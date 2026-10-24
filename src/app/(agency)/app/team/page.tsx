@@ -1,0 +1,142 @@
+import { redirect } from "next/navigation";
+import { InviteMemberForm } from "@/components/team/invite-member-form";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { PageHeader } from "@/components/shared/page-header";
+import { agencyCan } from "@/server/authorization/permissions";
+import { requireAgencyPageContext } from "@/server/auth/context";
+import { listInvitations } from "@/server/services/invitations";
+import { listAgencyMembers } from "@/server/services/workspace";
+
+function label(value: string) {
+  return value
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
+export default async function TeamPage() {
+  const context = await requireAgencyPageContext().catch(() => null);
+  if (!context) redirect("/login");
+  const canManage = agencyCan(context.role, "manage_members");
+  const [members, invitations] = await Promise.all([
+    listAgencyMembers(context.supabase, context.agencyId),
+    canManage
+      ? listInvitations(context.supabase, { agencyId: context.agencyId })
+      : Promise.resolve({ items: [] }),
+  ]);
+  const pendingInvitations = invitations.items.filter(
+    (invitation) => !invitation.accepted_at && !invitation.revoked_at,
+  );
+
+  return (
+    <div className="pb-20 lg:pb-0">
+      <PageHeader
+        title="Team"
+        description="See who can access the agency workspace and invite new teammates."
+      />
+      {canManage ? (
+        <div className="mt-6">
+          <InviteMemberForm />
+        </div>
+      ) : null}
+      <Card className="mt-6 shadow-none">
+        <CardHeader className="border-b pb-4">
+          <CardTitle>Active members</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Member</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Joined</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {members.items.map((member) => {
+                const name = member.profile?.full_name ?? "Team member";
+                return (
+                  <TableRow key={member.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar size="sm">
+                          <AvatarFallback>{initials(name)}</AvatarFallback>
+                        </Avatar>
+                        <p className="font-medium">{name}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>{label(member.role)}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="secondary"
+                        className={
+                          member.status === "active"
+                            ? "bg-success/10 text-success"
+                            : undefined
+                        }
+                      >
+                        {label(member.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {member.joined_at
+                        ? new Intl.DateTimeFormat("en", {
+                            dateStyle: "medium",
+                          }).format(new Date(member.joined_at))
+                        : "—"}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      {canManage && pendingInvitations.length ? (
+        <Card className="mt-5 shadow-none">
+          <CardHeader className="border-b pb-4">
+            <CardTitle>Pending invitations</CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y p-0">
+            {pendingInvitations.map((invitation) => (
+              <div
+                key={invitation.id}
+                className="flex flex-wrap items-center justify-between gap-3 px-5 py-4"
+              >
+                <div>
+                  <p className="text-sm font-medium">{invitation.email}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {label(invitation.role)} · Expires{" "}
+                    {new Intl.DateTimeFormat("en", {
+                      dateStyle: "medium",
+                    }).format(new Date(invitation.expires_at))}
+                  </p>
+                </div>
+                <Badge variant="secondary">Invited</Badge>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
+    </div>
+  );
+}

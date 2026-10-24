@@ -1,0 +1,25 @@
+begin;
+select plan(19);
+
+select has_table('public', 'agencies', 'agencies exists');
+select has_table('public', 'hiring_requests', 'hiring requests exists');
+select has_table('public', 'jobs', 'jobs exists');
+select has_table('public', 'activity_events', 'activity events exists');
+select has_table('public', 'candidates', 'candidates exists');
+select has_table('public', 'applications', 'applications exists');
+select has_table('public', 'candidate_documents', 'candidate documents exists');
+select has_table('public', 'job_application_questions', 'job application questions exist');
+select col_is_pk('public', 'agencies', 'id', 'agencies use UUID primary keys');
+select col_is_unique('public', 'jobs', 'hiring_request_id', 'one job per hiring request');
+select policies_are('public', 'agencies', array['agencies_read_member','agencies_update_admin'], 'agency policies are explicit');
+select policies_are('public', 'jobs', array['jobs_manage_authorized_agency','jobs_read_authorized'], 'job policies are explicit');
+select policies_are('public', 'applications', array['applications_manage_agency','applications_read_agency'], 'application policies are explicit');
+select has_function('public', 'onboard_agency', 'atomic onboarding exists');
+select has_function('public', 'accept_agency_invitation', 'atomic agency invitation acceptance exists');
+select has_function('public', 'accept_client_invitation', 'atomic client invitation acceptance exists');
+select has_function('public', 'convert_hiring_request_to_job', 'atomic request conversion exists');
+select has_function('public', 'create_manual_job', 'atomic manual job creation exists');
+select has_function('public', 'submit_public_application', 'atomic public application creation exists');
+
+select * from finish();
+rollback;
