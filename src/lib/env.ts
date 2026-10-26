@@ -50,7 +50,12 @@ export function getCompanyLookupEnv() {
       persistenceAllowed: z.boolean(),
     })
     .parse({
-      clientId: process.env.NEXT_PUBLIC_BRANDFETCH_CLIENT_ID,
+      // Public client IDs may be supplied from server configuration as a prop.
+      // This alias supports the existing Vercel setting without exposing API keys.
+      clientId:
+        process.env.NEXT_PUBLIC_BRANDFETCH_CLIENT_ID?.trim() ||
+        process.env.BRANDFETCH_CLIENT_ID?.trim() ||
+        undefined,
       apiKey: process.env.BRANDFETCH_API_KEY,
       persistenceAllowed: process.env.BRANDFETCH_PERSISTENCE_ALLOWED === "true",
     });

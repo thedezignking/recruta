@@ -28,9 +28,9 @@ type Suggestion = {
 };
 const suggestionsSchema = z.array(
   z.object({
-    name: z.string(),
+    name: z.string().nullish(),
     domain: z.string(),
-    icon: z.string().url().optional(),
+    icon: z.string().url().nullish(),
   }),
 );
 
@@ -127,7 +127,9 @@ export function CompanyPicker({
               external.push({
                 key: `external:${item.domain}`,
                 kind: "external",
-                ...item,
+                name: item.name || item.domain,
+                domain: item.domain,
+                icon: item.icon ?? undefined,
               });
           } catch {
             messages.push(

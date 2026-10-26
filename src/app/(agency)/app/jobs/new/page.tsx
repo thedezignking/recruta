@@ -43,11 +43,7 @@ export default async function NewJobPage({
       <PageHeader title="New job" />
       <NewJobForm
         agencyId={context.agencyId}
-        lookupClientId={
-          lookup.apiKey && lookup.persistenceAllowed
-            ? lookup.clientId
-            : undefined
-        }
+        lookupClientId={lookup.clientId}
         clients={clientOptions}
         workflows={workflowResult.items.map((workflow) => ({
           id: workflow.id,
