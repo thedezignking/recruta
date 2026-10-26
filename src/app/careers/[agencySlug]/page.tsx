@@ -6,7 +6,6 @@ import {
   MapPointIcon,
 } from "@solar-icons/react/linear";
 import { notFound } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
 import { ApiError } from "@/lib/api";
 import { getPublicCareerSite } from "@/server/services/public-jobs";
 
@@ -41,36 +40,22 @@ export default async function CareerSitePage({
             href={`mailto:${site.agency.contact_email}`}
             className="text-sm font-medium text-muted-foreground hover:text-foreground"
           >
-            Talk to our team
+            Contact us
           </a>
         </div>
       </header>
 
       <section className="overflow-hidden border-b border-foreground/8 bg-white">
-        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[1.25fr_.75fr] lg:py-24">
+        <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
           <div>
-            <Badge variant="secondary">Careers at {site.agency.name}</Badge>
-            <h1 className="mt-6 max-w-3xl text-balance text-4xl font-semibold tracking-[-0.055em] sm:text-6xl">
-              Work worth doing, with teams worth joining.
+            <h1 className="max-w-3xl text-balance text-4xl font-semibold tracking-[-0.055em]">
+              Careers
             </h1>
-            <p className="mt-6 max-w-xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
-              Explore open roles selected by our recruitment team. Apply once
-              with clear expectations and direct communication throughout the
-              process.
-            </p>
-          </div>
-          <div className="self-end rounded-2xl bg-foreground p-6 text-white">
-            <p className="text-xs font-medium uppercase tracking-[0.16em] text-white/55">
-              Our focus
-            </p>
-            <p className="mt-3 text-xl font-medium leading-8">
-              {site.agency.primary_specialization ||
-                "Thoughtful recruitment for growing organizations."}
-            </p>
-            <p className="mt-8 text-sm text-white/60">
-              {site.jobs.length} open{" "}
-              {site.jobs.length === 1 ? "role" : "roles"}
-            </p>
+            {site.agency.primary_specialization && (
+              <p className="mt-3 text-sm text-muted-foreground">
+                {site.agency.primary_specialization}
+              </p>
+            )}
           </div>
         </div>
       </section>
@@ -81,9 +66,6 @@ export default async function CareerSitePage({
       >
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-primary">
-              Current opportunities
-            </p>
             <h2
               id="open-roles"
               className="mt-2 text-3xl font-semibold tracking-[-0.04em]"

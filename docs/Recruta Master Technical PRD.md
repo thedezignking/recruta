@@ -61,10 +61,14 @@ Versions below are the installed baseline from `package.json`. Do not silently d
 | Browser/accessibility tests | Playwright `1.64.1`, axe-core Playwright `4.11.0` |
 | Deployment target | Vercel with separate local, preview/staging, and production services |
 
-## 2.1 Planned, Not Yet Installed
+## 2.1 Screening Addition (October 25, 2026)
 
-- An AI provider SDK and chosen models for document extraction and screening assistance.
-- A durable background workflow/execution system. Trigger.dev remains a candidate, not a committed current dependency.
+OpenAI SDK `7.43.0` is installed for a disabled server-only screening backend. `screening_runs` consolidates the durable queue, source snapshots, extraction, assessment evidence, provider/version metadata, and retry state. The deployment scheduler is not provisioned. See [ADR 0001](decisions/0001-screening-execution.md) for limits, activation, privacy, and remaining scope.
+
+## 2.2 Planned, Not Yet Installed
+
+- A selected/evaluated screening model and broader document-quality benchmark.
+- An external background workflow service if the Postgres lease worker becomes insufficient. Trigger.dev is not a current dependency.
 - WhatsApp and SMS channel providers.
 - Calendar or mailbox integration SDKs.
 
@@ -199,6 +203,8 @@ Current internal table names retain the earlier `client` vocabulary:
 The product UI calls these employer records **Organizations**. Do not rename database tables casually; a rename requires a migration, regenerated types, updated policies/functions, and compatibility review.
 
 An organization can be created independently or as part of the transactional manual-job flow. An organization does not imply a portal user.
+
+The next organization-entry enhancement is company autocomplete in both entry points. Search existing agency organizations first, then use a server-side adapter for a verified company-data provider. Return only the company information needed for selection and editable autofill, including logo and address where available. Debounce searches, cancel stale responses, bound results, and handle provider failures with manual entry. A selection does not persist an organization until confirmed. Provider access, licensing, privacy, and cost are unresolved; no LinkedIn integration is assumed or installed.
 
 ## 4.3 Hiring Requests
 
@@ -353,7 +359,8 @@ The code-level permission matrix lives in `src/server/authorization/permissions.
 - API requests may carry `x-agency-id` or `x-client-id` when a user has multiple memberships.
 - The server confirms the requested context belongs to an active membership.
 - Absence of context is acceptable only when exactly one applicable membership can be resolved or the page has an explicit selection flow.
-- A future workspace switcher must not store authorization only in the browser.
+- Workspace selection uses a user-scoped `recruta-workspace-<user-id>` HttpOnly, SameSite=Lax cookie (Secure over HTTPS). It is a preference only. Pages and APIs verify active memberships and active workspace status on every request. Explicit `x-agency-id` is validated and takes precedence; unauthorized explicit IDs are denied. Missing or stale preferences use the same deterministic oldest-active-membership fallback for pages and APIs. `POST /api/v1/workspaces/select` validates the payload, origin, current user and active membership before setting the cookie; switching reloads `/app` to discard previous-tenant client state.
+- `onboard_agency` permits multiple owned workspaces. An advisory transaction lock and the existing unique slug make same-slug retries safe only for the active owner of an active workspace. Other callers receive a conflict. Creation atomically inserts the agency, owner membership, default workflows, profile if absent, and one creation audit event; it never overwrites the existing personal profile or settings on retry. The authenticated `/app/workspaces/new` form reuses known profile details, and successful creation selects the new workspace.
 
 ---
 
@@ -420,18 +427,21 @@ External portal API:
 - `/api/v1/portal/requests`
 - `/api/v1/portal/jobs`
 
-## 7.3 Next Applicant-Operations API
+## 7.3 Applicant-Operations API
 
-Milestone 3 should add or complete:
+Implemented in the first 3A slice:
 
-- `GET /api/v1/applications/[id]`
-- `PATCH /api/v1/applications/[id]`
-- `POST /api/v1/applications/[id]/transitions`
-- `GET|POST /api/v1/applications/[id]/notes`
-- `POST /api/v1/applications/[id]/assignments`
+- `GET /api/v1/applications` with validated query filters and 25-row `(submitted_at,id)` cursor pagination, exact matching totals, and deterministic descending order.
+- `GET /api/v1/applications/[id]` with authorized application, notes, and audit history.
+- `PATCH /api/v1/applications/[id]` with a discriminated `action`: `transition`, `assign`, or `note`. Transitions and assignments require `expectedUpdatedAt`; note retries use a client UUID. Responses are private/no-store.
+
+Later milestone endpoints, when their workflows are implemented:
+
 - `POST /api/v1/applications/[id]/messages`
 - `POST /api/v1/applications/[id]/processing/retry`
 - Candidate duplicate-review and merge endpoints after the merge rules are specified.
+
+Screening uses `GET/POST /api/v1/applications/[id]/screening` for 20 latest reviewer-authorized runs and enqueue/retry with `{ documentId }` plus a UUID `Idempotency-Key`. Evidence context excludes private input metadata/lease tokens. `POST /screening/corrections` appends reviewer corrections without rewriting model output. POST processing requires operator configuration and workspace activation. Protected one-run worker routes are `/api/internal/screening`, `/api/internal/automations`, and `/api/internal/messages`. Application submission commits an intake task through a trigger; no scheduler or live provider is automatically enabled.
 
 List endpoints use cursor pagination, bounded page size, validated filters, and deterministic sort order. Bulk endpoints must specify per-item outcome and must not allow silent partial destructive changes.
 
@@ -496,15 +506,16 @@ Preview should use the same presentation components or data contract as the publ
 
 ---
 
-# 9. Applicant Operations Architecture — Next Milestone
+# 9. Applicant Operations Architecture
 
 ## 9.1 Required Schema Extensions
 
-Introduce forward migrations only after exact product interactions are finalized. Expected additions include:
+The first 3A migration adds `applications.owner_user_id` with a tenant-composite membership FK and `application_notes` with author, immutable body, and timestamps. Status and ownership events use normalized `activity_events` metadata (`from`/`to`/`reason`, or `fromOwner`/`toOwner`) alongside actor, tenant, resource, and request ID. Notes never put their body in global audit metadata.
 
-- `application_notes` for internal notes with author and timestamps.
-- `application_status_events` or a normalized event shape for from/to status, reason, actor, and timestamp.
-- Optional `application_assignments` if ownership must differ from job assignment.
+`private.can_review_job` and `private.can_review_application` check active database memberships and real job assignments. Managers have agency-wide review; recruiters are assigned-job scoped. Applications, candidate identity, answers, documents, notes, and application audit events enforce this in RLS. Authenticated direct writes to application/candidate/answer/document tables are revoked; public intake retains its existing trusted service-only path. The public `review_application` RPC is SECURITY INVOKER and delegates to a narrowly granted private transaction with explicit authorization, row locking, stale-version checks, state-machine validation, and atomic audit insertion. No email/provider call runs inside the transaction.
+
+Further extensions remain planned:
+
 - Candidate merge/audit support if deduplication moves beyond the current agency-email unique key.
 - Structured extraction and screening tables described in Section 10.
 
@@ -553,7 +564,7 @@ Every transition records the actor, old state, new state, reason, request ID, an
 
 # 10. AI-Assisted Processing
 
-This section is planned architecture, not current implementation.
+The durable queue, provider adapters, recruiter review UI, candidate email, and intake automation are implemented as described in ADRs 0001 and 0002. Live activation, scheduling, and provider evaluations remain operator prerequisites; the normalized tables below describe the longer-term target rather than additional current dependencies.
 
 ## 10.1 Processing Pipeline
 
@@ -569,7 +580,9 @@ application.submitted
 
 The pipeline is asynchronous. The application is immediately visible with `pending` or `extracting` state.
 
-## 10.2 Proposed Data Records
+## 10.2 Versioned Screening Records
+
+The first backend implementation consolidates the following proposed records into RLS-protected `screening_runs` and private idempotency-key bindings. Atomic request creation snapshots the job, criteria versions, answers, and document metadata; output retains separate extraction and assessment JSON plus provider/version metadata. Authenticated readers cannot access lease tokens or raw input snapshots. Claim/finish functions are service-role-only; the enqueue transaction checks live reviewer access. Details and pending UI/correction/evaluation work are recorded in ADR 0001.
 
 Use versioned records rather than overwriting a single opaque result:
 
@@ -805,9 +818,12 @@ A production release is not complete until the primary recruiter-to-application 
 
 # 17. UI Engineering Standards
 
-- Use `#5C5AED` for brand actions, focus rings, links, selected navigation, and active workflow markers.
+- Use `#5C5AED` for brand actions, focus rings, links, and active workflow markers. Keep broad surfaces neutral: #F5F5F5 sidebar/canvas, white work area, #E8E8E8 borders, and #EAEAEA selected navigation with dark text.
+- Reserve filled primary buttons for a page's main action or form's main submission. Use the shared `outline` variant for supporting/repeated CTAs, empty-state actions, and alternate Save draft actions, not `secondary`. Preserve ghost/link navigation and destructive semantics.
+- Summary cards are independent surfaces with visible gaps. Interface copy omits taglines and repeated explanations; retain meaningful metadata, task guidance, validation, consent, and destructive-action consequences.
 - Use semantic tokens for success, warning, and destructive state.
-- Use Solar Linear icons for routine actions, unselected navigation, fields, and metadata.
+- Use the shared 6 px radius base: 6 px controls/navigation, 10 px cards/overlays, and 4 px compact nested elements. The brand lockup pairs a 28 px square mark with a 22 px semibold Geist wordmark and a 10 px gap. Navigation/toolbar icons use 20 px, compact actions use 16 px, and search uses 18 px.
+- Use Solar Linear icons for routine actions, inactive sidebar navigation, fields, and metadata; selected sidebar items use the matching Bold solid variant on a neutral gray surface.
 - Use Solar Bold solid icons only for selected navigation, identity, major empty states, and high-salience confirmation.
 - Do not use Solar duotone variants.
 - Use the plain `AddIcon` for ordinary create buttons, not a circled add icon.
@@ -818,6 +834,10 @@ A production release is not complete until the primary recruiter-to-application 
 - Use React Hook Form and Zod for non-trivial forms.
 - Preview and public job display should share contracts and, where practical, presentation components.
 - Meet WCAG 2.2 AA for critical flows.
+
+Overview accepts a validated `range` query parameter: `all`, `24h`, `7d`, `14d`, or `30d` (default). Missing, invalid, or repeated values fall back to the last 30 days. All time remains an explicit `range=all` choice. The Server Component reads exact tenant/RLS-authorized counts through `getWorkspaceOverview`/`getOverviewSummary`. Cards are Active jobs (`status=open`), Applications received (all stages), In review (`status=in_review` only), and Shortlisted (`status=shortlisted`). Rolling UTC windows are bounded by a single server timestamp; jobs use `created_at`, applications use `submitted_at`. Counts show current state of that intake cohort, not historical transitions. Work queues remain unfiltered. A small Base UI Select island beside New job updates the URL without resetting scroll or dropping unrelated query parameters. Omit the Overview greeting. Selected navigation retains neutral surfaces and dark text with a purple solid icon. Never label application counts as unique candidates or infer placements from late-stage applications.
+
+Agency settings supports upload, replacement, and removal of a public agency logo through `POST/DELETE /api/v1/agency/logo`. Only active owners/administrators can mutate it. Requests pin the originating agency, bound multipart bodies, and validate PNG/JPEG/WebP MIME types, signatures, and a 2 MiB limit. Immutable object paths use the existing public `agency-logos` bucket; candidate storage stays private. `update_agency_logo` verifies role, tenant path and uploaded object, checks the expected previous path under a row lock, and atomically updates metadata and audit history. Cleanup failure does not undo a successful update. A transport failure can leave an unreferenced upload for later cleanup; it must not delete an upload whose commit result is unknown.
 
 ---
 
@@ -839,7 +859,7 @@ Technical hardening still required:
 - Expand public-form abuse/rate controls.
 - Expand database and browser coverage for new flows.
 
-## Milestone 3A — Applicant Operations (next)
+## Milestone 3A — Applicant Operations (core implemented; hardening continues)
 
 - Detail route/service/API and authorization.
 - Notes, transition history, and ownership.
@@ -847,7 +867,13 @@ Technical hardening still required:
 - Job pipeline counts and actionable overview queries.
 - Duplicate-review design.
 
+The first four items are implemented in the current slice. Duplicate identity remains protected by agency-normalized email uniqueness and one application per candidate/job; automatic merging is not implemented. Advanced duplicate review, date-range UI, pagination of the 200-job picker and older notes/history, and bulk actions remain follow-up work. Review displays the latest 100 notes/events per application. Placement is deliberately not an available review transition until opening-level placement records exist.
+
+Verification uses unit tests, rollback-only pgTAP fixtures, and opt-in Playwright fixtures (`RECRUTA_E2E_DATABASE=1`) against the configured staging database. Browser fixtures use their own UUID-namespaced synthetic users/workspaces, verify their namespace before cleanup, and never mutate existing agency records. Local Docker availability is required for the normal `npm run db:test`; rollback-only staging pgTAP is an alternative when Docker is unavailable.
+
 ## Milestone 3B — AI-Assisted Screening
+
+Backend and review UI implemented: strict schemas/prompts, OpenAI adapter, quote/criterion validation, durable queue, idempotent request/history, extracted text and evidence UI, append-only corrections, retained extraction checkpoints, workspace activation settings, and opted-in automatic intake preparation. After initial fake-provider testing, owner-authorized GPT-6 Luna evaluations passed six screening cases and simple PDF/DOCX extraction-to-evidence smoke checks. App-level AI and automatic intake remain off pending pilot activation. Broader model/document evaluation, provider activation, deployed scheduling, and operational monitoring still require operator setup; do not imply live app processing is enabled.
 
 - Background execution decision and outbox.
 - Extraction/assessment schemas.
@@ -855,6 +881,8 @@ Technical hardening still required:
 - Evidence UI, correction, retry, evaluation, and monitoring.
 
 ## Milestone 3C — Candidate Communication and Work Queue
+
+The current slice implements provider-neutral message intent in `communications`, fixed candidate templates/composer/history, pending-message cancellation, bounded leased delivery, stable Resend idempotency, signed/deduplicated ordered callbacks, bounce/complaint suppression, durable intake tasks, acknowledgement preparation, and scoped review/failure queues. Separate server flags and workspace preferences gate execution. A bounded operator runner and activation runbook are in ADR 0002. Provider scheduling, live deliverability, and operational alert configuration remain deployment prerequisites.
 
 - Candidate message API and composer.
 - Templates, delivery state, webhooks, resend, and opt-out groundwork.
@@ -894,9 +922,9 @@ Operational metrics derived from reliable events, retention/export tools, calend
 
 # 20. Open Technical Decisions
 
-- Durable job/outbox provider: Supabase-native approach, Trigger.dev, or another service.
-- AI provider/model and regional/privacy configuration.
-- Document text extraction provider or library for PDF/DOCX quality.
+- Scheduler deployment for the implemented Supabase/Postgres screening queue; external workflow service only if operational needs justify it.
+- OpenAI model selection and regional/privacy configuration; OpenAI is the selected provider.
+- PDF/DOCX extraction quality evaluation and whether an independent parser is required beyond the initial OpenAI file-input adapter.
 - Public form rate limiting, CAPTCHA/turnstile threshold, and abuse storage.
 - Candidate identity rules beyond normalized agency email, including shared emails and changed email addresses.
 - Merge semantics and reversibility.
@@ -910,6 +938,23 @@ Each decision must be recorded before the relevant implementation begins.
 ---
 
 # 21. Definition of Done
+
+## Implemented organization lookup and workspace utilities
+
+- `GET /api/v1/search?q=` returns up to five jobs, five applicants, and five organizations. Queries are trimmed, bounded to 2–100 characters, escaped for PostgREST filters, deterministically sorted, tenant-filtered, RLS-backed, and `private, no-store`.
+- `GET /api/v1/clients/search?q=` searches up to eight non-archived saved organizations by name/website. Existing company matches are preferred; name and domain warnings also appear during manual entry.
+- `POST /api/v1/companies/lookup` accepts a validated domain, checks the agency for an existing match before enrichment, and calls only the fixed Brandfetch API endpoint. It requires an active agency membership, uses a server-only secret, has an eight-second timeout, and fails back to manual entry. No private contacts or internal notes are sent.
+- Optional configuration: `NEXT_PUBLIC_BRANDFETCH_CLIENT_ID`, `BRANDFETCH_API_KEY`, and `BRANDFETCH_PERSISTENCE_ALLOWED=true`. Leave disabled until the operator confirms plan-specific storage/logo rights and configures provider spending limits. No provider account or paid subscription is created automatically.
+- Brand Search runs directly in the browser with debounce, cancellation, and no application caching/persistence. Its temporary logo URLs are hotlinked only in suggestions. Saved company details come from the separate Brand API, never the Search response. Street addresses are manual when unavailable.
+- `clients.company_profile` stores reviewed address, HTTPS logo URL, and enrichment source/identifier as an agency-private JSON object; anonymous grants do not include this column. Provider logos remain external URLs with a fallback if unavailable. No logo upload/proxy pipeline is introduced in this slice.
+- `create_organization` atomically saves an organization, optional contact, and audit event. Active role checks, advisory locks, and a tenant/request-key unique index protect retries and exact-name duplicate creation. Existing records are returned without silent edits. Inline `create_manual_job` calls the same operation within its job transaction.
+- `PATCH /api/v1/account` validates a name and updates only the authenticated user's profile under RLS. Password changes use Supabase Auth. `/auth/logout` supports JSON feedback for the shared account menu and retains POST/303 fallback behavior.
+- Workspace search uses an inline, explicitly non-modal Base UI Combobox with keyboard selection, debounce, and cancellation. Company selection also uses Base UI Combobox. The shared desktop/mobile account menu uses the existing menu primitive with personal account/security links, shortcut help, public careers access, and destructive logout—not duplicate Team/Settings links. The workspace selector reuses the menu primitive with active memberships supplied by the server. Routine/inactive icons remain Solar Linear; active navigation uses solid. The sidebar lockup is 24 px mark / 20 px wordmark / 8 px gap; other lockups retain the default 28/22/10 scale.
+- `GET /api/v1/notifications` reads bounded, tenant-filtered applications, non-draft hiring requests, and the current user's job assignments through their authenticated Supabase client and existing RLS. The response is `private, no-store`, sorted by timestamp/ID, and capped at 15 updates from the last 30 days. `workspace-notifications.ts` is separate from the existing email-notification delivery service. The bell uses an anchored Base UI popover; refresh on open/window focus and every 60 seconds while visible. Only read IDs (maximum 200) are persisted in browser storage keyed by agency/user. Cross-device read state and realtime push are not implemented in this slice.
+- Active branding uses the small native vector `public/brand/recruta-symbol.svg`: a #111111 square with an 8-unit radius in a 40-unit viewBox and a white abstract fit path formed by two complementary corners, representing candidate–role alignment. `src/app/icon.svg` contains the identical vector. The shared logo component pairs it with an accessible Geist wordmark. Previous supplied PNGs, ribbon wrapper, and starburst ICO remain legacy assets only; they are not active favicon fallbacks.
+- Database tests cover contact-free/atomic creation, retry reuse, inline profile copying, multi-opening jobs, rollback of failed jobs, anonymous denial, cross-tenant RLS, and revoked access. The intentionally authenticated `SECURITY DEFINER` creation API is guarded by live membership checks and explicit execute grants; its advisor warning is expected, not an unguarded permission bypass. The existing disabled leaked-password-protection warning still requires operator review.
+
+## Completion criteria
 
 A feature is complete only when:
 

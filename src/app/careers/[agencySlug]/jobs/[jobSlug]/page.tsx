@@ -9,6 +9,7 @@ import {
 } from "@solar-icons/react/linear";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
+import { ButtonLink } from "@/components/shared/button-link";
 import { ApiError } from "@/lib/api";
 import { getPublicJob } from "@/server/services/public-jobs";
 
@@ -105,7 +106,6 @@ export default async function PublicJobPage({
       <div className="mx-auto grid max-w-6xl gap-10 px-5 py-12 sm:px-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start lg:py-16">
         <article className="min-w-0">
           <section aria-labelledby="about-role">
-            <p className="text-sm font-medium text-primary">The opportunity</p>
             <h2
               id="about-role"
               className="mt-2 text-2xl font-semibold tracking-[-0.035em]"
@@ -125,7 +125,7 @@ export default async function PublicJobPage({
                 id="requirements"
                 className="text-2xl font-semibold tracking-[-0.035em]"
               >
-                What matters for this role
+                Requirements
               </h2>
               <ul className="mt-5 flex flex-col gap-4">
                 {job.job_requirements.map((requirement) => (
@@ -172,7 +172,6 @@ export default async function PublicJobPage({
           </section>
         </article>
         <aside className="rounded-2xl bg-white p-6 ring-1 ring-foreground/8 lg:sticky lg:top-6 sm:p-8">
-          <p className="text-sm font-medium text-primary">Ready to apply?</p>
           <h2 className="mt-2 text-2xl font-semibold tracking-[-0.035em]">
             Send your application
           </h2>
@@ -180,17 +179,15 @@ export default async function PublicJobPage({
             {job.application_form_intro ||
               "Share your profile and resume with the recruitment team."}
           </p>
-          <p className="mt-5 text-xs leading-5 text-muted-foreground">
-            The application opens on its own secure page, so you can focus on
-            your details without losing this role description.
-          </p>
-          <Link
+          <ButtonLink
             href={`/careers/${agencySlug}/jobs/${jobSlug}/apply`}
-            className="mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-150 hover:bg-primary/90 active:translate-y-px focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            variant="outline"
+            size="lg"
+            className="mt-6 h-11 w-full"
           >
             Apply for this role
-            <ArrowRightIcon aria-hidden="true" size={17} />
-          </Link>
+            <ArrowRightIcon data-icon="inline-end" aria-hidden="true" />
+          </ButtonLink>
         </aside>
       </div>
     </main>

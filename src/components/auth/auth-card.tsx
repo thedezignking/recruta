@@ -9,7 +9,7 @@ export function AuthCard({
   footer,
 }: {
   title: string;
-  description: string;
+  description?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
 }) {
@@ -24,9 +24,11 @@ export function AuthCard({
             <h1 className="font-heading text-xl font-medium tracking-[-.025em]">
               {title}
             </h1>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              {description}
-            </p>
+            {description && (
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                {description}
+              </p>
+            )}
           </CardHeader>
           <CardContent>{children}</CardContent>
           {footer && (

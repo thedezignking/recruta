@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { organizationDetailsSchema } from "./organization";
 
 export const agencyRoleSchema = z.enum([
   "owner",
@@ -77,18 +78,15 @@ export const requestMessageSchema = z.object({
     .default("client_visible"),
 });
 
-export const clientSchema = z.object({
-  name: z.string().trim().min(2).max(160),
-  industry: z.string().trim().max(120).optional(),
-  website: z.string().url().optional().or(z.literal("")),
-  countryCode: z.string().length(2).optional(),
-  location: z.string().trim().max(160).optional(),
-  primaryContact: z.object({
-    fullName: z.string().trim().min(2).max(120),
-    email: z.string().trim().email(),
-    jobTitle: z.string().trim().max(120).optional(),
-    phone: z.string().trim().max(40).optional(),
-  }),
+export const clientSchema = organizationDetailsSchema.extend({
+  primaryContact: z
+    .object({
+      fullName: z.string().trim().min(2).max(120),
+      email: z.string().trim().email(),
+      jobTitle: z.string().trim().max(120).optional(),
+      phone: z.string().trim().max(40).optional(),
+    })
+    .optional(),
 });
 
 export const requestRequirementSchema = z.object({
@@ -149,15 +147,7 @@ export const jobTransitionSchema = z.object({
 export const manualJobSchema = z
   .object({
     clientId: z.string().uuid().nullable().optional(),
-    newOrganization: z
-      .object({
-        name: z.string().trim().min(2).max(160),
-        industry: z.string().trim().max(120).optional(),
-        website: z.string().url().optional().or(z.literal("")),
-        countryCode: z.string().trim().length(2).optional().or(z.literal("")),
-        location: z.string().trim().max(160).optional(),
-      })
-      .optional(),
+    newOrganization: organizationDetailsSchema.optional(),
     title: z.string().trim().min(2).max(160),
     description: z.string().trim().min(20).max(20000),
     department: z.string().trim().max(120).optional(),
@@ -168,7 +158,9 @@ export const manualJobSchema = z
     salaryMin: z.coerce.number().nonnegative().optional(),
     salaryMax: z.coerce.number().nonnegative().optional(),
     currency: z.string().trim().length(3).optional().or(z.literal("")),
-    deadlineAt: z.coerce.date().optional(),
+    deadlineAt: z
+      .union([z.literal("").transform(() => undefined), z.coerce.date()])
+      .optional(),
     priority: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
     workflowTemplateId: z.string().uuid().optional().or(z.literal("")),
     primaryRecruiterId: z.string().uuid().optional().or(z.literal("")),

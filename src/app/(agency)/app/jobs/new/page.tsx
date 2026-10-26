@@ -3,6 +3,7 @@ import { NewJobForm } from "@/components/jobs/new-job-form";
 import { PageHeader } from "@/components/shared/page-header";
 import { requireAgencyPageContext } from "@/server/auth/context";
 import { listClients } from "@/server/services/clients";
+import { getCompanyLookupEnv } from "@/lib/env";
 import {
   listAgencyMembers,
   listWorkflowTemplates,
@@ -16,24 +17,38 @@ export default async function NewJobPage({
   const { clientId } = await searchParams;
   const context = await requireAgencyPageContext().catch(() => null);
   if (!context) redirect("/login");
+  const lookup = getCompanyLookupEnv();
   const [clientResult, workflowResult, memberResult] = await Promise.all([
     listClients(context.supabase, context.agencyId),
     listWorkflowTemplates(context.supabase, context.agencyId),
     listAgencyMembers(context.supabase, context.agencyId),
   ]);
+  const clientOptions = clientResult.items.map((client) => ({
+    id: client.id,
+    name: client.name,
+  }));
+  if (clientId && !clientOptions.some((item) => item.id === clientId)) {
+    const { data } = await context.supabase
+      .from("clients")
+      .select("id,name")
+      .eq("agency_id", context.agencyId)
+      .eq("id", clientId)
+      .neq("status", "archived")
+      .maybeSingle();
+    if (data) clientOptions.unshift(data);
+  }
 
   return (
     <div className="pb-20 lg:pb-0">
-      <PageHeader
-        eyebrow="New job"
-        title="Open a role"
-        description="Create the organization, role, requirements, and public application form in one place."
-      />
+      <PageHeader title="New job" />
       <NewJobForm
-        clients={clientResult.items.map((client) => ({
-          id: client.id,
-          name: client.name,
-        }))}
+        agencyId={context.agencyId}
+        lookupClientId={
+          lookup.apiKey && lookup.persistenceAllowed
+            ? lookup.clientId
+            : undefined
+        }
+        clients={clientOptions}
         workflows={workflowResult.items.map((workflow) => ({
           id: workflow.id,
           name: workflow.name,

@@ -1,6 +1,11 @@
 import { ApiError } from "@/lib/api";
 import { createClient } from "@/lib/supabase/server";
 import type { AgencyRole, ClientRole } from "@/types/domain";
+import { cookies } from "next/headers";
+import {
+  parseWorkspaceSelection,
+  workspaceCookieName,
+} from "@/lib/workspace-selection";
 
 export async function requireUser() {
   const supabase = await createClient();
@@ -15,38 +20,40 @@ export async function requireAgencyContext(
   allowedRoles?: AgencyRole[],
 ) {
   const { supabase, user } = await requireUser();
-  const requestedAgencyId = request.headers.get("x-agency-id");
-  let query = supabase
+  const explicitAgencyId = request.headers.get("x-agency-id");
+  if (explicitAgencyId && !parseWorkspaceSelection(explicitAgencyId))
+    throw new ApiError(400, "INVALID_AGENCY_ID", "Choose a valid workspace.");
+  const preferredAgencyId =
+    explicitAgencyId ||
+    parseWorkspaceSelection(
+      (await cookies()).get(workspaceCookieName(user.id))?.value,
+    );
+  const query = supabase
     .from("agency_memberships")
-    .select("agency_id, role, status")
+    .select("agency_id,role,status,agencies!inner(status)")
     .eq("user_id", user.id)
-    .eq("status", "active");
-  if (requestedAgencyId) query = query.eq("agency_id", requestedAgencyId);
-  const { data, error } = await query.limit(2);
+    .eq("status", "active")
+    .eq("agencies.status", "active");
+  const { data, error } = await query
+    .order("created_at", { ascending: true })
+    .order("agency_id");
   if (error)
     throw new ApiError(
       500,
       "MEMBERSHIP_LOOKUP_FAILED",
       "Agency access could not be verified.",
     );
-  if (!data?.length)
+  const selected = data?.find(
+    (membership) => membership.agency_id === preferredAgencyId,
+  );
+  const membership = selected ?? (!explicitAgencyId ? data?.[0] : undefined);
+  if (!membership)
     throw new ApiError(
       403,
       "AGENCY_ACCESS_DENIED",
       "You do not have access to this agency.",
     );
-  if (!requestedAgencyId && data.length > 1)
-    throw new ApiError(
-      400,
-      "AGENCY_CONTEXT_REQUIRED",
-      "Choose an agency before continuing.",
-    );
-  const membership = data[0] as {
-    agency_id: string;
-    role: AgencyRole;
-    status: string;
-  };
-  if (allowedRoles && !allowedRoles.includes(membership.role))
+  if (allowedRoles && !allowedRoles.includes(membership.role as AgencyRole))
     throw new ApiError(
       403,
       "PERMISSION_DENIED",
@@ -56,20 +63,27 @@ export async function requireAgencyContext(
     supabase,
     user,
     agencyId: membership.agency_id,
-    role: membership.role,
+    role: membership.role as AgencyRole,
   };
 }
 
 export async function requireAgencyPageContext() {
   const { supabase, user } = await requireUser();
-  const { data, error } = await supabase
+  const selectedAgencyId = parseWorkspaceSelection(
+    (await cookies()).get(workspaceCookieName(user.id))?.value,
+  );
+  const { data: memberships, error } = await supabase
     .from("agency_memberships")
-    .select("agency_id,role,status,created_at")
+    .select("agency_id,role,status,created_at,agencies!inner(status)")
     .eq("user_id", user.id)
     .eq("status", "active")
+    .eq("agencies.status", "active")
     .order("created_at", { ascending: true })
-    .limit(1)
-    .single();
+    .order("agency_id");
+  const data =
+    memberships?.find(
+      (membership) => membership.agency_id === selectedAgencyId,
+    ) ?? memberships?.[0];
   if (error || !data) {
     throw new ApiError(
       403,

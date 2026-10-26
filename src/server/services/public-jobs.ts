@@ -4,8 +4,6 @@ import { ApiError } from "@/lib/api";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createPublicClient } from "@/lib/supabase/public";
 import { publicApplicationSchema } from "@/lib/validation";
-import { statusEmail } from "@/server/email/templates";
-import { deliverApplicationEmail } from "@/server/services/communications";
 import type { Json } from "@/types/database.generated";
 
 const MAX_RESUME_BYTES = 10 * 1024 * 1024;
@@ -196,9 +194,9 @@ export async function submitPublicApplication(
     p_job_id: job.id,
     p_full_name: payload.fullName,
     p_email: payload.email,
-    p_phone: payload.phone || null,
-    p_linkedin_url: payload.linkedinUrl || null,
-    p_cover_note: payload.coverNote || null,
+    p_phone: payload.phone || "",
+    p_linkedin_url: payload.linkedinUrl || "",
+    p_cover_note: payload.coverNote || "",
     p_document: {
       fileName: resume.name,
       storagePath,
@@ -227,20 +225,6 @@ export async function submitPublicApplication(
     );
   }
 
-  const email = await deliverApplicationEmail({
-    agencyId: job.agency_id,
-    recipientEmail: payload.email,
-    messageType: "application_received",
-    relatedEntityType: "application",
-    relatedEntityId: applicationId,
-    idempotencyKey: `application-received:${applicationId}`,
-    subject: `Application received: ${job.title}`,
-    html: statusEmail({
-      title: "We received your application",
-      preview: `Your application for ${job.title} is with ${job.agencies.name}.`,
-      body: `Thanks, ${payload.fullName}. Your application for ${job.title} has been received by ${job.agencies.name}. They will contact you by email if they need anything else.`,
-    }),
-  });
-
-  return { applicationId, confirmationEmailStatus: email.status };
+  // The intake task was committed with the application. Provider work runs later.
+  return { applicationId, confirmationEmailStatus: "queued" };
 }

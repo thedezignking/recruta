@@ -1,15 +1,22 @@
 import { NewOrganizationForm } from "@/components/organizations/new-organization-form";
 import { PageHeader } from "@/components/shared/page-header";
+import { requireAgencyPageContext } from "@/server/auth/context";
+import { getCompanyLookupEnv } from "@/lib/env";
 
-export default function NewOrganizationPage() {
+export default async function NewOrganizationPage() {
+  const { agencyId } = await requireAgencyPageContext();
+  const lookup = getCompanyLookupEnv();
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader
-        eyebrow="New organization"
-        title="Add a client organization"
-        description="Create the company record and its primary contact."
+      <PageHeader title="New organization" />
+      <NewOrganizationForm
+        agencyId={agencyId}
+        lookupClientId={
+          lookup.apiKey && lookup.persistenceAllowed
+            ? lookup.clientId
+            : undefined
+        }
       />
-      <NewOrganizationForm />
     </div>
   );
 }

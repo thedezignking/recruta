@@ -5,8 +5,8 @@ import { SignupForm } from "@/components/auth/signup-form";
 export default function SignupPage() {
   return (
     <AuthCard
-      title="Build your agency workspace"
-      description="Create the owner account. We’ll verify your email before agency setup."
+      title="Create your account"
+      description="Verify your email, then set up your agency."
       footer={
         <>
           Already have an account?{" "}

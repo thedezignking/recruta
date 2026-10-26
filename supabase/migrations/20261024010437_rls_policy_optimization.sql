@@ -1,6 +1,12 @@
 -- The platform event-trigger function does not need to be callable through the
 -- Data API. The event trigger continues to invoke it internally.
-revoke all on function public.rls_auto_enable() from public, anon, authenticated;
+-- Hosted Supabase supplies this helper; local CLI databases may not. This
+-- portability guard preserves the original revoke wherever the helper exists.
+do $$ begin
+  if to_regprocedure('public.rls_auto_enable()') is not null then
+    revoke all on function public.rls_auto_enable() from public, anon, authenticated;
+  end if;
+end $$;
 
 -- Keep read policies distinct while ensuring write policies do not also run
 -- for SELECT. This removes duplicate permissive-policy evaluation.

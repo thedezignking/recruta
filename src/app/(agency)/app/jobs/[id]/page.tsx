@@ -11,12 +11,14 @@ import { JobLifecycleActions } from "@/components/jobs/job-lifecycle-actions";
 import { PublishJobButton } from "@/components/jobs/publish-job-button";
 import { ButtonLink } from "@/components/shared/button-link";
 import { PageHeader } from "@/components/shared/page-header";
-import { StageRail } from "@/components/shared/stage-rail";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getPublicEnv } from "@/lib/env";
 import { requireAgencyPageContext } from "@/server/auth/context";
-import { listApplications } from "@/server/services/applications";
+import {
+  getJobPipeline,
+  listApplications,
+} from "@/server/services/applications";
 import { getJob } from "@/server/services/jobs";
 
 export default async function JobPage({
@@ -29,23 +31,17 @@ export default async function JobPage({
   if (!context) redirect("/login");
   const job = await getJob(context.supabase, id).catch(() => null);
   if (!job) notFound();
-  const [applicationResult, agencyResult] = await Promise.all([
+  const [applicationResult, agencyResult, pipeline] = await Promise.all([
     listApplications(context.supabase, context.agencyId, { jobId: id }),
     context.supabase
       .from("agencies")
       .select("slug")
       .eq("id", context.agencyId)
       .single(),
+    getJobPipeline(context.supabase, context.agencyId, id),
   ]);
   const stages = job.job_workflow_stages.map(
-    (
-      stage: {
-        id: string;
-        name: string;
-        stage_type: string;
-      },
-      index: number,
-    ) => ({
+    (stage: { id: string; name: string; stage_type: string }) => ({
       id: stage.id,
       name: stage.name,
       owner:
@@ -53,7 +49,7 @@ export default async function JobPage({
           ? ("client" as const)
           : ("agency" as const),
       complete: false,
-      active: index === 0,
+      active: false,
     }),
   );
   const applicationUrl =
@@ -71,9 +67,6 @@ export default async function JobPage({
         Jobs
       </Link>
       <PageHeader
-        eyebrow={
-          job.source === "manual" ? "Agency-created job" : "Hiring request job"
-        }
         title={job.title}
         description={`${job.clients?.name ?? "Organization"} · ${job.positions_required} ${job.positions_required === 1 ? "position" : "positions"}`}
         actions={
@@ -117,8 +110,18 @@ export default async function JobPage({
 
       {stages.length ? (
         <Card className="mt-5 shadow-none">
-          <CardContent className="py-5">
-            <StageRail stages={stages} />
+          <CardHeader>
+            <CardTitle>Configured workflow</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ol
+              aria-label="Configured recruitment stages"
+              className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground"
+            >
+              {stages.map((stage: { id: string; name: string }) => (
+                <li key={stage.id}>{stage.name}</li>
+              ))}
+            </ol>
           </CardContent>
         </Card>
       ) : null}
@@ -128,9 +131,6 @@ export default async function JobPage({
           <CardHeader className="border-b pb-4">
             <div>
               <CardTitle>Latest applications</CardTitle>
-              <p className="mt-1 text-sm text-muted-foreground">
-                New candidates waiting for recruiter review.
-              </p>
             </div>
             <ButtonLink
               href={`/app/applications?jobId=${job.id}`}
@@ -145,8 +145,9 @@ export default async function JobPage({
             {applicationResult.items.length ? (
               <div className="divide-y">
                 {applicationResult.items.slice(0, 6).map((application) => (
-                  <div
+                  <Link
                     key={application.id}
+                    href={`/app/applications/${application.id}`}
                     className="flex items-center justify-between gap-4 px-5 py-4"
                   >
                     <div>
@@ -160,8 +161,8 @@ export default async function JobPage({
                         }).format(new Date(application.submitted_at))}
                       </p>
                     </div>
-                    <StatusBadge status={application.processing_status} />
-                  </div>
+                    <StatusBadge status={application.status} />
+                  </Link>
                 ))}
               </div>
             ) : (
@@ -200,6 +201,23 @@ export default async function JobPage({
                   className="text-primary"
                 />
               </div>
+              <ul className="mt-5 flex flex-col gap-3">
+                {pipeline.map((stage) => (
+                  <li key={stage.status}>
+                    <Link
+                      href={`/app/applications?jobId=${job.id}&status=${stage.status}`}
+                      className="flex items-center justify-between gap-3 text-sm hover:text-primary"
+                    >
+                      <span className="capitalize">
+                        {stage.status.replaceAll("_", " ")}
+                      </span>
+                      <span className="font-mono text-xs tabular-nums">
+                        {stage.count}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </CardContent>
           </Card>
           <Card className="shadow-none">
@@ -236,9 +254,6 @@ export default async function JobPage({
           <Card className="shadow-none">
             <CardHeader>
               <CardTitle>Job controls</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Change availability or remove an accidental empty job.
-              </p>
             </CardHeader>
             <CardContent>
               <JobLifecycleActions

@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 
 type AgencyProfile = {
+  id: string;
   name: string;
   contact_email: string;
   country_code: string;
@@ -33,7 +34,10 @@ export function AgencySettingsForm({ agency }: { agency: AgencyProfile }) {
     try {
       const response = await fetch("/api/v1/agency/profile", {
         method: "PATCH",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          "x-agency-id": agency.id,
+        },
         body: JSON.stringify({
           name: form.get("name"),
           contactEmail: form.get("contactEmail"),

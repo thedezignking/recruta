@@ -40,10 +40,7 @@ export default async function RequestsPage() {
   });
   return (
     <div className="pb-20 lg:pb-0">
-      <PageHeader
-        title="Hiring requests"
-        description="Review employer demand, resolve questions, and turn approved work into jobs."
-      />
+      <PageHeader title="Hiring requests" />
       <Card className="mt-6 shadow-none">
         <CardContent className="p-0">
           {result.items.length ? (

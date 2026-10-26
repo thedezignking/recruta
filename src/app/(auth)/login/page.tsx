@@ -11,7 +11,6 @@ export default async function LoginPage({
   return (
     <AuthCard
       title="Welcome back"
-      description="Sign in to your Recruta workspace."
       footer={
         <>
           New to Recruta?{" "}

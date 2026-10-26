@@ -116,7 +116,7 @@ export function ApplicationForm({
             {agencyName} now has your application for {jobTitle}.{" "}
             {confirmationSent
               ? "We sent a confirmation to your email address."
-              : "Your application is safe, but the confirmation email could not be sent."}
+              : "Your application has been received. The agency will contact you if they need anything else."}
           </p>
         </CardContent>
       </Card>
@@ -126,10 +126,7 @@ export function ApplicationForm({
   return (
     <Card className="shadow-[0_18px_55px_rgb(23_24_43_/_0.08)]">
       <CardHeader className="border-b pb-5">
-        <CardTitle className="text-xl">Apply for this role</CardTitle>
-        <p className="text-sm leading-6 text-muted-foreground">
-          Your application goes directly to the recruitment team.
-        </p>
+        <CardTitle className="text-xl">Your details</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} noValidate>

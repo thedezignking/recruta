@@ -48,13 +48,10 @@ export default async function TeamPage() {
 
   return (
     <div className="pb-20 lg:pb-0">
-      <PageHeader
-        title="Team"
-        description="See who can access the agency workspace and invite new teammates."
-      />
+      <PageHeader title="Team" />
       {canManage ? (
         <div className="mt-6">
-          <InviteMemberForm />
+          <InviteMemberForm agencyId={context.agencyId} />
         </div>
       ) : null}
       <Card className="mt-6 shadow-none">

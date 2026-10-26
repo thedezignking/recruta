@@ -43,7 +43,6 @@ export default async function JobsPage() {
     <div className="pb-20 lg:pb-0">
       <PageHeader
         title="Jobs"
-        description="Create, publish, and run every active search from one workspace."
         actions={
           <ButtonLink href="/app/jobs/new">
             <AddIcon data-icon="inline-start" aria-hidden="true" />
@@ -113,11 +112,10 @@ export default async function JobsPage() {
                 </EmptyMedia>
                 <EmptyTitle>No jobs yet</EmptyTitle>
                 <EmptyDescription>
-                  Create a role for an existing organization or add the
-                  organization while you work.
+                  Create a job to start receiving applications.
                 </EmptyDescription>
               </EmptyHeader>
-              <ButtonLink href="/app/jobs/new">
+              <ButtonLink href="/app/jobs/new" variant="outline">
                 <AddIcon data-icon="inline-start" aria-hidden="true" />
                 Create your first job
               </ButtonLink>

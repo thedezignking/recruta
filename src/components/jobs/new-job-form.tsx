@@ -14,13 +14,15 @@ import {
   FieldError,
   FieldGroup,
   FieldLabel,
-  FieldLegend,
-  FieldSet,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { manualJobSchema } from "@/lib/validation";
 import type { z } from "zod";
+
+import { CompanyPicker } from "@/components/organizations/company-picker";
+import { OrganizationFields } from "@/components/organizations/organization-fields";
+import { OrganizationDuplicateHint } from "@/components/organizations/organization-duplicate-hint";
 
 type FormValues = z.input<typeof manualJobSchema>;
 
@@ -34,12 +36,16 @@ export function NewJobForm({
   recruiters,
   currentUserId,
   initialClientId,
+  agencyId,
+  lookupClientId,
 }: {
   clients: ClientOption[];
   workflows: WorkflowOption[];
   recruiters: RecruiterOption[];
   currentUserId: string;
   initialClientId?: string;
+  agencyId: string;
+  lookupClientId?: string;
 }) {
   const router = useRouter();
   const submittingRef = useRef(false);
@@ -47,6 +53,12 @@ export function NewJobForm({
   const [organizationMode, setOrganizationMode] = useState<"existing" | "new">(
     clients.length ? "existing" : "new",
   );
+  const [selectedOrganization, setSelectedOrganization] =
+    useState<ClientOption | null>(
+      clients.find((client) => client.id === initialClientId) ?? null,
+    );
+  const [organizationDetailsVisible, setOrganizationDetailsVisible] =
+    useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [pendingIntent, setPendingIntent] = useState<
     "draft" | "publish" | null
@@ -58,14 +70,8 @@ export function NewJobForm({
         initialClientId &&
         clients.some((client) => client.id === initialClientId)
           ? initialClientId
-          : (clients[0]?.id ?? null),
-      newOrganization: {
-        name: "",
-        industry: "",
-        website: "",
-        countryCode: "NG",
-        location: "",
-      },
+          : null,
+      newOrganization: undefined,
       title: "",
       description: "",
       department: "",
@@ -77,7 +83,6 @@ export function NewJobForm({
       priority: "normal",
       workflowTemplateId: workflows[0]?.id ?? "",
       primaryRecruiterId: currentUserId,
-      applicationFormIntro: "",
       requirements: [],
       questions: [],
       publish: false,
@@ -89,10 +94,6 @@ export function NewJobForm({
   });
   const questions = useFieldArray({ control: form.control, name: "questions" });
   const previewTitle = useWatch({ control: form.control, name: "title" }) ?? "";
-  const previewIntro = useWatch({
-    control: form.control,
-    name: "applicationFormIntro",
-  });
   const previewQuestions =
     useWatch({ control: form.control, name: "questions" }) ?? [];
 
@@ -114,6 +115,7 @@ export function NewJobForm({
         method: "POST",
         headers: {
           "content-type": "application/json",
+          "x-agency-id": agencyId,
           "x-request-id": creationRequestId.current,
         },
         body: JSON.stringify(payload),
@@ -140,15 +142,26 @@ export function NewJobForm({
     }
   }
 
+  function focusInvalid() {
+    requestAnimationFrame(() =>
+      document
+        .querySelector<HTMLInputElement>('[aria-invalid="true"]')
+        ?.focus(),
+    );
+  }
   function handlePublishClick() {
-    void form.handleSubmit((values) => submit(values, true))();
+    void form.handleSubmit((values) => submit(values, true), focusInvalid)();
   }
 
   function handleDraftClick() {
-    void form.handleSubmit((values) => submit(values, false))();
+    void form.handleSubmit((values) => submit(values, false), focusInvalid)();
   }
 
   const errors = form.formState.errors;
+  const organizationValues = useWatch({
+    control: form.control,
+    name: "newOrganization",
+  });
 
   return (
     <form className="mt-6" noValidate>
@@ -166,114 +179,96 @@ export function NewJobForm({
           <Card className="shadow-none">
             <CardHeader className="border-b pb-5">
               <CardTitle>Organization</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Every published role belongs to a client organization.
-              </p>
             </CardHeader>
             <CardContent>
               <FieldGroup>
-                <FieldSet>
-                  <FieldLegend variant="label">
-                    How would you like to add it?
-                  </FieldLegend>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border border-input bg-card px-4 has-[:checked]:border-primary has-[:checked]:bg-primary/[0.045]">
-                      <input
-                        type="radio"
-                        name="organizationMode"
-                        value="existing"
-                        checked={organizationMode === "existing"}
-                        onChange={() => setOrganizationMode("existing")}
-                        disabled={!clients.length}
-                        className="accent-primary"
-                      />
-                      <span className="text-sm font-medium">
-                        Choose existing
-                      </span>
-                    </label>
-                    <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border border-input bg-card px-4 has-[:checked]:border-primary has-[:checked]:bg-primary/[0.045]">
-                      <input
-                        type="radio"
-                        name="organizationMode"
-                        value="new"
-                        checked={organizationMode === "new"}
-                        onChange={() => setOrganizationMode("new")}
-                        className="accent-primary"
-                      />
-                      <span className="text-sm font-medium">
-                        Create organization
-                      </span>
-                    </label>
+                <CompanyPicker
+                  agencyId={agencyId}
+                  error={errors.clientId?.message}
+                  lookupClientId={lookupClientId}
+                  initialOrganizations={clients}
+                  onManual={(name) => {
+                    setOrganizationMode("new");
+                    setOrganizationDetailsVisible(true);
+                    setSelectedOrganization(null);
+                    form.setValue("clientId", null);
+                    if (!form.getValues("newOrganization.name"))
+                      form.setValue("newOrganization.name", name);
+                  }}
+                  onSelect={(details, existingId) => {
+                    if (existingId) {
+                      setOrganizationMode("existing");
+                      setSelectedOrganization({
+                        id: existingId,
+                        name: details.name,
+                      });
+                      form.setValue("clientId", existingId);
+                      form.setValue("newOrganization", undefined);
+                      setOrganizationDetailsVisible(false);
+                      return;
+                    }
+                    setOrganizationMode("new");
+                    setSelectedOrganization(null);
+                    form.setValue("clientId", null);
+                    setOrganizationDetailsVisible(true);
+                    for (const key of [
+                      "name",
+                      "industry",
+                      "website",
+                      "countryCode",
+                      "location",
+                      "companyProfile",
+                    ] as const) {
+                      if (!form.getFieldState(`newOrganization.${key}`).isDirty)
+                        form.setValue(`newOrganization.${key}`, details[key], {
+                          shouldDirty: false,
+                        });
+                    }
+                  }}
+                />
+                {organizationMode === "existing" && selectedOrganization && (
+                  <div className="rounded-lg border bg-muted/25 px-4 py-3">
+                    <p className="text-sm font-medium">
+                      {selectedOrganization.name}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Saved organization
+                    </p>
                   </div>
-                </FieldSet>
-                {organizationMode === "existing" ? (
-                  <Field data-invalid={Boolean(errors.clientId)}>
-                    <FieldLabel htmlFor="clientId">Organization</FieldLabel>
-                    <select
-                      id="clientId"
-                      className="h-10 rounded-lg border border-input bg-background px-3 text-sm"
-                      {...form.register("clientId")}
-                    >
-                      {clients.map((client) => (
-                        <option key={client.id} value={client.id}>
-                          {client.name}
-                        </option>
-                      ))}
-                    </select>
-                    <FieldError
-                      errors={
-                        errors.clientId
-                          ? [{ message: errors.clientId.message }]
-                          : undefined
-                      }
+                )}
+                {organizationMode === "new" && organizationDetailsVisible && (
+                  <>
+                    <OrganizationDuplicateHint
+                      agencyId={agencyId}
+                      name={organizationValues?.name ?? ""}
+                      website={organizationValues?.website}
+                      onUse={(organization) => {
+                        setOrganizationMode("existing");
+                        setSelectedOrganization(organization);
+                        form.setValue("clientId", organization.id);
+                        form.setValue("newOrganization", undefined);
+                        setOrganizationDetailsVisible(false);
+                      }}
                     />
-                  </Field>
-                ) : (
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    <Field data-invalid={Boolean(errors.newOrganization?.name)}>
-                      <FieldLabel htmlFor="organizationName">
-                        Organization name
-                      </FieldLabel>
-                      <Input
-                        id="organizationName"
-                        {...form.register("newOrganization.name")}
-                        aria-invalid={Boolean(errors.newOrganization?.name)}
-                      />
-                      <FieldError
-                        errors={
-                          errors.newOrganization?.name
-                            ? [{ message: errors.newOrganization.name.message }]
-                            : undefined
-                        }
-                      />
-                    </Field>
-                    <Field>
-                      <FieldLabel htmlFor="industry">Industry</FieldLabel>
-                      <Input
-                        id="industry"
-                        {...form.register("newOrganization.industry")}
-                      />
-                    </Field>
-                    <Field>
-                      <FieldLabel htmlFor="organizationLocation">
-                        Location
-                      </FieldLabel>
-                      <Input
-                        id="organizationLocation"
-                        {...form.register("newOrganization.location")}
-                      />
-                    </Field>
-                    <Field>
-                      <FieldLabel htmlFor="organizationWebsite">
-                        Website
-                      </FieldLabel>
-                      <Input
-                        id="organizationWebsite"
-                        type="url"
-                        {...form.register("newOrganization.website")}
-                      />
-                    </Field>
-                  </div>
+                    <OrganizationFields
+                      value={{
+                        ...organizationValues,
+                        name: organizationValues?.name ?? "",
+                      }}
+                      onChange={(details) => {
+                        form.setValue("newOrganization", details, {
+                          shouldDirty: true,
+                        });
+                      }}
+                      errors={{
+                        name: errors.newOrganization?.name,
+                        website: errors.newOrganization?.website,
+                        industry: errors.newOrganization?.industry,
+                        location: errors.newOrganization?.location,
+                        countryCode: errors.newOrganization?.countryCode,
+                      }}
+                    />
+                  </>
                 )}
               </FieldGroup>
             </CardContent>
@@ -282,9 +277,6 @@ export function NewJobForm({
           <Card className="shadow-none">
             <CardHeader className="border-b pb-5">
               <CardTitle>Role details</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Write this for candidates, not for an internal requisition form.
-              </p>
             </CardHeader>
             <CardContent>
               <FieldGroup>
@@ -311,10 +303,6 @@ export function NewJobForm({
                     {...form.register("description")}
                     aria-invalid={Boolean(errors.description)}
                   />
-                  <FieldDescription>
-                    Describe the opportunity, responsibilities, outcomes, and
-                    team context.
-                  </FieldDescription>
                   <FieldError
                     errors={
                       errors.description
@@ -369,7 +357,7 @@ export function NewJobForm({
                       <option value="remote">Remote</option>
                     </select>
                   </Field>
-                  <Field>
+                  <Field data-invalid={Boolean(errors.deadlineAt)}>
                     <FieldLabel htmlFor="deadlineAt">
                       Application deadline
                     </FieldLabel>
@@ -377,6 +365,18 @@ export function NewJobForm({
                       id="deadlineAt"
                       type="date"
                       {...form.register("deadlineAt")}
+                      aria-invalid={Boolean(errors.deadlineAt)}
+                      aria-describedby={
+                        errors.deadlineAt ? "deadline-error" : undefined
+                      }
+                    />
+                    <FieldError
+                      id="deadline-error"
+                      errors={
+                        errors.deadlineAt
+                          ? [{ message: errors.deadlineAt.message }]
+                          : undefined
+                      }
                     />
                   </Field>
                 </div>
@@ -387,9 +387,6 @@ export function NewJobForm({
           <Card className="shadow-none">
             <CardHeader className="border-b pb-5">
               <CardTitle>Requirements</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                These become the evidence checklist for screening later.
-              </p>
             </CardHeader>
             <CardContent>
               <FieldGroup>
@@ -471,23 +468,11 @@ export function NewJobForm({
             <CardHeader className="border-b pb-5">
               <CardTitle>Application form</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Contact details and resume are included automatically. Add only
-                questions that change a decision.
+                Contact details and resume are included.
               </p>
             </CardHeader>
             <CardContent>
               <FieldGroup>
-                <Field>
-                  <FieldLabel htmlFor="applicationFormIntro">
-                    Candidate note
-                  </FieldLabel>
-                  <Textarea
-                    id="applicationFormIntro"
-                    rows={3}
-                    {...form.register("applicationFormIntro")}
-                    placeholder="Tell candidates what to expect after applying."
-                  />
-                </Field>
                 {questions.fields.map((field, index) => (
                   <div
                     key={field.id}
@@ -648,10 +633,6 @@ export function NewJobForm({
           <Card className="shadow-none">
             <CardHeader className="border-b pb-5">
               <CardTitle>Candidate application preview</CardTitle>
-              <p className="text-sm leading-6 text-muted-foreground">
-                These standard details are included automatically on the
-                separate application page.
-              </p>
             </CardHeader>
             <CardContent>
               <div className="rounded-xl bg-muted/45 p-4">
@@ -661,11 +642,6 @@ export function NewJobForm({
                 <p className="mt-2 font-medium">
                   {previewTitle.trim() || "Untitled role"}
                 </p>
-                {previewIntro?.trim() ? (
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    {previewIntro}
-                  </p>
-                ) : null}
               </div>
               <div className="mt-5">
                 <p className="text-sm font-medium">Candidate details</p>
@@ -722,7 +698,7 @@ export function NewJobForm({
                   </ul>
                 ) : (
                   <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                    Add only questions that will change a screening decision.
+                    No screening questions.
                   </p>
                 )}
               </div>

@@ -3,6 +3,8 @@ import { CaseRoundIcon } from "@solar-icons/react/bold";
 import { AddIcon, ArrowLeftIcon, LetterIcon } from "@solar-icons/react/linear";
 import { notFound, redirect } from "next/navigation";
 import { OrganizationDeleteAction } from "@/components/organizations/organization-delete-action";
+import { CompanyLogo } from "@/components/organizations/company-picker";
+import { companyProfileSchema } from "@/lib/organization";
 import { ButtonLink } from "@/components/shared/button-link";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -24,6 +26,8 @@ export default async function OrganizationDetailPage({
     id,
   ).catch(() => null);
   if (!organization) notFound();
+  const profile = companyProfileSchema.safeParse(organization.company_profile);
+  const company = profile.success ? profile.data : undefined;
   const primary =
     organization.client_contacts.find((contact) => contact.is_primary) ??
     organization.client_contacts[0];
@@ -52,6 +56,39 @@ export default async function OrganizationDetailPage({
       />
       <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex flex-col gap-5">
+          {(organization.website || company?.address || company?.logoUrl) && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Company details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-start gap-4">
+                  {company?.logoUrl && (
+                    <span className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-lg border">
+                      <CompanyLogo src={company.logoUrl} />
+                    </span>
+                  )}
+                  <div className="flex min-w-0 flex-col gap-2 text-sm">
+                    {organization.website && (
+                      <a
+                        href={organization.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="break-all text-primary hover:underline"
+                      >
+                        {organization.website}
+                      </a>
+                    )}
+                    {company?.address && (
+                      <p className="whitespace-pre-wrap break-words text-muted-foreground">
+                        {company.address}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           <Card className="shadow-none">
             <CardHeader className="border-b pb-4">
               <CardTitle>Jobs</CardTitle>

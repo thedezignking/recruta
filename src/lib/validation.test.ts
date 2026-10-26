@@ -80,6 +80,11 @@ describe("manual job validation", () => {
   it("accepts an existing organization", () => {
     expect(manualJobSchema.safeParse(job).success).toBe(true);
   });
+  it("allows an empty optional application deadline", () => {
+    const result = manualJobSchema.safeParse({ ...job, deadlineAt: "" });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.deadlineAt).toBeUndefined();
+  });
 
   it("accepts inline organization creation", () => {
     expect(

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useRef, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -15,164 +15,251 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { clientSchema } from "@/lib/validation";
+import { CompanyPicker } from "./company-picker";
+import { OrganizationFields } from "./organization-fields";
+import { OrganizationDuplicateHint } from "./organization-duplicate-hint";
 import type { z } from "zod";
 
 type Values = z.input<typeof clientSchema>;
 
-export function NewOrganizationForm() {
+export function NewOrganizationForm({
+  agencyId,
+  lookupClientId,
+}: {
+  agencyId: string;
+  lookupClientId?: string;
+}) {
   const router = useRouter();
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const creationId = useRef<string | null>(null);
+  const submitting = useRef(false);
+  const [error, setError] = useState<string | null>(null);
+  const [detailsVisible, setDetailsVisible] = useState(false);
+  const [addContact, setAddContact] = useState(false);
+  const [existing, setExisting] = useState<{ id: string; name: string } | null>(
+    null,
+  );
   const form = useForm<Values>({
     resolver: zodResolver(clientSchema),
     defaultValues: {
       name: "",
       industry: "",
       website: "",
-      countryCode: "NG",
+      countryCode: "",
       location: "",
-      primaryContact: { fullName: "", email: "", jobTitle: "", phone: "" },
     },
   });
-
+  const values = useWatch({ control: form.control });
+  const errors = form.formState.errors;
   async function submit(values: Values) {
-    setSubmitError(null);
+    if (submitting.current) return;
+    submitting.current = true;
+    creationId.current ??= crypto.randomUUID();
+    setError(null);
     try {
       const response = await fetch("/api/v1/clients", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(values),
+        headers: {
+          "content-type": "application/json",
+          "x-agency-id": agencyId,
+          "x-request-id": creationId.current,
+        },
+        body: JSON.stringify({
+          ...values,
+          primaryContact: addContact ? values.primaryContact : undefined,
+        }),
       });
-      const result = (await response.json()) as {
-        data?: { id: string };
-        error?: { message?: string };
-      };
-      if (!response.ok || !result.data) {
-        setSubmitError(
+      const result = await response.json();
+      if (!response.ok || !result.data)
+        throw new Error(
           result.error?.message ?? "The organization could not be created.",
         );
-        return;
-      }
       router.push(`/app/clients/${result.data.id}`);
       router.refresh();
-    } catch {
-      setSubmitError(
-        "We could not reach the server. Check your connection and try again.",
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Check your connection and try again.",
       );
+    } finally {
+      submitting.current = false;
     }
   }
-
-  const errors = form.formState.errors;
   return (
-    <Card className="mt-6 shadow-none">
-      <CardHeader className="border-b pb-5">
+    <Card className="mt-6">
+      <CardHeader>
         <CardTitle>Organization details</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Add the company and the person your team works with most often.
-        </p>
       </CardHeader>
       <CardContent>
-        <form onSubmit={form.handleSubmit(submit)} noValidate>
+        <form
+          onSubmit={(event) =>
+            void form.handleSubmit(submit, () =>
+              requestAnimationFrame(() =>
+                document
+                  .querySelector<HTMLInputElement>('[aria-invalid="true"]')
+                  ?.focus(),
+              ),
+            )(event)
+          }
+          noValidate
+        >
           <FieldGroup>
-            {submitError ? (
-              <div
-                role="alert"
-                className="rounded-lg bg-destructive/8 px-4 py-3 text-sm text-destructive"
-              >
-                {submitError}
+            {error && (
+              <p role="alert" className="text-sm text-destructive">
+                {error}
+              </p>
+            )}
+            <CompanyPicker
+              agencyId={agencyId}
+              lookupClientId={lookupClientId}
+              onManual={(name) => {
+                setExisting(null);
+                setDetailsVisible(true);
+                if (!form.getValues("name")) form.setValue("name", name);
+              }}
+              onSelect={(details, id) => {
+                if (id) {
+                  setExisting({ id, name: details.name });
+                  setDetailsVisible(false);
+                  return;
+                }
+                setExisting(null);
+                setDetailsVisible(true);
+                for (const key of [
+                  "name",
+                  "industry",
+                  "website",
+                  "countryCode",
+                  "location",
+                  "companyProfile",
+                ] as const) {
+                  if (!form.getFieldState(key).isDirty)
+                    form.setValue(key, details[key], { shouldDirty: false });
+                }
+              }}
+            />
+            {existing && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
+                <p className="text-sm">
+                  {existing.name} is already in your workspace.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.push(`/app/clients/${existing.id}`)}
+                >
+                  Open organization
+                </Button>
               </div>
-            ) : null}
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Field data-invalid={Boolean(errors.name)}>
-                <FieldLabel htmlFor="name">Organization name</FieldLabel>
-                <Input
-                  id="name"
-                  {...form.register("name")}
-                  aria-invalid={Boolean(errors.name)}
+            )}
+            {detailsVisible && (
+              <>
+                <OrganizationDuplicateHint
+                  agencyId={agencyId}
+                  name={values.name ?? ""}
+                  website={values.website}
+                  onUse={(organization) => {
+                    setExisting(organization);
+                    setDetailsVisible(false);
+                  }}
                 />
-                <FieldError
-                  errors={
-                    errors.name ? [{ message: errors.name.message }] : undefined
-                  }
+                <OrganizationFields
+                  value={{ ...values, name: values.name ?? "" }}
+                  onChange={(details) => {
+                    for (const key of [
+                      "name",
+                      "industry",
+                      "website",
+                      "countryCode",
+                      "location",
+                      "companyProfile",
+                    ] as const)
+                      form.setValue(key, details[key], { shouldDirty: true });
+                  }}
+                  errors={errors}
                 />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="industry">Industry</FieldLabel>
-                <Input id="industry" {...form.register("industry")} />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="location">Head office</FieldLabel>
-                <Input id="location" {...form.register("location")} />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="website">Website</FieldLabel>
-                <Input
-                  id="website"
-                  type="url"
-                  inputMode="url"
-                  {...form.register("website")}
-                />
-              </Field>
-            </div>
-            <div className="rounded-xl bg-muted/45 p-4">
-              <h2 className="font-medium">Primary contact</h2>
-              <FieldDescription className="mt-1">
-                You can invite this person to the client workspace when you are
-                ready.
-              </FieldDescription>
-            </div>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Field data-invalid={Boolean(errors.primaryContact?.fullName)}>
-                <FieldLabel htmlFor="contactName">Full name</FieldLabel>
-                <Input
-                  id="contactName"
-                  autoComplete="name"
-                  {...form.register("primaryContact.fullName")}
-                  aria-invalid={Boolean(errors.primaryContact?.fullName)}
-                />
-                <FieldError
-                  errors={
-                    errors.primaryContact?.fullName
-                      ? [{ message: errors.primaryContact.fullName.message }]
-                      : undefined
-                  }
-                />
-              </Field>
-              <Field data-invalid={Boolean(errors.primaryContact?.email)}>
-                <FieldLabel htmlFor="email">Work email</FieldLabel>
-                <Input
-                  id="email"
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  {...form.register("primaryContact.email")}
-                  aria-invalid={Boolean(errors.primaryContact?.email)}
-                />
-                <FieldError
-                  errors={
-                    errors.primaryContact?.email
-                      ? [{ message: errors.primaryContact.email.message }]
-                      : undefined
-                  }
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="jobTitle">Job title</FieldLabel>
-                <Input
-                  id="jobTitle"
-                  {...form.register("primaryContact.jobTitle")}
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="phone">Phone</FieldLabel>
-                <Input
-                  id="phone"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  {...form.register("primaryContact.phone")}
-                />
-              </Field>
-            </div>
+                <Field orientation="horizontal">
+                  <input
+                    id="add-contact"
+                    type="checkbox"
+                    checked={addContact}
+                    onChange={(event) => {
+                      setAddContact(event.target.checked);
+                      form.setValue(
+                        "primaryContact",
+                        event.target.checked
+                          ? { fullName: "", email: "", jobTitle: "", phone: "" }
+                          : undefined,
+                      );
+                    }}
+                  />
+                  <FieldLabel htmlFor="add-contact">
+                    Add a primary contact
+                  </FieldLabel>
+                </Field>
+                {addContact && (
+                  <FieldGroup className="grid gap-5 sm:grid-cols-2">
+                    <FieldDescription className="sm:col-span-2">
+                      Adding a contact does not send an invitation.
+                    </FieldDescription>
+                    <Field
+                      data-invalid={Boolean(errors.primaryContact?.fullName)}
+                    >
+                      <FieldLabel htmlFor="contact-name">Full name</FieldLabel>
+                      <Input
+                        id="contact-name"
+                        {...form.register("primaryContact.fullName")}
+                        aria-invalid={Boolean(errors.primaryContact?.fullName)}
+                        aria-describedby="contact-name-error"
+                      />
+                      <FieldError
+                        id="contact-name-error"
+                        errors={
+                          errors.primaryContact?.fullName
+                            ? [errors.primaryContact.fullName]
+                            : undefined
+                        }
+                      />
+                    </Field>
+                    <Field data-invalid={Boolean(errors.primaryContact?.email)}>
+                      <FieldLabel htmlFor="contact-email">
+                        Work email
+                      </FieldLabel>
+                      <Input
+                        id="contact-email"
+                        type="email"
+                        {...form.register("primaryContact.email")}
+                        aria-invalid={Boolean(errors.primaryContact?.email)}
+                        aria-describedby="contact-email-error"
+                      />
+                      <FieldError
+                        id="contact-email-error"
+                        errors={
+                          errors.primaryContact?.email
+                            ? [errors.primaryContact.email]
+                            : undefined
+                        }
+                      />
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="contact-title">Job title</FieldLabel>
+                      <Input
+                        id="contact-title"
+                        {...form.register("primaryContact.jobTitle")}
+                      />
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="contact-phone">Phone</FieldLabel>
+                      <Input
+                        id="contact-phone"
+                        type="tel"
+                        {...form.register("primaryContact.phone")}
+                      />
+                    </Field>
+                  </FieldGroup>
+                )}
+              </>
+            )}
             <div className="flex justify-end gap-2">
               <Button
                 type="button"
@@ -181,7 +268,14 @@ export function NewOrganizationForm() {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
+              <Button
+                type="submit"
+                disabled={
+                  form.formState.isSubmitting ||
+                  !detailsVisible ||
+                  Boolean(existing)
+                }
+              >
                 {form.formState.isSubmitting
                   ? "Creating…"
                   : "Create organization"}

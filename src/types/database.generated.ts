@@ -7,11 +7,6 @@ export type Json =
   | Json[];
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.18";
-  };
   public: {
     Tables: {
       activity_events: {
@@ -23,9 +18,10 @@ export type Database = {
           entity_type: string;
           event_type: string;
           id: string;
-          metadata: Json;
+          metadata: NonNullable<Json>;
           request_id: string | null;
         };
+        ComputedFields: never;
         Insert: {
           actor_user_id?: string | null;
           agency_id: string;
@@ -34,7 +30,7 @@ export type Database = {
           entity_type: string;
           event_type: string;
           id?: string;
-          metadata?: Json;
+          metadata?: NonNullable<Json>;
           request_id?: string | null;
         };
         Update: {
@@ -45,7 +41,7 @@ export type Database = {
           entity_type?: string;
           event_type?: string;
           id?: string;
-          metadata?: Json;
+          metadata?: NonNullable<Json>;
           request_id?: string | null;
         };
         Relationships: [
@@ -72,6 +68,7 @@ export type Database = {
           timezone: string;
           updated_at: string;
         };
+        ComputedFields: never;
         Insert: {
           contact_email: string;
           country_code: string;
@@ -113,6 +110,7 @@ export type Database = {
           role: string;
           token_hash: string;
         };
+        ComputedFields: never;
         Insert: {
           accepted_at?: string | null;
           agency_id: string;
@@ -157,6 +155,7 @@ export type Database = {
           status: string;
           user_id: string;
         };
+        ComputedFields: never;
         Insert: {
           agency_id: string;
           created_at?: string;
@@ -185,19 +184,56 @@ export type Database = {
           },
         ];
       };
+      agency_processing_settings: {
+        Row: {
+          acknowledge_applications: boolean;
+          agency_id: string;
+          automatic_screening: boolean;
+          review_reminder_hours: number;
+          screening_enabled: boolean;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          acknowledge_applications?: boolean;
+          agency_id: string;
+          automatic_screening?: boolean;
+          review_reminder_hours?: number;
+          screening_enabled?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          acknowledge_applications?: boolean;
+          agency_id?: string;
+          automatic_screening?: boolean;
+          review_reminder_hours?: number;
+          screening_enabled?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "agency_processing_settings_agency_id_fkey";
+            columns: ["agency_id"];
+            isOneToOne: true;
+            referencedRelation: "agencies";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       application_answers: {
         Row: {
           agency_id: string;
-          answer: Json;
+          answer: NonNullable<Json>;
           application_id: string;
           created_at: string;
           id: string;
           job_id: string;
           question_id: string;
         };
+        ComputedFields: never;
         Insert: {
           agency_id: string;
-          answer: Json;
+          answer: NonNullable<Json>;
           application_id: string;
           created_at?: string;
           id?: string;
@@ -206,7 +242,7 @@ export type Database = {
         };
         Update: {
           agency_id?: string;
-          answer?: Json;
+          answer?: NonNullable<Json>;
           application_id?: string;
           created_at?: string;
           id?: string;
@@ -230,6 +266,90 @@ export type Database = {
           },
         ];
       };
+      application_intake_tasks: {
+        Row: {
+          agency_id: string;
+          application_id: string;
+          attempts: number;
+          available_at: string;
+          created_at: string;
+          failure_code: string | null;
+          id: string;
+          lease_token: string | null;
+          lease_until: string | null;
+          status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          agency_id: string;
+          application_id: string;
+          attempts?: number;
+          available_at?: string;
+          created_at?: string;
+          failure_code?: string | null;
+          id?: string;
+          lease_token?: string | null;
+          lease_until?: string | null;
+          status?: string;
+        };
+        Update: {
+          agency_id?: string;
+          application_id?: string;
+          attempts?: number;
+          available_at?: string;
+          created_at?: string;
+          failure_code?: string | null;
+          id?: string;
+          lease_token?: string | null;
+          lease_until?: string | null;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "application_intake_tasks_agency_id_application_id_fkey";
+            columns: ["agency_id", "application_id"];
+            isOneToOne: false;
+            referencedRelation: "applications";
+            referencedColumns: ["agency_id", "id"];
+          },
+        ];
+      };
+      application_notes: {
+        Row: {
+          agency_id: string;
+          application_id: string;
+          author_user_id: string | null;
+          body: string;
+          created_at: string;
+          id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          agency_id: string;
+          application_id: string;
+          author_user_id?: string | null;
+          body: string;
+          created_at?: string;
+          id?: string;
+        };
+        Update: {
+          agency_id?: string;
+          application_id?: string;
+          author_user_id?: string | null;
+          body?: string;
+          created_at?: string;
+          id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "application_notes_agency_id_application_id_fkey";
+            columns: ["agency_id", "application_id"];
+            isOneToOne: false;
+            referencedRelation: "applications";
+            referencedColumns: ["agency_id", "id"];
+          },
+        ];
+      };
       applications: {
         Row: {
           agency_id: string;
@@ -238,12 +358,14 @@ export type Database = {
           created_at: string;
           id: string;
           job_id: string;
+          owner_user_id: string | null;
           processing_status: string;
           source: string;
           status: string;
           submitted_at: string;
           updated_at: string;
         };
+        ComputedFields: never;
         Insert: {
           agency_id: string;
           candidate_id: string;
@@ -251,6 +373,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           job_id: string;
+          owner_user_id?: string | null;
           processing_status?: string;
           source?: string;
           status?: string;
@@ -264,6 +387,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           job_id?: string;
+          owner_user_id?: string | null;
           processing_status?: string;
           source?: string;
           status?: string;
@@ -285,6 +409,13 @@ export type Database = {
             referencedRelation: "jobs";
             referencedColumns: ["agency_id", "id"];
           },
+          {
+            foreignKeyName: "applications_owner_membership_fk";
+            columns: ["agency_id", "owner_user_id"];
+            isOneToOne: false;
+            referencedRelation: "agency_memberships";
+            referencedColumns: ["agency_id", "user_id"];
+          },
         ];
       };
       candidate_documents: {
@@ -300,6 +431,7 @@ export type Database = {
           size_bytes: number;
           storage_path: string;
         };
+        ComputedFields: never;
         Insert: {
           agency_id: string;
           application_id: string;
@@ -347,17 +479,20 @@ export type Database = {
           created_at: string;
           email: string;
           email_normalized: string | null;
+          email_suppressed: boolean;
           full_name: string;
           id: string;
           linkedin_url: string | null;
           phone: string | null;
           updated_at: string;
         };
+        ComputedFields: never;
         Insert: {
           agency_id: string;
           created_at?: string;
           email: string;
-          email_normalized?: string | null;
+          email_normalized?: never;
+          email_suppressed?: boolean;
           full_name: string;
           id?: string;
           linkedin_url?: string | null;
@@ -368,7 +503,8 @@ export type Database = {
           agency_id?: string;
           created_at?: string;
           email?: string;
-          email_normalized?: string | null;
+          email_normalized?: never;
+          email_suppressed?: boolean;
           full_name?: string;
           id?: string;
           linkedin_url?: string | null;
@@ -397,6 +533,7 @@ export type Database = {
           job_title: string | null;
           phone: string | null;
         };
+        ComputedFields: never;
         Insert: {
           agency_id: string;
           client_id: string;
@@ -443,6 +580,7 @@ export type Database = {
           role: string;
           token_hash: string;
         };
+        ComputedFields: never;
         Insert: {
           accepted_at?: string | null;
           agency_id: string;
@@ -489,6 +627,7 @@ export type Database = {
           job_id: string;
           user_id: string;
         };
+        ComputedFields: never;
         Insert: {
           access_role: string;
           agency_id: string;
@@ -534,6 +673,7 @@ export type Database = {
           status: string;
           user_id: string;
         };
+        ComputedFields: never;
         Insert: {
           agency_id: string;
           client_id: string;
@@ -566,8 +706,10 @@ export type Database = {
         Row: {
           account_manager_id: string | null;
           agency_id: string;
+          company_profile: NonNullable<Json>;
           country_code: string | null;
           created_at: string;
+          creation_request_id: string | null;
           id: string;
           industry: string | null;
           internal_notes: string | null;
@@ -577,11 +719,14 @@ export type Database = {
           updated_at: string;
           website: string | null;
         };
+        ComputedFields: never;
         Insert: {
           account_manager_id?: string | null;
           agency_id: string;
+          company_profile?: NonNullable<Json>;
           country_code?: string | null;
           created_at?: string;
+          creation_request_id?: string | null;
           id?: string;
           industry?: string | null;
           internal_notes?: string | null;
@@ -594,8 +739,10 @@ export type Database = {
         Update: {
           account_manager_id?: string | null;
           agency_id?: string;
+          company_profile?: NonNullable<Json>;
           country_code?: string | null;
           created_at?: string;
+          creation_request_id?: string | null;
           id?: string;
           industry?: string | null;
           internal_notes?: string | null;
@@ -618,53 +765,91 @@ export type Database = {
       communications: {
         Row: {
           agency_id: string;
+          application_id: string | null;
           attempt_count: number;
+          available_at: string;
+          body: string | null;
           created_at: string;
           delivered_at: string | null;
+          failure_code: string | null;
           id: string;
           idempotency_key: string;
           last_error: string | null;
+          lease_token: string | null;
+          lease_until: string | null;
           message_type: string;
+          provider_event_at: string | null;
           provider_message_id: string | null;
           recipient_email: string;
           related_entity_id: string | null;
           related_entity_type: string | null;
+          reply_to: string | null;
+          sender_user_id: string | null;
           sent_at: string | null;
           status: string;
+          subject: string | null;
         };
+        ComputedFields: never;
         Insert: {
           agency_id: string;
+          application_id?: string | null;
           attempt_count?: number;
+          available_at?: string;
+          body?: string | null;
           created_at?: string;
           delivered_at?: string | null;
+          failure_code?: string | null;
           id?: string;
           idempotency_key: string;
           last_error?: string | null;
+          lease_token?: string | null;
+          lease_until?: string | null;
           message_type: string;
+          provider_event_at?: string | null;
           provider_message_id?: string | null;
           recipient_email: string;
           related_entity_id?: string | null;
           related_entity_type?: string | null;
+          reply_to?: string | null;
+          sender_user_id?: string | null;
           sent_at?: string | null;
           status?: string;
+          subject?: string | null;
         };
         Update: {
           agency_id?: string;
+          application_id?: string | null;
           attempt_count?: number;
+          available_at?: string;
+          body?: string | null;
           created_at?: string;
           delivered_at?: string | null;
+          failure_code?: string | null;
           id?: string;
           idempotency_key?: string;
           last_error?: string | null;
+          lease_token?: string | null;
+          lease_until?: string | null;
           message_type?: string;
+          provider_event_at?: string | null;
           provider_message_id?: string | null;
           recipient_email?: string;
           related_entity_id?: string | null;
           related_entity_type?: string | null;
+          reply_to?: string | null;
+          sender_user_id?: string | null;
           sent_at?: string | null;
           status?: string;
+          subject?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "communications_agency_id_application_id_fkey";
+            columns: ["agency_id", "application_id"];
+            isOneToOne: false;
+            referencedRelation: "applications";
+            referencedColumns: ["agency_id", "id"];
+          },
           {
             foreignKeyName: "communications_agency_id_fkey";
             columns: ["agency_id"];
@@ -686,6 +871,7 @@ export type Database = {
           storage_path: string;
           uploaded_by: string;
         };
+        ComputedFields: never;
         Insert: {
           agency_id: string;
           content_type: string;
@@ -728,6 +914,7 @@ export type Database = {
           message: string;
           visibility: string;
         };
+        ComputedFields: never;
         Insert: {
           agency_id: string;
           author_user_id: string;
@@ -767,6 +954,7 @@ export type Database = {
           requirement_type: string;
           sort_order: number;
         };
+        ComputedFields: never;
         Insert: {
           agency_id: string;
           created_at?: string;
@@ -805,8 +993,9 @@ export type Database = {
           hiring_request_id: string;
           id: string;
           revision_number: number;
-          snapshot: Json;
+          snapshot: NonNullable<Json>;
         };
+        ComputedFields: never;
         Insert: {
           agency_id: string;
           created_at?: string;
@@ -814,7 +1003,7 @@ export type Database = {
           hiring_request_id: string;
           id?: string;
           revision_number: number;
-          snapshot: Json;
+          snapshot: NonNullable<Json>;
         };
         Update: {
           agency_id?: string;
@@ -823,7 +1012,7 @@ export type Database = {
           hiring_request_id?: string;
           id?: string;
           revision_number?: number;
-          snapshot?: Json;
+          snapshot?: NonNullable<Json>;
         };
         Relationships: [
           {
@@ -861,6 +1050,7 @@ export type Database = {
           updated_at: string;
           work_arrangement: string | null;
         };
+        ComputedFields: never;
         Insert: {
           additional_instructions?: string | null;
           agency_id: string;
@@ -937,10 +1127,11 @@ export type Database = {
           is_required: boolean;
           job_id: string;
           label: string;
-          options: Json;
+          options: NonNullable<Json>;
           question_type: string;
           sort_order: number;
         };
+        ComputedFields: never;
         Insert: {
           agency_id: string;
           created_at?: string;
@@ -949,7 +1140,7 @@ export type Database = {
           is_required?: boolean;
           job_id: string;
           label: string;
-          options?: Json;
+          options?: NonNullable<Json>;
           question_type?: string;
           sort_order?: number;
         };
@@ -961,7 +1152,7 @@ export type Database = {
           is_required?: boolean;
           job_id?: string;
           label?: string;
-          options?: Json;
+          options?: NonNullable<Json>;
           question_type?: string;
           sort_order?: number;
         };
@@ -984,6 +1175,7 @@ export type Database = {
           job_id: string;
           user_id: string;
         };
+        ComputedFields: never;
         Insert: {
           agency_id: string;
           assignment_role: string;
@@ -1023,6 +1215,7 @@ export type Database = {
           sort_order: number;
           version: number;
         };
+        ComputedFields: never;
         Insert: {
           agency_id: string;
           created_at?: string;
@@ -1068,6 +1261,7 @@ export type Database = {
           sort_order: number;
           stage_type: string;
         };
+        ComputedFields: never;
         Insert: {
           agency_id: string;
           created_at?: string;
@@ -1130,6 +1324,7 @@ export type Database = {
           work_arrangement: string | null;
           workflow_template_id: string | null;
         };
+        ComputedFields: never;
         Insert: {
           accepting_applications?: boolean;
           agency_id: string;
@@ -1223,6 +1418,155 @@ export type Database = {
           },
         ];
       };
+      screening_corrections: {
+        Row: {
+          agency_id: string;
+          application_id: string;
+          author_user_id: string | null;
+          created_at: string;
+          explanation: string;
+          id: string;
+          requirement_id: string;
+          run_id: string;
+          verdict: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          agency_id: string;
+          application_id: string;
+          author_user_id?: string | null;
+          created_at?: string;
+          explanation: string;
+          id: string;
+          requirement_id: string;
+          run_id: string;
+          verdict: string;
+        };
+        Update: {
+          agency_id?: string;
+          application_id?: string;
+          author_user_id?: string | null;
+          created_at?: string;
+          explanation?: string;
+          id?: string;
+          requirement_id?: string;
+          run_id?: string;
+          verdict?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "screening_corrections_agency_id_application_id_fkey";
+            columns: ["agency_id", "application_id"];
+            isOneToOne: false;
+            referencedRelation: "applications";
+            referencedColumns: ["agency_id", "id"];
+          },
+          {
+            foreignKeyName: "screening_corrections_agency_id_run_id_fkey";
+            columns: ["agency_id", "run_id"];
+            isOneToOne: false;
+            referencedRelation: "screening_runs";
+            referencedColumns: ["agency_id", "id"];
+          },
+        ];
+      };
+      screening_runs: {
+        Row: {
+          agency_id: string;
+          application_id: string;
+          assessment: Json | null;
+          attempts: number;
+          available_at: string;
+          created_at: string;
+          document_id: string;
+          extraction: Json | null;
+          extractor_version: string;
+          failure_code: string | null;
+          finished_at: string | null;
+          id: string;
+          idempotency_key: string;
+          input_fingerprint: string;
+          input_snapshot: NonNullable<Json>;
+          lease_token: string | null;
+          lease_until: string | null;
+          model: string;
+          prompt_version: string;
+          provider_metadata: Json | null;
+          request_id: string;
+          requested_by: string | null;
+          started_at: string | null;
+          status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          agency_id: string;
+          application_id: string;
+          assessment?: Json | null;
+          attempts?: number;
+          available_at?: string;
+          created_at?: string;
+          document_id: string;
+          extraction?: Json | null;
+          extractor_version: string;
+          failure_code?: string | null;
+          finished_at?: string | null;
+          id?: string;
+          idempotency_key: string;
+          input_fingerprint: string;
+          input_snapshot: NonNullable<Json>;
+          lease_token?: string | null;
+          lease_until?: string | null;
+          model: string;
+          prompt_version: string;
+          provider_metadata?: Json | null;
+          request_id: string;
+          requested_by?: string | null;
+          started_at?: string | null;
+          status?: string;
+        };
+        Update: {
+          agency_id?: string;
+          application_id?: string;
+          assessment?: Json | null;
+          attempts?: number;
+          available_at?: string;
+          created_at?: string;
+          document_id?: string;
+          extraction?: Json | null;
+          extractor_version?: string;
+          failure_code?: string | null;
+          finished_at?: string | null;
+          id?: string;
+          idempotency_key?: string;
+          input_fingerprint?: string;
+          input_snapshot?: NonNullable<Json>;
+          lease_token?: string | null;
+          lease_until?: string | null;
+          model?: string;
+          prompt_version?: string;
+          provider_metadata?: Json | null;
+          request_id?: string;
+          requested_by?: string | null;
+          started_at?: string | null;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "screening_runs_agency_id_application_id_document_id_fkey";
+            columns: ["agency_id", "application_id", "document_id"];
+            isOneToOne: false;
+            referencedRelation: "candidate_documents";
+            referencedColumns: ["agency_id", "application_id", "id"];
+          },
+          {
+            foreignKeyName: "screening_runs_agency_id_application_id_fkey";
+            columns: ["agency_id", "application_id"];
+            isOneToOne: false;
+            referencedRelation: "applications";
+            referencedColumns: ["agency_id", "id"];
+          },
+        ];
+      };
       user_profiles: {
         Row: {
           avatar_path: string | null;
@@ -1231,6 +1575,7 @@ export type Database = {
           id: string;
           updated_at: string;
         };
+        ComputedFields: never;
         Insert: {
           avatar_path?: string | null;
           created_at?: string;
@@ -1257,6 +1602,7 @@ export type Database = {
           stage_type: string;
           workflow_template_id: string;
         };
+        ComputedFields: never;
         Insert: {
           created_at?: string;
           id?: string;
@@ -1296,6 +1642,7 @@ export type Database = {
           name: string;
           template_key: string | null;
         };
+        ComputedFields: never;
         Insert: {
           agency_id?: string | null;
           created_at?: string;
@@ -1367,6 +1714,10 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      application_inbox: {
+        Args: { p_agency_id: string; p_filters?: Json };
+        Returns: Json;
+      };
       approve_hiring_request: {
         Args: { p_request_id: string; p_request_id_header?: string };
         Returns: {
@@ -1423,6 +1774,110 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      cancel_candidate_message: {
+        Args: { p_agency_id: string; p_id: string; p_request_id: string };
+        Returns: undefined;
+      };
+      checkpoint_screening_extraction: {
+        Args: {
+          p_extraction: Json;
+          p_id: string;
+          p_lease: string;
+          p_metadata: Json;
+        };
+        Returns: boolean;
+      };
+      claim_application_intake: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          agency_id: string;
+          application_id: string;
+          attempts: number;
+          available_at: string;
+          created_at: string;
+          failure_code: string | null;
+          id: string;
+          lease_token: string | null;
+          lease_until: string | null;
+          status: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "application_intake_tasks";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      claim_candidate_message: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          agency_id: string;
+          application_id: string | null;
+          attempt_count: number;
+          available_at: string;
+          body: string | null;
+          created_at: string;
+          delivered_at: string | null;
+          failure_code: string | null;
+          id: string;
+          idempotency_key: string;
+          last_error: string | null;
+          lease_token: string | null;
+          lease_until: string | null;
+          message_type: string;
+          provider_event_at: string | null;
+          provider_message_id: string | null;
+          recipient_email: string;
+          related_entity_id: string | null;
+          related_entity_type: string | null;
+          reply_to: string | null;
+          sender_user_id: string | null;
+          sent_at: string | null;
+          status: string;
+          subject: string | null;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "communications";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      claim_screening_run: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          agency_id: string;
+          application_id: string;
+          assessment: Json | null;
+          attempts: number;
+          available_at: string;
+          created_at: string;
+          document_id: string;
+          extraction: Json | null;
+          extractor_version: string;
+          failure_code: string | null;
+          finished_at: string | null;
+          id: string;
+          idempotency_key: string;
+          input_fingerprint: string;
+          input_snapshot: NonNullable<Json>;
+          lease_token: string | null;
+          lease_until: string | null;
+          model: string;
+          prompt_version: string;
+          provider_metadata: Json | null;
+          request_id: string;
+          requested_by: string | null;
+          started_at: string | null;
+          status: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "screening_runs";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       convert_hiring_request_to_job: {
         Args: {
           p_deadline_at: string;
@@ -1433,6 +1888,15 @@ export type Database = {
           p_workflow_template_id: string;
         };
         Returns: string;
+      };
+      correct_screening: {
+        Args: {
+          p_agency_id: string;
+          p_application_id: string;
+          p_payload: Json;
+          p_request_id: string;
+        };
+        Returns: undefined;
       };
       create_manual_job: {
         Args: {
@@ -1447,6 +1911,15 @@ export type Database = {
         };
         Returns: string;
       };
+      create_organization: {
+        Args: {
+          p_agency_id: string;
+          p_contact?: Json;
+          p_organization: Json;
+          p_request_id_header?: string;
+        };
+        Returns: string;
+      };
       delete_empty_client: {
         Args: { p_client_id: string; p_request_id_header?: string };
         Returns: string;
@@ -1454,6 +1927,30 @@ export type Database = {
       delete_empty_manual_job: {
         Args: { p_job_id: string; p_request_id_header?: string };
         Returns: Json;
+      };
+      fail_application_intake: {
+        Args: { p_id: string; p_lease: string };
+        Returns: undefined;
+      };
+      finish_candidate_message: {
+        Args: {
+          p_failure: string;
+          p_id: string;
+          p_lease: string;
+          p_provider_id: string;
+          p_retryable: boolean;
+        };
+        Returns: boolean;
+      };
+      finish_screening_run: {
+        Args: {
+          p_failure_code: string;
+          p_id: string;
+          p_lease: string;
+          p_result: Json;
+          p_retryable: boolean;
+        };
+        Returns: boolean;
       };
       onboard_agency: {
         Args: {
@@ -1466,6 +1963,10 @@ export type Database = {
           p_timezone: string;
         };
         Returns: string;
+      };
+      prepare_application_intake: {
+        Args: { p_id: string; p_lease: string; p_model: string };
+        Returns: Json;
       };
       publish_job: {
         Args: {
@@ -1511,6 +2012,37 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      queue_candidate_message: {
+        Args: {
+          p_agency_id: string;
+          p_application_id: string;
+          p_key: string;
+          p_payload: Json;
+          p_request_id: string;
+        };
+        Returns: string;
+      };
+      record_email_event: {
+        Args: {
+          p_at: string;
+          p_event_id: string;
+          p_provider_id: string;
+          p_status: string;
+          p_suppress?: boolean;
+        };
+        Returns: boolean;
+      };
+      request_application_screening: {
+        Args: {
+          p_agency_id: string;
+          p_application_id: string;
+          p_document_id: string;
+          p_key: string;
+          p_model: string;
+          p_request_id: string;
+        };
+        Returns: Json;
+      };
       request_hiring_request_clarification: {
         Args: {
           p_message: string;
@@ -1548,6 +2080,52 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      retry_application_intake: {
+        Args: { p_agency_id: string; p_application_id: string };
+        Returns: undefined;
+      };
+      retry_candidate_message: {
+        Args: { p_agency_id: string; p_id: string; p_request_id: string };
+        Returns: undefined;
+      };
+      review_application: {
+        Args: {
+          p_action: string;
+          p_agency_id: string;
+          p_application_id: string;
+          p_expected_updated_at?: string;
+          p_payload: Json;
+          p_request_id?: string;
+        };
+        Returns: {
+          agency_id: string;
+          candidate_id: string;
+          cover_note: string | null;
+          created_at: string;
+          id: string;
+          job_id: string;
+          owner_user_id: string | null;
+          processing_status: string;
+          source: string;
+          status: string;
+          submitted_at: string;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "applications";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      save_processing_settings: {
+        Args: { p_agency_id: string; p_request_id: string; p_settings: Json };
+        Returns: undefined;
+      };
+      screening_evidence_context: {
+        Args: { p_agency_id: string; p_application_id: string };
+        Returns: Json;
       };
       submit_hiring_request: {
         Args: { p_request_id: string; p_request_id_header?: string };
@@ -1588,13 +2166,13 @@ export type Database = {
           p_agency_id: string;
           p_answers?: Json;
           p_application_id: string;
-          p_cover_note: string | null;
+          p_cover_note: string;
           p_document: Json;
           p_email: string;
           p_full_name: string;
           p_job_id: string;
-          p_linkedin_url: string | null;
-          p_phone: string | null;
+          p_linkedin_url: string;
+          p_phone: string;
         };
         Returns: Json;
       };
@@ -1679,6 +2257,15 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      update_agency_logo: {
+        Args: {
+          p_agency_id: string;
+          p_expected_logo_path: string;
+          p_logo_path: string;
+          p_request_id: string;
+        };
+        Returns: undefined;
       };
     };
     Enums: {

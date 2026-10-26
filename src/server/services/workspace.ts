@@ -1,6 +1,86 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError } from "@/lib/api";
-import { agencyProfileSchema } from "@/lib/validation";
+import { agencyProfileSchema, onboardingSchema } from "@/lib/validation";
+
+export async function listUserWorkspaces(
+  supabase: SupabaseClient,
+  userId: string,
+) {
+  const { data, error } = await supabase
+    .from("agency_memberships")
+    .select("agency_id,role,created_at,agencies(id,name,slug,status)")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .order("created_at")
+    .order("agency_id");
+  if (error)
+    throw new ApiError(
+      500,
+      "WORKSPACE_LIST_FAILED",
+      "Your workspaces could not be loaded.",
+    );
+  return (data ?? []).flatMap((membership) => {
+    const agency = Array.isArray(membership.agencies)
+      ? membership.agencies[0]
+      : membership.agencies;
+    return agency?.status === "active"
+      ? [
+          {
+            id: agency.id,
+            name: agency.name,
+            slug: agency.slug,
+            role: membership.role,
+          },
+        ]
+      : [];
+  });
+}
+
+export async function verifyWorkspaceAccess(
+  supabase: SupabaseClient,
+  userId: string,
+  agencyId: string,
+) {
+  const workspaces = await listUserWorkspaces(supabase, userId);
+  if (!workspaces.some((workspace) => workspace.id === agencyId))
+    throw new ApiError(
+      403,
+      "WORKSPACE_ACCESS_DENIED",
+      "You do not have active access to this workspace.",
+    );
+}
+
+export async function createAgencyWorkspace(
+  supabase: SupabaseClient,
+  input: unknown,
+) {
+  const payload = onboardingSchema.parse(input);
+  const { data, error } = await supabase.rpc("onboard_agency", {
+    p_name: payload.agencyName,
+    p_slug: payload.slug,
+    p_contact_email: payload.contactEmail,
+    p_country_code: payload.countryCode,
+    p_timezone: payload.timezone,
+    p_full_name: payload.fullName,
+    ...(payload.specialization
+      ? { p_primary_specialization: payload.specialization }
+      : {}),
+  });
+  if (error || !data) {
+    if (error?.code === "23505")
+      throw new ApiError(
+        409,
+        "WORKSPACE_URL_TAKEN",
+        "That workspace URL is already taken. Choose another.",
+      );
+    throw new ApiError(
+      400,
+      "WORKSPACE_CREATE_FAILED",
+      "The workspace could not be created. Check your details and try again.",
+    );
+  }
+  return data as string;
+}
 
 export async function getAgencyProfile(
   supabase: SupabaseClient,

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 
-export function InviteMemberForm() {
+export function InviteMemberForm({ agencyId }: { agencyId: string }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("recruiter");
@@ -31,6 +31,7 @@ export function InviteMemberForm() {
         method: "POST",
         headers: {
           "content-type": "application/json",
+          "x-agency-id": agencyId,
           "idempotency-key": crypto.randomUUID(),
         },
         body: JSON.stringify({ email, role }),

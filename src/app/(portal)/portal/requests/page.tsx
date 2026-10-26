@@ -11,7 +11,6 @@ export default function PortalRequestsPage() {
     <div>
       <PageHeader
         title="Hiring requests"
-        description="Create requests and see what your recruiting partner needs from you."
         actions={
           <ButtonLink href="/portal/requests/new">
             <AddIcon data-icon="inline-start" aria-hidden="true" />

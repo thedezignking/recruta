@@ -6,10 +6,7 @@ import { jobs } from "@/lib/demo-data";
 export default function PortalJobsPage() {
   return (
     <div>
-      <PageHeader
-        title="Authorized jobs"
-        description="Progress on jobs your team has permission to view."
-      />
+      <PageHeader title="Jobs" />
       <div className="mt-6 grid gap-3">
         {jobs.slice(0, 2).map((job) => (
           <Link key={job.id} href={`/app/jobs/${job.id}`}>

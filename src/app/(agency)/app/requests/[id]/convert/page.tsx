@@ -30,7 +30,7 @@ export default async function ConvertRequestPage({
       <PageHeader
         eyebrow="Approved request"
         title={`Create job: ${request.title}`}
-        description={`Choose the operating workflow and owner for ${request.clients?.name ?? "this organization"}.`}
+        description={request.clients?.name}
       />
       <ConvertRequestForm
         requestId={request.id}

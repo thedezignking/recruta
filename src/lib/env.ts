@@ -41,3 +41,55 @@ export function isSupabaseConfigured() {
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
   );
 }
+
+export function getCompanyLookupEnv() {
+  return z
+    .object({
+      clientId: z.string().trim().max(200).optional(),
+      apiKey: z.string().trim().max(500).optional(),
+      persistenceAllowed: z.boolean(),
+    })
+    .parse({
+      clientId: process.env.NEXT_PUBLIC_BRANDFETCH_CLIENT_ID,
+      apiKey: process.env.BRANDFETCH_API_KEY,
+      persistenceAllowed: process.env.BRANDFETCH_PERSISTENCE_ALLOWED === "true",
+    });
+}
+
+export function getScreeningEnv() {
+  return z
+    .object({
+      enabled: z.boolean(),
+      dataUseApproved: z.boolean(),
+      apiKey: z.string().trim().min(1).optional(),
+      model: z.string().trim().min(1).max(100).optional(),
+      workerSecret: z.string().min(32).optional(),
+    })
+    .parse({
+      enabled: process.env.RECRUTA_AI_ENABLED === "true",
+      dataUseApproved: process.env.RECRUTA_AI_DATA_USE_APPROVED === "true",
+      apiKey: process.env.OPENAI_API_KEY || undefined,
+      model: process.env.OPENAI_SCREENING_MODEL || undefined,
+      workerSecret: process.env.SCREENING_WORKER_SECRET || undefined,
+    });
+}
+
+export function getDeliveryEnv() {
+  return z
+    .object({
+      enabled: z.boolean(),
+      automationsEnabled: z.boolean(),
+      apiKey: z.string().min(1).optional(),
+      from: z.string().min(3).optional(),
+      workerSecret: z.string().min(32).optional(),
+      webhookSecret: z.string().min(1).optional(),
+    })
+    .parse({
+      enabled: process.env.RECRUTA_CANDIDATE_EMAIL_ENABLED === "true",
+      automationsEnabled: process.env.RECRUTA_AUTOMATIONS_ENABLED === "true",
+      apiKey: process.env.RESEND_API_KEY || undefined,
+      from: process.env.RECRUTA_EMAIL_FROM || undefined,
+      workerSecret: process.env.AUTOMATION_WORKER_SECRET || undefined,
+      webhookSecret: process.env.RESEND_WEBHOOK_SECRET || undefined,
+    });
+}

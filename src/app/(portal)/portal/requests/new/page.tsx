@@ -15,11 +15,7 @@ import { PageHeader } from "@/components/shared/page-header";
 export default function NewRequestPage() {
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader
-        eyebrow="New request"
-        title="Tell us who you need"
-        description="Start with the essentials. You can save a draft before submitting it to the agency."
-      />
+      <PageHeader title="New hiring request" />
       <Card className="mt-6 shadow-none">
         <CardHeader className="border-b pb-4">
           <CardTitle>Role details</CardTitle>
@@ -123,7 +119,7 @@ export default function NewRequestPage() {
                 <ButtonLink variant="outline" href="/portal/requests">
                   Cancel
                 </ButtonLink>
-                <Button variant="secondary" type="button">
+                <Button variant="outline" type="button">
                   Save draft
                 </Button>
                 <Button type="submit">Submit request</Button>

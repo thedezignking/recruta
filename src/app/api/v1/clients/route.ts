@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const id = requestId(request.headers);
   try {
-    const { supabase, agencyId, user } = await requireAgencyContext(request, [
+    const { supabase, agencyId } = await requireAgencyContext(request, [
       "owner",
       "administrator",
       "recruitment_manager",
@@ -27,8 +27,8 @@ export async function POST(request: Request) {
     const client = await createClientRecord(
       supabase,
       agencyId,
-      user.id,
       await readJson(request),
+      id,
     );
     return ok(client, { status: 201, headers: { "x-request-id": id } });
   } catch (error) {

@@ -23,7 +23,6 @@ export default async function OrganizationsPage() {
     <div className="pb-20 lg:pb-0">
       <PageHeader
         title="Organizations"
-        description="Manage the employers, contacts, requests, and roles your agency supports."
         actions={
           <ButtonLink href="/app/clients/new">
             <AddIcon data-icon="inline-start" aria-hidden="true" />
@@ -99,7 +98,7 @@ export default async function OrganizationsPage() {
                   Add an employer now, or create one inline when you open a job.
                 </EmptyDescription>
               </EmptyHeader>
-              <ButtonLink href="/app/clients/new">
+              <ButtonLink href="/app/clients/new" variant="outline">
                 <AddIcon data-icon="inline-start" aria-hidden="true" />
                 Add organization
               </ButtonLink>

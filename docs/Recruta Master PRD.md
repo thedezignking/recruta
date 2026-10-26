@@ -368,6 +368,7 @@ Priority meanings:
 - Atomic onboarding that creates the agency, owner membership, profile, and default workflows.
 - Expiring and revocable agency invitations.
 - Safe handling of multiple workspace memberships.
+- A compact workspace dropdown lists the person's active workspaces and marks the current one. A person may create additional agency workspaces and becomes the owner of each new workspace, without gaining access to any other agency. Reuse the known personal profile details; workspace creation must not overwrite them. Workspace URLs are unique, and retrying creation with the same owned URL returns that workspace without creating duplicates or overwriting its settings.
 - Immediate access removal for suspended or revoked memberships.
 
 ## F02 — Organizations and Contacts (P0)
@@ -378,6 +379,30 @@ Priority meanings:
 - Warn about likely duplicates.
 - Delete only empty organizations that have no dependent operational history.
 - Archive or deactivate organizations with history instead of erasing records.
+
+### Company search and autofill
+
+Organization entry should support company-name search with matching suggestions showing the company name, logo, website/domain, and location. Selecting a company prefills available website, address, industry, and logo details. The recruiter reviews and edits those details before saving. When no company matches, manual entry remains available immediately, including organizations without a public directory listing. Use the same interaction in the standalone organization form and inline job-creation form.
+
+Suggestions must not create records automatically. Show likely matches already in the agency before external suggestions to help prevent duplicates. Keep loading, unavailable-provider, and no-results states clear and preserve manual input. Company-data provider/API access, coverage, licensing, and cost must be verified before implementation; LinkedIn-like interaction does not assume unrestricted LinkedIn data access. External lookup should run only for an explicit company search and must not send private contacts or internal notes.
+
+The current implementation shares a picker between standalone organization creation and New job. Saved organizations are searched across the agency, not just the initially loaded list. Primary contacts are optional; organization and contact creation is transactional and retry-safe. Exact active name matches reuse the saved organization without overwriting its details or adding an unsolicited contact. Matching websites are shown as a reuse suggestion rather than assumed to identify the same legal entity.
+
+Optional Brandfetch search and Brand API enrichment are integrated behind credentials and an explicit storage-permission setting. Search results are live browser-only autocomplete data, never persisted. Only separately retrieved, recruiter-reviewed enrichment is saved. Available location, industry, website, and logo fields may be filled; missing street addresses remain manual. Directory lookup is not a dependency for creating or publishing a job.
+
+### Workspace utilities and personal account
+
+Keep organization entry free of a manual logo-URL field; imported company logos may be previewed and removed. Job creation does not include a separate Candidate note introduction field. Use the job description and screening questions for relevant candidate-facing information.
+
+The global top bar provides a compact inline search for jobs, applicants by name/email, and organizations. Results appear in a non-modal dropdown beneath the field; show only `⌘ K` in its hint, while supporting Ctrl/Cmd+K to focus it. Results lead to real records or filtered applications. Page-specific create actions remain beside page titles.
+
+A notification bell opens recent recruitment updates: applications, hiring-request changes, and the current user's job assignments. Load real tenant-authorized records, with clear empty/error states and links to the relevant work. This first notification slice refreshes on focus/open and every minute while visible; read IDs are stored per user and agency on this device only, not synced across devices. Do not invent unread counts or activity.
+
+The sidebar account row opens one menu with My account, Password & security, keyboard-shortcut help, the agency's public careers page, and a separated destructive Log out action. Do not repeat Team and workspace Settings, which already exist in navigation. Logout is not exposed on the resting sidebar. Mobile uses the same account menu in its header. My account edits the profile name and password without giving recruiters access to agency administration.
+
+Recruta's identity is a near-black (#111111) rounded square containing a white abstract fit symbol formed by two complementary corners. Pair it with a clean Geist wordmark throughout the app; use the symbol alone for compact branding and the favicon. No gradients or 3D effects. Previous supplied logos are legacy assets, not active branding.
+
+The default lockup pairs a 28 px square mark with a 22 px semibold wordmark and a 10 px gap. The compact sidebar variant uses a 24 px mark, 20 px wordmark, and 8 px gap. The mark's corner radius is proportional (8 units on a 40-unit square). Controls/navigation use 6 px corners and cards/overlays use 10 px corners. The workspace selector below the brand is a compact 36 px control with a small neutral initial, name, and dropdown chevron; it supports switching and creating workspaces on desktop, collapsed navigation, and mobile.
 
 ## F03 — Jobs and Openings (P0)
 
@@ -503,21 +528,23 @@ Avoid a row of large metrics that merely restates totals without supporting an a
 
 - Primary accent: `#5C5AED`.
 - Ink: `#17182B`.
-- Canvas: `#F6F7FB`.
+- Canvas and sidebar: neutral `#F5F5F5`.
 - Paper: `#FFFFFF`.
 - Attention: `#C97812`.
 - Success: `#137A5A`.
 - Product typeface: Geist Sans.
 - Operational metadata: Geist Mono where helpful.
 
-Brand purple is for primary actions, links, focus, selected navigation, and active workflow markers. It must not replace semantic success, warning, or destructive colors.
+Brand purple is for primary actions, links, focus, active workflow markers, and selected sidebar solid icons. Selected sidebar navigation keeps a neutral gray surface and dark text. Purple must not replace semantic success, warning, or destructive colors.
+
+Overview omits the greeting and places its content-width date-range select beside New job, defaulting to Last 30 days. All time remains available explicitly. In review uses a document icon. Agency settings includes a public logo preview with upload, replace, and remove actions for owners and administrators. Accept PNG/JPG/WebP images up to 2 MiB. Changing a logo must not affect other agency details or private candidate documents.
 
 ## 8.2 Iconography
 
 Use `@solar-icons/react` version `2.3.3` with per-icon imports.
 
 - Use **Linear** icons for routine navigation, table actions, metadata, fields, and low-emphasis controls.
-- Use **Bold solid** icons for selected navigation, product identity, major empty states, and high-salience success or confirmation moments.
+- Use **Bold solid** icons for selected sidebar navigation on a quiet gray background, product identity, major empty states, and high-salience success or confirmation moments.
 - Do not use duotone icons.
 - Use the plain `Add` icon for ordinary create actions; a circled add icon is reserved for contexts where the container itself has meaning.
 - Decorative icons are hidden from assistive technology.
@@ -526,7 +553,12 @@ Use `@solar-icons/react` version `2.3.3` with per-icon imports.
 
 ## 8.3 Interaction Quality
 
+The workspace fills the browser edge to edge, with a neutral `#F5F5F5` sidebar and a white main work area. There is no outer padding, rounded application frame, or enclosing border. Borders (`#E8E8E8`) and elevation stay quiet; broad surfaces and selected navigation are neutral rather than purple. Summary counts use independent cards with visible gaps, while recent jobs, applications, and next actions carry the page. Interface copy is concise: retain task guidance and meaningful metadata, and omit taglines and repeated descriptions. The surface direction and component guidance are documented in `docs/Recruta Design Direction.md`.
+
+Overview summary cards are ordered Active jobs, Applications received, In review, Shortlisted. In review counts only applications currently in review, not unreviewed arrivals; Shortlisted counts the current shortlisted stage. These are job-specific submissions, not unique people. A shared All time / 24h / 7d / 14d / 30d filter applies rolling received-date windows to applications and created-date windows to jobs, combined with current status. Detailed queues remain unfiltered to retain older outstanding work. Hiring requests remain in their own panel; confirmed placements are deferred until a real placement-confirmation workflow exists. The profile menu separates identity, personal controls, utilities, and destructive logout with comfortable row spacing.
+
 - The agency workspace is compact and desktop-efficient, with responsive fallbacks.
+- Omit the redundant visible “Workspace” sidebar heading and the divider above the account menu; use spacing to group navigation. Reserve filled primary buttons for the page's main action or a form's main submission. Supporting and repeated actions (including empty-state CTAs and Save draft) use outline, not filled secondary. Keep lightweight navigation ghost/link and destructive actions semantically destructive.
 - Public and external experiences are mobile-first.
 - Forms preserve entered data when validation fails.
 - Publishing always includes a review/preview step.
@@ -594,9 +626,15 @@ Pilot targets should be set after baseline observation with real agencies; the P
 
 Remaining hardening includes richer preview, duplicate guidance, loading/confirmation polish, and expanded regression coverage.
 
-## Milestone 3 — Applicant Operations (next)
+## Milestone 3 — Applicant Operations (in progress)
 
 ### 3A: Recruiter inbox and application detail
+
+Core implemented: server-side candidate/email/job/organization search, stage/job/ownership filters, exact matching totals, stable cursor pagination, application detail with private document actions and screening answers, append-only internal notes, owner assignment, audited stage transitions, and exact per-job stage counts. Related applications link to the same existing candidate identity without merging records.
+
+Managers review agency-wide; recruiters review assigned jobs, can claim unassigned applications, and cannot delegate another recruiter's ownership. Rejection, withdrawal, and reopening require reasons. Changes detect stale versions; a retry of the same note cannot create a second note. Stage changes do not send candidate email in this slice, and review cannot fabricate a placement.
+
+Still to complete in 3A hardening: possible-duplicate review/merge rules, date-range controls, larger job-picker pagination, older-history pagination, and bulk operations. Notes and activity currently show the latest 100 entries each. AI processing and candidate email workflows remain 3B/3C, not active background behavior implied by the UI.
 
 - Search, filters, pagination, queues, and actionable empty states.
 - Application detail with resume, answers, profile, notes, ownership, and timeline.
@@ -606,6 +644,8 @@ Remaining hardening includes richer preview, duplicate guidance, loading/confirm
 
 ### 3B: AI-assisted screening
 
+The screening backend and recruiter evidence UI are implemented with per-agency opt-in, automatic intake preparation, extraction checkpoints, retry state, and separate append-only corrections. Following initial fake-provider verification, the owner authorized live synthetic evaluation: GPT-6 Luna passed six screening cases and simple PDF/DOCX extraction-to-evidence smoke checks. App-level AI and automatic intake remain disabled pending pilot activation. Broader human-reviewed extraction/quality evaluation, real-data provider privacy approval, and deployment scheduling remain prerequisites for live operation. See `decisions/0001-screening-execution.md` and `decisions/0002-applicant-processing-and-communication.md`. Screening never changes stages or sends email.
+
 - Document extraction pipeline.
 - Structured candidate facts and evidence references.
 - Requirement comparison and missing-information flags.
@@ -613,6 +653,8 @@ Remaining hardening includes richer preview, duplicate guidance, loading/confirm
 - Human-controlled review outcome.
 
 ### 3C: Communication and work queue
+
+Implemented: queued recruiter email composition/templates, delivery history, retry/cancel actions, verified/deduplicated provider callbacks, candidate email suppression after bounce/complaint, durable application acknowledgement preparation, configurable review reminders, and a job-authorized Needs attention queue. Replies go to the agency contact mailbox. Live delivery and intake workers remain disabled until operator configuration; no live email was sent for this build. Inbound mailbox synchronization, WhatsApp/SMS, custom automation builders, and live-provider deliverability checks remain separate. See ADR 0002 for activation and history limits.
 
 - Candidate email composer, templates, delivery history, and resend.
 - Acknowledgement hardening and missing-information flow.
@@ -682,7 +724,7 @@ The following require product validation rather than silent implementation assum
 - Exact pilot segment and country-specific privacy obligations.
 - Candidate retention periods and deletion/export workflow.
 - Background workflow provider and operational cost limits.
-- AI provider/model selection, evaluation set, and acceptable extraction accuracy.
+- OpenAI model selection, evaluation set, and acceptable extraction accuracy. OpenAI is the selected provider; live activation remains gated by configuration, evaluation, and privacy review.
 - WhatsApp/SMS provider and consent model.
 - Whether job application questions need conditional logic in the first pilot.
 - When a separate talent-pool experience is valuable enough to enter primary navigation.

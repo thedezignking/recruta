@@ -13,8 +13,7 @@ export default function PortalHome() {
     <div>
       <PageHeader
         eyebrow="Meridian Systems"
-        title="Hiring, without the handoff gaps"
-        description="Submit a role, answer questions, and follow progress in one shared place."
+        title="Overview"
         actions={
           <ButtonLink href="/portal/requests/new">
             <AddIcon data-icon="inline-start" aria-hidden="true" />

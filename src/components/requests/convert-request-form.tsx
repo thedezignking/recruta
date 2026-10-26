@@ -1,16 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircleIcon } from "@solar-icons/react/bold";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 
 export function ConvertRequestForm({
@@ -102,10 +96,6 @@ export function ConvertRequestForm({
                   </option>
                 ))}
               </select>
-              <FieldDescription>
-                Stages are copied into the job so later template changes cannot
-                rewrite active work.
-              </FieldDescription>
             </Field>
             <div className="grid gap-5 sm:grid-cols-2">
               <Field>
@@ -149,22 +139,6 @@ export function ConvertRequestForm({
                 ))}
               </select>
             </Field>
-            <div className="rounded-xl border border-success/20 bg-success/5 p-4">
-              <div className="flex gap-3">
-                <CheckCircleIcon
-                  aria-hidden="true"
-                  size={20}
-                  className="mt-0.5 text-success"
-                />
-                <div>
-                  <p className="text-sm font-medium">Ready to create</p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    The approved revision and workflow become an immutable job
-                    snapshot. You can publish its application page next.
-                  </p>
-                </div>
-              </div>
-            </div>
             <div className="flex justify-end">
               <Button type="submit" disabled={pending}>
                 {pending ? "Creating job…" : "Create job"}

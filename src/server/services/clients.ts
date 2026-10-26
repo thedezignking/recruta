@@ -38,7 +38,7 @@ export async function getClientRecord(
   const { data, error } = await supabase
     .from("clients")
     .select(
-      "id,name,industry,website,country_code,location,status,account_manager_id,created_at,client_contacts(id,full_name,email,phone,job_title,is_primary),jobs(id,title,status,positions_required,public_slug,created_at),hiring_requests(id,title,status,positions_required,created_at)",
+      "id,name,industry,website,country_code,location,company_profile,status,account_manager_id,created_at,client_contacts(id,full_name,email,phone,job_title,is_primary),jobs(id,title,status,positions_required,public_slug,created_at),hiring_requests(id,title,status,positions_required,created_at)",
     )
     .eq("agency_id", agencyId)
     .eq("id", clientId)
@@ -61,62 +61,24 @@ export async function getClientRecord(
 export async function createClientRecord(
   supabase: SupabaseClient,
   agencyId: string,
-  accountManagerId: string,
   input: unknown,
+  requestId: string,
 ) {
   const payload = clientSchema.parse(input);
-  const { data: existing } = await supabase
-    .from("clients")
-    .select("id")
-    .eq("agency_id", agencyId)
-    .ilike("name", payload.name.trim())
-    .neq("status", "archived")
-    .limit(1)
-    .maybeSingle();
-  if (existing) {
-    throw new ApiError(
-      409,
-      "ORGANIZATION_ALREADY_EXISTS",
-      "An organization with this name already exists. Open the existing organization instead.",
-    );
-  }
-  const { data: client, error } = await supabase
-    .from("clients")
-    .insert({
-      agency_id: agencyId,
-      name: payload.name,
-      industry: payload.industry || null,
-      website: payload.website || null,
-      country_code: payload.countryCode?.toUpperCase() || null,
-      location: payload.location || null,
-      account_manager_id: accountManagerId,
-    })
-    .select("id,name,industry,location,status")
-    .single();
-  if (error || !client)
+  const { data: clientId, error } = await supabase.rpc("create_organization", {
+    p_agency_id: agencyId,
+    p_organization: payload,
+    p_contact: payload.primaryContact ?? null,
+    p_request_id_header: requestId,
+  });
+  if (error || !clientId)
     throw new ApiError(
       400,
       "CLIENT_CREATE_FAILED",
-      "The client could not be created.",
+      "The organization could not be saved. Review the details and try again.",
     );
+  const client = { id: clientId as string };
 
-  const { error: contactError } = await supabase
-    .from("client_contacts")
-    .insert({
-      agency_id: agencyId,
-      client_id: client.id,
-      full_name: payload.primaryContact.fullName,
-      email: payload.primaryContact.email.toLowerCase(),
-      phone: payload.primaryContact.phone || null,
-      job_title: payload.primaryContact.jobTitle || null,
-      is_primary: true,
-    });
-  if (contactError)
-    throw new ApiError(
-      400,
-      "CONTACT_CREATE_FAILED",
-      "The primary contact could not be saved.",
-    );
   return client;
 }
 

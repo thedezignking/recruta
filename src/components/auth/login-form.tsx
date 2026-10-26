@@ -12,6 +12,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/auth/password-input";
 
 export function LoginForm({ next = "/app" }: { next?: string }) {
   const router = useRouter();
@@ -61,10 +62,9 @@ export function LoginForm({ next = "/app" }: { next?: string }) {
               Forgot password?
             </Link>
           </div>
-          <Input
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             autoComplete="current-password"
             required
           />
