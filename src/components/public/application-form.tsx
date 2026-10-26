@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { CheckCircleIcon } from "@solar-icons/react/bold";
 import { UploadIcon } from "@solar-icons/react/linear";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,8 @@ export function ApplicationForm({
   questions: PublicQuestion[];
 }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const submissionKey = useRef<string | null>(null);
+  const busy = useRef(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<
@@ -65,6 +67,9 @@ export function ApplicationForm({
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy.current) return;
+    busy.current = true;
+    submissionKey.current ??= crypto.randomUUID();
     setPending(true);
     setError(null);
     setFieldErrors({});
@@ -75,14 +80,20 @@ export function ApplicationForm({
         questions.map((question) => ({
           questionId: question.id,
           answer:
-            question.question_type === "yes_no"
+            question.question_type === "yes_no" &&
+            answers[question.id] !== undefined &&
+            answers[question.id] !== ""
               ? answers[question.id] === "true"
               : (answers[question.id] ?? ""),
         })),
       ),
     );
     try {
-      const response = await fetch(endpoint, { method: "POST", body });
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Idempotency-Key": submissionKey.current },
+        body,
+      });
       const result = (await response.json()) as ApiFailure;
       if (!response.ok) {
         setError(
@@ -98,6 +109,7 @@ export function ApplicationForm({
         "We could not reach the application service. Check your connection and try again.",
       );
     } finally {
+      busy.current = false;
       setPending(false);
     }
   }

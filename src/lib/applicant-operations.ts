@@ -52,23 +52,34 @@ const optionalValue = <T extends z.ZodType>(schema: T) =>
     (value) => (value === "" || value === null ? undefined : value),
     schema.optional(),
   );
-export const applicationFiltersSchema = z.object({
-  q: optionalValue(z.string().trim().max(100)),
-  jobId: optionalValue(z.uuid()),
-  candidateId: optionalValue(z.uuid()),
-  status: optionalValue(applicationStatusSchema),
-  processingStatus: optionalValue(
-    z.enum(["pending", "extracting", "ready", "needs_information", "failed"]),
-  ),
-  source: optionalValue(z.enum(["public_form", "manual", "imported"])),
-  owner: optionalValue(z.enum(["mine", "unassigned"])),
-  cursor: optionalValue(
-    z
-      .string()
-      .max(300)
-      .regex(/^[A-Za-z0-9_-]+$/),
-  ),
-});
+export const applicationFiltersSchema = z
+  .object({
+    submittedFrom: optionalValue(z.iso.date()),
+    submittedTo: optionalValue(z.iso.date()),
+    q: optionalValue(z.string().trim().max(100)),
+    jobId: optionalValue(z.uuid()),
+    candidateId: optionalValue(z.uuid()),
+    status: optionalValue(applicationStatusSchema),
+    processingStatus: optionalValue(
+      z.enum(["pending", "extracting", "ready", "needs_information", "failed"]),
+    ),
+    source: optionalValue(z.enum(["public_form", "manual", "imported"])),
+    owner: optionalValue(z.enum(["mine", "unassigned"])),
+    cursor: optionalValue(
+      z
+        .string()
+        .max(300)
+        .regex(/^[A-Za-z0-9_-]+$/),
+    ),
+  })
+  .refine(
+    (v) =>
+      !v.submittedFrom || !v.submittedTo || v.submittedFrom <= v.submittedTo,
+    {
+      path: ["submittedTo"],
+      message: "The end date must be on or after the start date.",
+    },
+  );
 export type ApplicationFilters = z.output<typeof applicationFiltersSchema>;
 export const applicationCursorSchema = z.object({
   at: z.iso.datetime({ offset: true }),
@@ -134,6 +145,11 @@ export type ApplicationDetail = {
   updated_at: string;
   owner_user_id: string | null;
   cover_note: string | null;
+  submitted_profile: {
+    fullName?: string;
+    phone?: string;
+    linkedinUrl?: string;
+  };
   candidates: {
     id: string;
     full_name: string;

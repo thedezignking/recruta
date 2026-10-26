@@ -205,7 +205,7 @@ export async function processNextScreeningRun(
   try {
     if (
       run.model !== config.model ||
-      run.prompt_version !== screeningVersion ||
+      ![screeningVersion, "screening-v1"].includes(run.prompt_version) ||
       run.extractor_version !== extractionVersion
     ) {
       throw new ScreeningError("configuration_changed", false);
@@ -242,7 +242,11 @@ export async function processNextScreeningRun(
       throw new ScreeningError("document_download_failed", true);
     if (file && file.size > 10 * 1024 * 1024)
       throw new ScreeningError("invalid_document", false);
-    const provider = providerFactory(config.apiKey, run.model);
+    const provider = providerFactory(
+      config.apiKey,
+      run.model,
+      run.prompt_version,
+    );
     const extraction = cached.success
       ? {
           output: cached.data,

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { appRequestOrigin } from "@/lib/request-origin";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -17,5 +18,8 @@ export async function POST(request: Request) {
   if (request.headers.get("accept")?.includes("application/json")) {
     return NextResponse.json({ data: { redirectTo: "/login" } });
   }
-  return NextResponse.redirect(new URL("/login", request.url), 303);
+  return NextResponse.redirect(
+    new URL("/login", appRequestOrigin(request)),
+    303,
+  );
 }

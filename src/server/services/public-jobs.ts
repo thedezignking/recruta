@@ -1,4 +1,11 @@
 import "server-only";
+import { createHmac, createHash } from "node:crypto";
+import { z } from "zod";
+import { getServerEnv } from "@/lib/env";
+import {
+  validateResumeSignature,
+  validateScreeningAnswers,
+} from "@/lib/public-intake";
 
 import { ApiError } from "@/lib/api";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -108,6 +115,7 @@ export async function submitPublicApplication(
   agencySlug: string,
   jobSlug: string,
   formData: FormData,
+  intake?: { key: string; address: string },
 ) {
   const job = await getPublicJob(agencySlug, jobSlug);
   const resume = formData.get("resume");
@@ -140,43 +148,73 @@ export async function submitPublicApplication(
     answers: parseAnswers(formData.get("answers")),
   });
 
-  const questionIds = new Set(
-    job.job_application_questions.map((question) => question.id),
-  );
-  const requiredIds = new Set(
-    job.job_application_questions
-      .filter((question) => question.is_required)
-      .map((question) => question.id),
-  );
-  for (const answer of payload.answers) {
-    if (!questionIds.has(answer.questionId)) {
-      throw new ApiError(
-        422,
-        "INVALID_QUESTION",
-        "A screening question is no longer available.",
-      );
-    }
-    if (typeof answer.answer === "string" && answer.answer.trim()) {
-      requiredIds.delete(answer.questionId);
-    }
-    if (typeof answer.answer === "boolean")
-      requiredIds.delete(answer.questionId);
-  }
-  if (requiredIds.size) {
-    throw new ApiError(
-      422,
-      "REQUIRED_ANSWERS_MISSING",
-      "Answer every required screening question.",
-    );
-  }
+  validateScreeningAnswers(job.job_application_questions, payload.answers);
 
   const admin = createAdminClient();
-  const applicationId = crypto.randomUUID();
+  const bytes = new Uint8Array(await resume.arrayBuffer());
+  validateResumeSignature(bytes, resume.type);
+  const intakeHash = createHash("sha256")
+    .update(JSON.stringify(payload))
+    .update(bytes)
+    .digest("hex");
+  const digest = intake
+    ? createHmac("sha256", getServerEnv().SUPABASE_SECRET_KEY)
+        .update(`${job.id}:${z.uuid().parse(intake.key)}`)
+        .digest("hex")
+    : null;
+  const applicationId = digest
+    ? `${digest.slice(0, 8)}-${digest.slice(8, 12)}-4${digest.slice(13, 16)}-a${digest.slice(17, 20)}-${digest.slice(20, 32)}`
+    : crypto.randomUUID();
+  async function priorSubmission() {
+    const { data, error } = await admin
+      .from("applications")
+      .select("id,intake_payload_hash")
+      .eq("agency_id", job.agency_id)
+      .eq("job_id", job.id)
+      .eq("id", applicationId)
+      .maybeSingle();
+    if (error)
+      throw new ApiError(
+        503,
+        "APPLICATION_UNAVAILABLE",
+        "Submission status could not be checked. Try again.",
+      );
+    if (data && data.intake_payload_hash !== intakeHash)
+      throw new ApiError(
+        409,
+        "IDEMPOTENCY_CONFLICT",
+        "This submission key was already used for different details. Reload the form.",
+      );
+    return data;
+  }
+  if (digest && (await priorSubmission()))
+    return { applicationId, confirmationEmailStatus: "queued" };
+  if (intake) {
+    const fingerprint = createHmac("sha256", getServerEnv().SUPABASE_SECRET_KEY)
+      .update(intake.address)
+      .digest("hex");
+    const reservation = await admin.rpc("reserve_public_intake", {
+      p_job_id: job.id,
+      p_fingerprint: fingerprint,
+    });
+    if (reservation.error)
+      throw new ApiError(
+        503,
+        "INTAKE_UNAVAILABLE",
+        "Applications are temporarily unavailable. Try again.",
+      );
+    if (!reservation.data)
+      throw new ApiError(
+        429,
+        "INTAKE_RATE_LIMITED",
+        "Too many attempts. Please try again later.",
+      );
+  }
   const fileName = safeFileName(resume.name) || `resume-${applicationId}.pdf`;
-  const storagePath = `${job.agency_id}/${job.id}/${applicationId}/${fileName}`;
+  const storagePath = `${job.agency_id}/${job.id}/${applicationId}/${crypto.randomUUID()}-${fileName}`;
   const upload = await admin.storage
     .from("candidate-documents")
-    .upload(storagePath, await resume.arrayBuffer(), {
+    .upload(storagePath, bytes, {
       contentType: resume.type,
       upsert: false,
     });
@@ -202,6 +240,7 @@ export async function submitPublicApplication(
       storagePath,
       contentType: resume.type,
       sizeBytes: resume.size,
+      intakeHash,
     } as Json,
     p_answers: payload.answers.map((answer) => ({
       questionId: answer.questionId,
@@ -210,7 +249,21 @@ export async function submitPublicApplication(
   });
 
   if (error || !data) {
-    await admin.storage.from("candidate-documents").remove([storagePath]);
+    const committed = await admin
+      .from("candidate_documents")
+      .select("id")
+      .eq("storage_path", storagePath)
+      .maybeSingle();
+    if (committed.error)
+      throw new ApiError(
+        503,
+        "SUBMISSION_STATUS_UNKNOWN",
+        "We could not confirm submission status. Retry without changing your details.",
+      );
+    if (!committed.data)
+      await admin.storage.from("candidate-documents").remove([storagePath]);
+    if (digest && (await priorSubmission()))
+      return { applicationId, confirmationEmailStatus: "queued" };
     if (error?.message.includes("applications_job_id_candidate_id_key")) {
       throw new ApiError(
         409,

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const screeningVersion = "screening-v1";
+export const screeningVersion = "screening-v2";
 export const extractionVersion = "extraction-v1";
 export const screeningRequestSchema = z.strictObject({ documentId: z.uuid() });
 

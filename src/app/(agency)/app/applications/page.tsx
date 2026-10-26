@@ -55,8 +55,9 @@ export default async function ApplicationsPage({
       .from("jobs")
       .select("id,title")
       .eq("agency_id", context.agencyId)
+      .eq("id", filters.jobId ?? "00000000-0000-0000-0000-000000000000")
       .order("title")
-      .limit(200),
+      .limit(1),
     context.supabase
       .from("agencies")
       .select("timezone")
@@ -87,6 +88,7 @@ export default async function ApplicationsPage({
       <InboxFilters
         key={JSON.stringify(filters)}
         filters={filters}
+        agencyId={context.agencyId}
         jobs={jobs.data ?? []}
       />
       <Card>

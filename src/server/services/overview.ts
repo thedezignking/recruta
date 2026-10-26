@@ -85,14 +85,13 @@ export async function getWorkspaceOverview(
       .in("status", ["received", "in_review"]),
     supabase
       .from("hiring_requests")
-      .select("id", { count: "exact", head: true })
+      .select("id,jobs!jobs_agency_id_hiring_request_id_fkey(id)", {
+        count: "exact",
+        head: true,
+      })
       .eq("agency_id", agencyId)
-      .in("status", [
-        "submitted",
-        "under_review",
-        "clarification_requested",
-        "approved",
-      ]),
+      .in("status", ["submitted", "under_review", "approved"])
+      .is("jobs", null),
     supabase
       .from("clients")
       .select("id", { count: "exact", head: true })
@@ -104,19 +103,20 @@ export async function getWorkspaceOverview(
         "id,status,processing_status,submitted_at,candidates(full_name),jobs(id,title,clients(name))",
       )
       .eq("agency_id", agencyId)
-      .order("submitted_at", { ascending: false })
+      .in("status", ["received", "in_review"])
+      .order("submitted_at", { ascending: true })
+      .order("id", { ascending: true })
       .limit(5),
     supabase
       .from("hiring_requests")
-      .select("id,title,status,positions_required,created_at,clients(name)")
+      .select(
+        "id,title,status,positions_required,created_at,clients(name),jobs!jobs_agency_id_hiring_request_id_fkey(id)",
+      )
       .eq("agency_id", agencyId)
-      .in("status", [
-        "submitted",
-        "under_review",
-        "clarification_requested",
-        "approved",
-      ])
-      .order("updated_at", { ascending: false })
+      .in("status", ["submitted", "under_review", "approved"])
+      .is("jobs", null)
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
       .limit(5),
     supabase
       .from("applications")
@@ -192,5 +192,71 @@ export async function getWorkspaceOverview(
         : await getOverviewSummary(supabase, agencyId, selectedRange, now),
     applications: applicationItems,
     requests: requestItems,
+  };
+}
+
+export async function getOverviewJobs(
+  supabase: SupabaseClient,
+  agencyId: string,
+) {
+  const fields =
+    "id,title,status,positions_required,published_at,accepting_applications,public_slug,clients(name),applications(count)";
+  const [all, published, active, drafts, shareable] = await Promise.all([
+    supabase
+      .from("jobs")
+      .select("id", { count: "exact", head: true })
+      .eq("agency_id", agencyId),
+    supabase
+      .from("jobs")
+      .select("id", { count: "exact", head: true })
+      .eq("agency_id", agencyId)
+      .not("published_at", "is", null),
+    supabase
+      .from("jobs")
+      .select(fields)
+      .eq("agency_id", agencyId)
+      .eq("status", "open")
+      .order("updated_at", { ascending: false })
+      .order("id")
+      .limit(5),
+    supabase
+      .from("jobs")
+      .select("id,title")
+      .eq("agency_id", agencyId)
+      .eq("status", "draft")
+      .order("updated_at", { ascending: false })
+      .order("id")
+      .limit(1),
+    supabase
+      .from("jobs")
+      .select("id,title,public_slug")
+      .eq("agency_id", agencyId)
+      .eq("status", "open")
+      .eq("accepting_applications", true)
+      .not("published_at", "is", null)
+      .not("public_slug", "is", null)
+      .order("updated_at", { ascending: false })
+      .order("id")
+      .limit(1),
+  ]);
+  if (
+    [all, published, active, drafts, shareable].some((result) => result.error)
+  )
+    throw new ApiError(
+      500,
+      "OVERVIEW_LOAD_FAILED",
+      "The job overview could not be loaded.",
+    );
+  return {
+    totalJobs: all.count ?? 0,
+    publishedJobs: published.count ?? 0,
+    activeJobs: (active.data ?? []).map((job) => ({
+      ...job,
+      clients: Array.isArray(job.clients)
+        ? (job.clients[0] ?? null)
+        : job.clients,
+    })),
+    draft: drafts.data?.[0] ?? null,
+    shareable: shareable.data?.[0] ?? null,
   };
 }

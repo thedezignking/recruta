@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError } from "@/lib/api";
+import { decodeTimeCursor, encodeTimeCursor } from "@/lib/cursor";
 import {
   jobAssignmentSchema,
   jobTransitionSchema,
@@ -28,10 +29,15 @@ export async function listJobs(
       "id,title,status,priority,positions_required,deadline_at,primary_recruiter_id,created_at,source,public_slug,published_at,accepting_applications,clients(name),workflow_templates(name),applications(count)",
     )
     .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
     .limit(26);
   if (scope.agencyId) query = query.eq("agency_id", scope.agencyId);
   if (scope.clientId) query = query.eq("client_id", scope.clientId);
-  if (cursor) query = query.lt("created_at", cursor);
+  const after = decodeTimeCursor(cursor ?? undefined);
+  if (after)
+    query = query.or(
+      `created_at.lt.${after.at},and(created_at.eq.${after.at},id.lt.${after.id})`,
+    );
   const { data, error } = await query;
   if (error)
     throw new ApiError(500, "JOB_LIST_FAILED", "Jobs could not be loaded.");
@@ -46,7 +52,7 @@ export async function listJobs(
   }));
   return {
     items,
-    nextCursor: data && data.length > 25 ? data[24]?.created_at : null,
+    nextCursor: data && data.length > 25 ? encodeTimeCursor(data[24]) : null,
   };
 }
 
@@ -209,6 +215,13 @@ export async function deleteEmptyManualJob(
   });
   if (error) {
     const message = error.message;
+    if (message.includes("job_has_collaboration_history")) {
+      throw new ApiError(
+        409,
+        "JOB_HAS_COLLABORATION_HISTORY",
+        "This job has hiring-manager collaboration history. Close it instead to preserve that history.",
+      );
+    }
     if (message.includes("job_has_applications")) {
       throw new ApiError(
         409,

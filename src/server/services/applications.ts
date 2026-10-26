@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError } from "@/lib/api";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { decodeTimeCursor, encodeTimeCursor } from "@/lib/cursor";
 import {
   applicationActionSchema,
   applicationCursorSchema,
@@ -63,7 +64,7 @@ export async function getApplication(
   const { data, error } = await supabase
     .from("applications")
     .select(
-      "id,agency_id,job_id,candidate_id,status,processing_status,source,submitted_at,updated_at,owner_user_id,cover_note,candidates(id,full_name,email,phone,linkedin_url,email_suppressed),jobs(id,title,clients(name),job_assignments(user_id)),candidate_documents(id,file_name,size_bytes,content_type),application_answers(id,answer,job_application_questions(label,sort_order))",
+      "id,agency_id,job_id,candidate_id,status,processing_status,source,submitted_at,updated_at,owner_user_id,cover_note,submitted_profile,candidates(id,full_name,email,phone,linkedin_url,email_suppressed),jobs(id,title,clients(name),job_assignments(user_id)),candidate_documents(id,file_name,size_bytes,content_type),application_answers(id,answer,job_application_questions(label,sort_order))",
     )
     .eq("agency_id", agencyId)
     .eq("id", applicationId)
@@ -83,25 +84,38 @@ export async function getApplicationHistory(
   supabase: SupabaseClient,
   agencyId: string,
   applicationId: string,
+  cursors: { notes?: string; events?: string } = {},
 ) {
+  const noteCursor = decodeTimeCursor(cursors.notes);
+  const eventCursor = decodeTimeCursor(cursors.events);
+  let noteQuery = supabase
+    .from("application_notes")
+    .select("id,body,author_user_id,created_at")
+    .eq("agency_id", agencyId)
+    .eq("application_id", applicationId);
+  let eventQuery = supabase
+    .from("activity_events")
+    .select("id,event_type,actor_user_id,metadata,created_at")
+    .eq("agency_id", agencyId)
+    .eq("entity_type", "application")
+    .eq("entity_id", applicationId);
+  if (noteCursor)
+    noteQuery = noteQuery.or(
+      `created_at.lt.${noteCursor.at},and(created_at.eq.${noteCursor.at},id.lt.${noteCursor.id})`,
+    );
+  if (eventCursor)
+    eventQuery = eventQuery.or(
+      `created_at.lt.${eventCursor.at},and(created_at.eq.${eventCursor.at},id.lt.${eventCursor.id})`,
+    );
   const [notes, events] = await Promise.all([
-    supabase
-      .from("application_notes")
-      .select("id,body,author_user_id,created_at")
-      .eq("agency_id", agencyId)
-      .eq("application_id", applicationId)
+    noteQuery
       .order("created_at", { ascending: false })
       .order("id", { ascending: false })
-      .limit(100),
-    supabase
-      .from("activity_events")
-      .select("id,event_type,actor_user_id,metadata,created_at")
-      .eq("agency_id", agencyId)
-      .eq("entity_type", "application")
-      .eq("entity_id", applicationId)
+      .limit(26),
+    eventQuery
       .order("created_at", { ascending: false })
       .order("id", { ascending: false })
-      .limit(100),
+      .limit(26),
   ]);
   if (notes.error || events.error)
     throw new ApiError(
@@ -109,7 +123,16 @@ export async function getApplicationHistory(
       "APPLICATION_HISTORY_FAILED",
       "Application history could not be loaded.",
     );
-  return { notes: notes.data ?? [], events: events.data ?? [] };
+  const noteItems = (notes.data ?? []).slice(0, 25);
+  const eventItems = (events.data ?? []).slice(0, 25);
+  return {
+    notes: noteItems,
+    events: eventItems,
+    notesNext:
+      (notes.data?.length ?? 0) > 25 ? encodeTimeCursor(noteItems[24]) : null,
+    eventsNext:
+      (events.data?.length ?? 0) > 25 ? encodeTimeCursor(eventItems[24]) : null,
+  };
 }
 
 export async function reviewApplication(

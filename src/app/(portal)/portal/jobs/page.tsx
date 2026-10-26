@@ -1,29 +1,61 @@
-import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
+import { requirePortalPageContext } from "@/server/auth/portal-context";
+import { listPortalJobs } from "@/server/services/portal";
 import { PageHeader } from "@/components/shared/page-header";
+import { ButtonLink } from "@/components/shared/button-link";
+import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { jobs } from "@/lib/demo-data";
-export default function PortalJobsPage() {
+export default async function PortalJobs({
+  searchParams,
+}: {
+  searchParams: Promise<{ cursor?: string }>;
+}) {
+  const c = await requirePortalPageContext();
+  const result = await listPortalJobs(
+    c.supabase,
+    c.clientId,
+    (await searchParams).cursor,
+  );
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader title="Jobs" />
-      <div className="mt-6 grid gap-3">
-        {jobs.slice(0, 2).map((job) => (
-          <Link key={job.id} href={`/app/jobs/${job.id}`}>
-            <Card className="shadow-none">
-              <CardContent className="flex items-center justify-between gap-4 px-4">
-                <div>
-                  <p className="font-medium">{job.title}</p>
-                  <p className="mt-1 font-mono text-xs text-muted-foreground">
-                    {job.reference} · {job.filled}/{job.positions} filled
-                  </p>
-                </div>
-                <StatusBadge status={job.status} />
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+      {result.items.length ? (
+        result.items.map((j) => (
+          <Card key={j.id}>
+            <CardContent className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <ButtonLink
+                  variant="link"
+                  className="px-0"
+                  href={`/portal/jobs/${j.id}`}
+                >
+                  {j.title}
+                </ButtonLink>
+                <p className="text-xs text-muted-foreground">
+                  {j.positions_required} openings ·{" "}
+                  {j.location || "Location to be agreed"}
+                </p>
+              </div>
+              <StatusBadge status={j.status} />
+            </CardContent>
+          </Card>
+        ))
+      ) : (
+        <Card>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              No jobs have been shared with you.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+      {result.nextCursor && (
+        <ButtonLink
+          variant="outline"
+          href={`/portal/jobs?cursor=${encodeURIComponent(result.nextCursor)}`}
+        >
+          Older jobs
+        </ButtonLink>
+      )}
     </div>
   );
 }

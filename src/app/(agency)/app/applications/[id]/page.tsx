@@ -28,13 +28,19 @@ import {
   listApplications,
 } from "@/server/services/applications";
 import { listAgencyMembers } from "@/server/services/workspace";
+import { getSubmissions } from "@/server/services/collaboration";
+import { SubmissionPanel } from "@/components/collaboration/submission-panel";
+import { ButtonLink } from "@/components/shared/button-link";
 
 export default async function ApplicationPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ notesBefore?: string; eventsBefore?: string }>;
 }) {
   const { id } = await params;
+  const before = await searchParams;
   if (!z.uuid().safeParse(id).success) notFound();
   const context = await requireAgencyPageContext().catch(() => null);
   if (!context) redirect("/login");
@@ -56,7 +62,10 @@ export default async function ApplicationPage({
     processing,
     intake,
   ] = await Promise.all([
-    getApplicationHistory(context.supabase, context.agencyId, id),
+    getApplicationHistory(context.supabase, context.agencyId, id, {
+      notes: before.notesBefore,
+      events: before.eventsBefore,
+    }),
     listAgencyMembers(context.supabase, context.agencyId),
     listApplications(context.supabase, context.agencyId, {
       candidateId: application.candidate_id,
@@ -89,6 +98,10 @@ export default async function ApplicationPage({
       member.profile?.full_name ?? "Teammate",
     ]),
   );
+  const submissions = await getSubmissions(context.supabase, {
+    agencyId: context.agencyId,
+    applicationId: id,
+  });
   const members = team.items
     .filter(
       (member) =>
@@ -123,6 +136,20 @@ export default async function ApplicationPage({
         actions={<StatusBadge status={application.status} />}
       />
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        {application.submitted_profile?.fullName &&
+          application.submitted_profile.fullName.trim().toLowerCase() !==
+            application.candidates.full_name.trim().toLowerCase() && (
+            <Alert className="xl:col-span-2">
+              <AlertTitle>Check candidate identity</AlertTitle>
+              <AlertDescription>
+                This application was submitted as{" "}
+                {application.submitted_profile.fullName}, using an email already
+                linked to {application.candidates.full_name}. The existing name
+                was preserved. Confirm the identity before sharing or making a
+                decision.
+              </AlertDescription>
+            </Alert>
+          )}
         <div className="flex min-w-0 flex-col gap-5">
           <Card>
             <CardHeader>
@@ -319,10 +346,23 @@ export default async function ApplicationPage({
                   No internal notes yet.
                 </p>
               )}
-              {history.notes.length === 100 && (
-                <p className="mt-4 text-xs text-muted-foreground">
-                  Showing the latest 100 notes.
-                </p>
+              {history.notesNext && (
+                <ButtonLink
+                  variant="outline"
+                  className="mt-4"
+                  href={`/app/applications/${id}?notesBefore=${history.notesNext}${before.eventsBefore ? `&eventsBefore=${encodeURIComponent(before.eventsBefore)}` : ""}`}
+                >
+                  Older notes
+                </ButtonLink>
+              )}
+              {before.notesBefore && (
+                <ButtonLink
+                  variant="ghost"
+                  className="mt-4"
+                  href={`/app/applications/${id}`}
+                >
+                  Latest history
+                </ButtonLink>
               )}
             </CardContent>
           </Card>
@@ -380,24 +420,42 @@ export default async function ApplicationPage({
                   </time>
                 </li>
               </ol>
-              {history.events.length === 100 && (
-                <p className="mt-4 text-xs text-muted-foreground">
-                  Showing the latest 100 events.
-                </p>
+              {history.eventsNext && (
+                <ButtonLink
+                  variant="outline"
+                  className="mt-4"
+                  href={`/app/applications/${id}?eventsBefore=${history.eventsNext}${before.notesBefore ? `&notesBefore=${encodeURIComponent(before.notesBefore)}` : ""}`}
+                >
+                  Older activity
+                </ButtonLink>
               )}
             </CardContent>
           </Card>
         </div>
-        <ApplicationReview
-          applicationId={id}
-          agencyId={context.agencyId}
-          status={application.status}
-          updatedAt={application.updated_at}
-          ownerId={application.owner_user_id}
-          userId={context.user.id}
-          role={context.role}
-          members={members}
-        />
+        <div className="flex flex-col gap-6">
+          <SubmissionPanel
+            agencyId={context.agencyId}
+            applicationId={id}
+            canShare={[
+              "shortlisted",
+              "client_review",
+              "interview",
+              "offer",
+            ].includes(application.status)}
+            submissions={submissions}
+            document={application.candidate_documents[0]}
+          />
+          <ApplicationReview
+            applicationId={id}
+            agencyId={context.agencyId}
+            status={application.status}
+            updatedAt={application.updated_at}
+            ownerId={application.owner_user_id}
+            userId={context.user.id}
+            role={context.role}
+            members={members}
+          />
+        </div>
       </div>
     </div>
   );

@@ -13,6 +13,7 @@ export async function DELETE(
       "owner",
       "administrator",
       "recruitment_manager",
+      "recruiter",
     ]);
     return ok(
       await revokeInvitation(supabase, {

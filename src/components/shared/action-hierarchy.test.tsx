@@ -37,7 +37,7 @@ vi.mock("next/navigation", () => ({
 }));
 import JobsPage from "@/app/(agency)/app/jobs/page";
 import PublicJobPage from "@/app/careers/[agencySlug]/jobs/[jobSlug]/page";
-import NewRequestPage from "@/app/(portal)/portal/requests/new/page";
+import { PortalRequestActions } from "@/components/portal/request-actions";
 import { WorkspaceOverview } from "@/components/overview/workspace-overview";
 
 afterEach(cleanup);
@@ -60,7 +60,15 @@ describe("action hierarchy", () => {
     render(
       <WorkspaceOverview
         timezone="Africa/Lagos"
-        jobs={[]}
+        work={{
+          totalJobs: 0,
+          publishedJobs: 0,
+          activeJobs: [],
+          draft: null,
+          shareable: null,
+        }}
+        role="owner"
+        applicationBaseUrl="https://example.invalid/careers/test"
         overview={{
           counts: {
             openJobs: 0,
@@ -85,7 +93,7 @@ describe("action hierarchy", () => {
     expect(screen.getByRole("link", { name: "New job" }).className).toContain(
       "bg-primary",
     );
-    expectOutline(screen.getByRole("link", { name: "Open your first job" }));
+    expectOutline(screen.getByRole("link", { name: "Create job" }));
     const cards = within(
       screen.getByRole("region", { name: "Recruitment summary" }),
     ).getAllByRole("link");
@@ -115,9 +123,15 @@ describe("action hierarchy", () => {
     ).toBe(true);
     expect(screen.queryByText("Applications to review")).toBeNull();
   });
-  it("makes Save draft outline without weakening Submit request", () => {
-    render(<NewRequestPage />);
-    expectOutline(screen.getByRole("button", { name: "Save draft" }));
+  it("keeps request submission primary and supporting cancellation outline", () => {
+    render(
+      <PortalRequestActions
+        clientId="client"
+        requestId="request"
+        status="draft"
+      />,
+    );
+    expectOutline(screen.getByRole("button", { name: "Cancel request" }));
     expect(
       screen.getByRole("button", { name: "Submit request" }).className,
     ).toContain("bg-primary");

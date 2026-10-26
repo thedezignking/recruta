@@ -1,4 +1,5 @@
 import "server-only";
+import { z } from "zod";
 
 import { createHash, randomBytes } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -49,64 +50,73 @@ async function deliverInvitation(input: {
     return { communicationId: communication.id, status: communication.status };
   }
 
-  const acceptUrl = `${getPublicEnv().NEXT_PUBLIC_APP_URL}/invitations/${encodeURIComponent(input.token)}?kind=${input.kind}`;
   const admin = createAdminClient();
-  const { data, error } = await admin.auth.admin.inviteUserByEmail(
-    input.email,
-    {
-      redirectTo: acceptUrl,
-    },
-  );
-
-  if (!error) {
+  try {
+    let link = await admin.auth.admin.generateLink({
+      type: "invite",
+      email: input.email,
+    });
+    let type: "invite" | "magiclink" = "invite";
+    if (link.error?.message.toLowerCase().includes("already")) {
+      type = "magiclink";
+      link = await admin.auth.admin.generateLink({
+        type: "magiclink",
+        email: input.email,
+      });
+    }
+    if (link.error || !link.data?.properties?.hashed_token)
+      throw new Error("A secure invitation sign-in link could not be created.");
+    const callback = new URL(
+      "/auth/callback",
+      getPublicEnv().NEXT_PUBLIC_APP_URL,
+    );
+    callback.searchParams.set("token_hash", link.data.properties.hashed_token);
+    callback.searchParams.set("type", type);
+    callback.searchParams.set(
+      "next",
+      `/invitations/${encodeURIComponent(input.token)}?kind=${input.kind}${type === "invite" ? "&setup=1" : ""}`,
+    );
+    const providerMessageId = await sendApplicationEmail({
+      to: input.email,
+      subject: "You have been invited to Recruta",
+      html: statusEmail({
+        title:
+          input.kind === "client"
+            ? "Review hiring with your agency"
+            : "Join your recruitment team",
+        preview: "An invitation is waiting for you.",
+        body: "Use this secure link to sign in, then accept your invitation. Access is limited to the work your agency shares.",
+        actionLabel: "Open invitation",
+        actionUrl: callback.toString(),
+      }),
+      idempotencyKey: `invitation:${input.invitationId}:${createHash("sha256").update(input.token).digest("hex")}`,
+    });
     await markCommunication(communication.id, {
       status: "sent",
-      providerMessageId: data.user?.id ?? "supabase-auth",
+      providerMessageId,
     });
     return { communicationId: communication.id, status: "sent" as const };
+  } catch (error) {
+    await markCommunication(communication.id, {
+      status: "failed",
+      lastError:
+        error instanceof Error ? error.message : "Invitation delivery failed.",
+    });
+    return { communicationId: communication.id, status: "failed" as const };
   }
-
-  if (error.message.toLowerCase().includes("already")) {
-    try {
-      const providerMessageId = await sendApplicationEmail({
-        to: input.email,
-        subject: "You have been invited to Recruta",
-        html: statusEmail({
-          title: "Join your team on Recruta",
-          preview: "An invitation is waiting for you.",
-          body: "Sign in with this email address to accept the invitation and access your workspace.",
-          actionLabel: "Accept invitation",
-          actionUrl: acceptUrl,
-        }),
-      });
-      await markCommunication(communication.id, {
-        status: "sent",
-        providerMessageId,
-      });
-      return { communicationId: communication.id, status: "sent" as const };
-    } catch (fallbackError) {
-      await markCommunication(communication.id, {
-        status: "failed",
-        lastError:
-          fallbackError instanceof Error
-            ? fallbackError.message
-            : "Unknown delivery error",
-      });
-      return { communicationId: communication.id, status: "failed" as const };
-    }
-  }
-
-  await markCommunication(communication.id, {
-    status: "failed",
-    lastError: error.message,
-  });
-  return { communicationId: communication.id, status: "failed" as const };
 }
 
 async function findIdempotentInvitation(
   supabase: SupabaseClient,
   agencyId: string,
   idempotencyKey: string,
+  expected: {
+    kind: InvitationKind;
+    email: string;
+    role: string;
+    clientId?: string;
+    jobId?: string;
+  },
 ) {
   const { data } = await supabase
     .from("communications")
@@ -115,6 +125,12 @@ async function findIdempotentInvitation(
     .eq("idempotency_key", idempotencyKey)
     .maybeSingle();
   if (!data?.related_entity_id || !data.related_entity_type) return null;
+  if (data.related_entity_type !== `${expected.kind}_invitation`)
+    throw new ApiError(
+      409,
+      "IDEMPOTENCY_CONFLICT",
+      "This request key was already used for another operation.",
+    );
   const table =
     data.related_entity_type === "agency_invitation"
       ? "agency_invitations"
@@ -122,11 +138,48 @@ async function findIdempotentInvitation(
         ? "client_invitations"
         : null;
   if (!table) return null;
-  const { data: invitation } = await supabase
-    .from(table)
-    .select("id,email,role,expires_at")
-    .eq("id", data.related_entity_id)
-    .single();
+  const result =
+    table === "client_invitations"
+      ? await supabase
+          .from("client_invitations")
+          .select("id,email,role,expires_at,client_id,job_id")
+          .eq("id", data.related_entity_id)
+          .single()
+      : await supabase
+          .from("agency_invitations")
+          .select("id,email,role,expires_at")
+          .eq("id", data.related_entity_id)
+          .single();
+  if (result.error)
+    throw new ApiError(
+      503,
+      "INVITATION_LOOKUP_FAILED",
+      "Invitation status could not be loaded.",
+    );
+  const invitation = z
+    .object({
+      id: z.uuid(),
+      email: z.string(),
+      role: z.string(),
+      expires_at: z.string(),
+      client_id: z.uuid().optional(),
+      job_id: z.uuid().nullable().optional(),
+    })
+    .nullable()
+    .parse(result.data);
+  if (
+    invitation &&
+    (invitation.email.toLowerCase() !== expected.email.toLowerCase() ||
+      invitation.role !== expected.role ||
+      (expected.kind === "client" &&
+        (invitation.client_id !== expected.clientId ||
+          (invitation.job_id ?? undefined) !== expected.jobId)))
+  )
+    throw new ApiError(
+      409,
+      "IDEMPOTENCY_CONFLICT",
+      "This request key was already used for another invitation.",
+    );
   return invitation
     ? {
         invitation,
@@ -142,14 +195,15 @@ export async function inviteAgencyMember(
   input: unknown,
   idempotencyKey: string,
 ) {
+  const payload = agencyInvitationSchema.parse(input);
   const existing = await findIdempotentInvitation(
     supabase,
     context.agencyId,
     idempotencyKey,
+    { kind: "agency", ...payload },
   );
   if (existing) return existing;
 
-  const payload = agencyInvitationSchema.parse(input);
   const { token, tokenHash } = invitationToken();
   const expiresAt = invitationExpiresAt();
   const { data: invitation, error } = await supabase
@@ -184,18 +238,41 @@ export async function inviteAgencyMember(
 
 export async function inviteClientMember(
   supabase: SupabaseClient,
-  context: { agencyId: string; clientId: string; userId: string },
+  context: {
+    agencyId: string;
+    clientId: string;
+    userId: string;
+    jobId?: string;
+  },
   input: unknown,
   idempotencyKey: string,
 ) {
+  const payload = clientInvitationSchema.parse(input);
+  if (context.jobId) {
+    const access = await supabase.rpc("job_collaborator_directory", {
+      p_agency_id: context.agencyId,
+      p_job_id: context.jobId,
+    });
+    if (access.error)
+      throw new ApiError(
+        403,
+        "JOB_ACCESS_DENIED",
+        "You cannot invite people to this job.",
+      );
+  }
   const existing = await findIdempotentInvitation(
     supabase,
     context.agencyId,
     idempotencyKey,
+    {
+      kind: "client",
+      ...payload,
+      clientId: context.clientId,
+      jobId: context.jobId,
+    },
   );
   if (existing) return existing;
 
-  const payload = clientInvitationSchema.parse(input);
   const { data: client, error: clientError } = await supabase
     .from("clients")
     .select("id")
@@ -212,6 +289,7 @@ export async function inviteClientMember(
     .insert({
       agency_id: context.agencyId,
       client_id: context.clientId,
+      job_id: context.jobId ?? null,
       email: payload.email.toLowerCase(),
       role: payload.role,
       token_hash: tokenHash,
@@ -280,7 +358,7 @@ export async function resendInvitation(
   const table = kind === "agency" ? "agency_invitations" : "client_invitations";
   const { data: invitation, error } = await supabase
     .from(table)
-    .select("id,email,accepted_at,revoked_at")
+    .select("id,email,accepted_at,revoked_at,token_hash")
     .eq("id", communication.related_entity_id)
     .single();
   if (error || !invitation)
@@ -299,7 +377,12 @@ export async function resendInvitation(
       token_hash: tokenHash,
       expires_at: invitationExpiresAt().toISOString(),
     })
-    .eq("id", invitation.id);
+    .eq("id", invitation.id)
+    .eq("token_hash", invitation.token_hash)
+    .is("accepted_at", null)
+    .is("revoked_at", null)
+    .select("id")
+    .single();
   if (updateError)
     throw new ApiError(409, "INVITATION_UPDATE_FAILED", updateError.message);
 

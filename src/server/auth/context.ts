@@ -1,6 +1,7 @@
 import { ApiError } from "@/lib/api";
 import { createClient } from "@/lib/supabase/server";
 import type { AgencyRole, ClientRole } from "@/types/domain";
+import { portalMembershipsSchema } from "@/lib/collaboration";
 import { cookies } from "next/headers";
 import {
   parseWorkspaceSelection,
@@ -105,13 +106,11 @@ export async function requireClientContext(
 ) {
   const { supabase, user } = await requireUser();
   const requestedClientId = request.headers.get("x-client-id");
-  let query = supabase
-    .from("client_memberships")
-    .select("agency_id, client_id, role, status")
-    .eq("user_id", user.id)
-    .eq("status", "active");
-  if (requestedClientId) query = query.eq("client_id", requestedClientId);
-  const { data, error } = await query.limit(2);
+  const { data: raw, error } = await supabase.rpc("portal_memberships");
+  const memberships = portalMembershipsSchema.parse(raw ?? []);
+  const data = requestedClientId
+    ? memberships.filter((m) => m.client_id === requestedClientId)
+    : memberships;
   if (error)
     throw new ApiError(
       500,
@@ -134,7 +133,6 @@ export async function requireClientContext(
     agency_id: string;
     client_id: string;
     role: ClientRole;
-    status: string;
   };
   if (allowedRoles && !allowedRoles.includes(membership.role))
     throw new ApiError(

@@ -508,6 +508,8 @@ Candidates may become a separate navigation destination when cross-job rediscove
 
 The overview answers: **What needs a human decision today?**
 
+Below the four existing summary cards, show only relevant work. Needs attention appears only for real exceptions. The application inbox prioritizes the oldest received/in-review submissions and uses the actual outstanding count; it is hidden before any published job or application exists. A published role awaiting its first application offers a direct copy-link action. Active jobs are queried independently of the newest jobs; draft continuation belongs beside the jobs it relates to. First-use owners get one starting point, while recruiters with no visible assignments get assignment-aware guidance. Hiring requests appear only for managers with unconverted submitted/under-review/approved requests; omit the empty secondary column and permanent Up next card. An established quiet workspace is not first use. The four summary cards, zero values, date rules, and links remain unchanged by this refinement.
+
 Preferred content:
 
 - New or aging applications to review.
@@ -634,7 +636,7 @@ Core implemented: server-side candidate/email/job/organization search, stage/job
 
 Managers review agency-wide; recruiters review assigned jobs, can claim unassigned applications, and cannot delegate another recruiter's ownership. Rejection, withdrawal, and reopening require reasons. Changes detect stale versions; a retry of the same note cannot create a second note. Stage changes do not send candidate email in this slice, and review cannot fabricate a placement.
 
-Still to complete in 3A hardening: possible-duplicate review/merge rules, date-range controls, larger job-picker pagination, older-history pagination, and bulk operations. Notes and activity currently show the latest 100 entries each. AI processing and candidate email workflows remain 3B/3C, not active background behavior implied by the UI.
+Hardening adds received-date filters in the agency timezone, a searchable paginated job picker, independently paginated notes/activity, faithful public-job previews, bounded PDF/DOCX intake, payload-bound application retries, and per-job abuse limits. Each application retains its submitted identity without overwriting the agency candidate's name. Advanced identity merging and bulk operations remain separate work.
 
 - Search, filters, pagination, queues, and actionable empty states.
 - Application detail with resume, answers, profile, notes, ownership, and timeline.
@@ -654,7 +656,7 @@ The screening backend and evidence UI are implemented with per-agency opt-in, au
 
 ### 3C: Communication and work queue
 
-Implemented: queued recruiter email composition/templates, delivery history, retry/cancel actions, verified/deduplicated provider callbacks, candidate email suppression after bounce/complaint, durable application acknowledgement preparation, configurable review reminders, and a job-authorized Needs attention queue. Replies go to the agency contact mailbox. Live delivery and intake workers remain disabled until operator configuration; no live email was sent for this build. Inbound mailbox synchronization, WhatsApp/SMS, custom automation builders, and live-provider deliverability checks remain separate. See ADR 0002 for activation and history limits.
+Implemented: queued recruiter email composition/templates, delivery history, retry/cancel actions, verified/deduplicated provider callbacks, candidate email suppression after bounce/complaint, durable application acknowledgement preparation, configurable review reminders, and a job-authorized Needs attention queue. Replies go to the agency contact mailbox. The owner activated deployed workers after a synthetic pilot verified screening, acknowledgement, and a signed Delivered callback. Workspace AI remains opt-in. Inbound mailbox synchronization, WhatsApp/SMS, and custom automation builders remain separate. See ADRs 0002 and 0004 for activation and history limits.
 
 - Candidate email composer, templates, delivery history, and resend.
 - Acknowledgement hardening and missing-information flow.
@@ -663,8 +665,9 @@ Implemented: queued recruiter email composition/templates, delivery history, ret
 
 ## Milestone 4 — Hiring Manager Collaboration and Website Intake
 
-- Job-scoped hiring-manager invitations.
-- Candidate submissions and structured feedback.
+Implemented locally: job-scoped hiring-manager/reviewer invitations, existing-member access controls, a real employer portal, intentional recruiter-written candidate submissions, optionally shared private résumés, and append-only structured feedback. Reviewers cannot write feedback. Withdrawal or revocation removes external access immediately; invitation receipts cannot restore removed access. No stage or candidate email changes occur implicitly. Portal requests support real drafts, submission, clarification, messages, and cancellation. See ADR 0005 for boundaries and deployment prerequisites.
+
+Still separate:
 - Public agency website hiring-request CTA and anti-abuse controls.
 - Organization matching and request-to-job conversion improvements.
 

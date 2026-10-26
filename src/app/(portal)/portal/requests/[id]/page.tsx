@@ -1,91 +1,108 @@
-import Link from "next/link";
-import { ArrowLeftIcon, LetterIcon } from "@solar-icons/react/linear";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Textarea } from "@/components/ui/textarea";
+import { notFound } from "next/navigation";
+import { z } from "zod";
+import { requirePortalPageContext } from "@/server/auth/portal-context";
+import {
+  getHiringRequest,
+  listRequestMessages,
+} from "@/server/services/hiring-requests";
 import { PageHeader } from "@/components/shared/page-header";
-import { StageRail } from "@/components/shared/stage-rail";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { requestStages, requests } from "@/lib/demo-data";
-
-export default async function PortalRequestDetail({
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { PortalRequestForm } from "@/components/portal/request-form";
+import { PortalRequestActions } from "@/components/portal/request-actions";
+import { AttachmentDownload } from "@/components/portal/attachment-download";
+import { ApiError } from "@/lib/api";
+export default async function PortalRequest({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const r = requests.find((x) => x.id === id) ?? requests[0];
+  if (!z.uuid().safeParse(id).success) notFound();
+  const c = await requirePortalPageContext();
+  const r = await getHiringRequest(c.supabase, id).catch((e) => {
+    if (e instanceof ApiError && e.status === 404) notFound();
+    throw e;
+  });
+  if (r.client_id !== c.clientId) notFound();
+  const messages = await listRequestMessages(c.supabase, id);
+  const editable =
+    c.role !== "reviewer" &&
+    ["draft", "clarification_requested"].includes(r.status);
   return (
-    <div>
-      <Link
-        href="/portal/requests"
-        className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground"
-      >
-        <ArrowLeftIcon aria-hidden="true" size={16} />
-        Requests
-      </Link>
-      <PageHeader
-        eyebrow={r.reference}
-        title={r.title}
-        description={`${r.department} · ${r.positions} positions · ${r.location}`}
-        actions={<StatusBadge status={r.status} />}
-      />
-      <Card className="mt-6 shadow-none">
-        <CardContent className="py-5">
-          <StageRail stages={requestStages} />
+    <div className="space-y-6">
+      <PageHeader title={r.title} actions={<StatusBadge status={r.status} />} />
+      <Card>
+        <CardContent>
+          {editable ? (
+            <PortalRequestForm clientId={c.clientId} draft={r} />
+          ) : (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {r.positions_required} openings · {r.location}
+              </p>
+              <p className="whitespace-pre-wrap text-sm leading-6">
+                {r.description}
+              </p>
+              {r.hiring_request_requirements.map((q) => (
+                <p key={q.id} className="text-sm">
+                  {q.label}
+                </p>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
-      <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_360px]">
-        <Card className="shadow-none">
-          <CardHeader className="border-b pb-4">
-            <CardTitle>Your submitted brief</CardTitle>
+      {r.hiring_request_attachments.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Attachments</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm leading-6 text-muted-foreground">
-              Build and own platform services that support rapid product growth.
-              Partner with product and infrastructure teams, mentor engineers,
-              and improve reliability.
-            </p>
-            <dl className="mt-6 grid grid-cols-2 gap-4">
-              <div>
-                <dt className="text-xs text-muted-foreground">Arrangement</dt>
-                <dd className="mt-1 font-medium">{r.workArrangement}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-muted-foreground">Positions</dt>
-                <dd className="mt-1 font-medium">{r.positions}</dd>
-              </div>
-            </dl>
+            {r.hiring_request_attachments.map((a) => (
+              <AttachmentDownload
+                key={a.id}
+                requestId={id}
+                id={a.id}
+                name={a.file_name}
+              />
+            ))}
           </CardContent>
         </Card>
-        <Card className="border-attention/25 shadow-none">
-          <CardHeader className="border-b bg-attention/[.04] pb-4">
-            <CardTitle>Clarification requested</CardTitle>
+      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Conversation</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {messages.items.length ? (
+            messages.items
+              .filter((m) => m.visibility === "client_visible")
+              .map((m) => (
+                <div key={m.id} className="rounded-lg border p-3">
+                  <p className="whitespace-pre-wrap text-sm">{m.message}</p>
+                  <time
+                    dateTime={m.created_at}
+                    className="mt-2 block text-xs text-muted-foreground"
+                  >
+                    {new Date(m.created_at).toLocaleDateString("en")}
+                  </time>
+                </div>
+              ))
+          ) : (
             <p className="text-sm text-muted-foreground">
-              Maya Bello · 22 Oct, 09:14
+              Messages from your agency will appear here.
             </p>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-lg bg-muted p-3 text-sm leading-6">
-              Please confirm the approved salary range and whether candidates
-              outside Lagos can work remotely.
-            </div>
-            <form className="mt-4">
-              <FieldGroup>
-                <Field>
-                  <FieldLabel htmlFor="response">Your response</FieldLabel>
-                  <Textarea id="response" placeholder="Reply to the agency…" />
-                </Field>
-                <Button type="submit">
-                  <LetterIcon data-icon="inline-start" aria-hidden="true" />
-                  Send and resubmit
-                </Button>
-              </FieldGroup>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+          {c.role !== "reviewer" && (
+            <PortalRequestActions
+              clientId={c.clientId}
+              requestId={id}
+              status={r.status}
+            />
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

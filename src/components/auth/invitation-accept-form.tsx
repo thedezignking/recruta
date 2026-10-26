@@ -3,26 +3,45 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckCircleIcon } from "@solar-icons/react/bold";
+import { CheckCircleIcon } from "@solar-icons/react/bold/check-circle";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { PasswordInput } from "./password-input";
+import { createClient } from "@/lib/supabase/client";
 
 export function InvitationAcceptForm({
   token,
   kind,
+  setup = false,
 }: {
   token: string;
   kind: "agency" | "client";
+  setup?: boolean;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string>();
+  const [fullName, setFullName] = useState("");
+  const [password, setPassword] = useState("");
   const returnTo = `/invitations/${encodeURIComponent(token)}?kind=${kind}`;
 
   async function accept() {
     setPending(true);
     setError(undefined);
     try {
+      if (setup) {
+        if (fullName.trim().length < 2 || password.length < 10)
+          throw new Error(
+            "Add your name and a password of at least ten characters.",
+          );
+        const { error: authError } = await createClient().auth.updateUser({
+          password,
+          data: { full_name: fullName.trim() },
+        });
+        if (authError) throw authError;
+      }
       const response = await fetch("/api/v1/invitations/accept", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -61,6 +80,30 @@ export function InvitationAcceptForm({
         {token.slice(0, 8)}••••
       </p>
       {error && <FieldError className="mt-4">{error}</FieldError>}
+      {setup && (
+        <div className="mt-5 space-y-4 text-left">
+          <Field>
+            <FieldLabel htmlFor="invited-name">Full name</FieldLabel>
+            <Input
+              id="invited-name"
+              autoComplete="name"
+              maxLength={120}
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="invited-password">Create password</FieldLabel>
+            <PasswordInput
+              id="invited-password"
+              autoComplete="new-password"
+              minLength={10}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </Field>
+        </div>
+      )}
       <Button
         className="mt-5 w-full"
         type="button"

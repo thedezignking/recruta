@@ -12,10 +12,15 @@ import {
 import {
   extractionInstructions,
   screeningInstructions,
+  legacyScreeningInstructions,
   screeningInput,
 } from "./prompts";
 
-export function createScreeningProvider(apiKey: string, model: string) {
+export function createScreeningProvider(
+  apiKey: string,
+  model: string,
+  promptVersion = "screening-v2",
+) {
   // Queue owns retries; automatic SDK retries could duplicate billable work.
   const client = new OpenAI({ apiKey, timeout: 90000, maxRetries: 0 });
 
@@ -113,7 +118,9 @@ export function createScreeningProvider(apiKey: string, model: string) {
       return parse(
         screeningOutputSchema,
         "application_screening",
-        screeningInstructions,
+        promptVersion === "screening-v1"
+          ? legacyScreeningInstructions
+          : screeningInstructions,
         [{ role: "user", content: screeningInput(snapshot, sources) }],
         operationId,
       );

@@ -8,7 +8,7 @@ export async function listNotifications(
   userId: string,
 ) {
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const [applications, requests, assignments] = await Promise.all([
+  const [applications, requests, assignments, feedback] = await Promise.all([
     supabase
       .from("applications")
       .select(
@@ -37,8 +37,23 @@ export async function listNotifications(
       .order("created_at", { ascending: false })
       .order("id")
       .limit(8),
+    supabase
+      .from("submission_feedback")
+      .select(
+        "id,created_at,candidate_submissions(application_id,candidate_name)",
+      )
+      .eq("agency_id", agencyId)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .order("id")
+      .limit(8),
   ]);
-  if (applications.error || requests.error || assignments.error)
+  if (
+    applications.error ||
+    requests.error ||
+    assignments.error ||
+    feedback.error
+  )
     throw new ApiError(
       503,
       "NOTIFICATIONS_UNAVAILABLE",
@@ -52,6 +67,16 @@ export async function listNotifications(
       : "";
   }
   const items: WorkspaceNotification[] = [
+    ...(feedback.data ?? [])
+      .filter((item) => related(item.candidate_submissions, "application_id"))
+      .map((item) => ({
+        id: `feedback:${item.id}`,
+        kind: "feedback" as const,
+        title: "Hiring manager feedback",
+        detail: related(item.candidate_submissions, "candidate_name"),
+        href: `/app/applications/${related(item.candidate_submissions, "application_id")}`,
+        occurredAt: item.created_at,
+      })),
     ...(applications.data ?? []).map((item) => ({
       id: `application:${item.id}`,
       kind: "application" as const,

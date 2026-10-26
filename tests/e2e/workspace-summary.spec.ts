@@ -68,6 +68,75 @@ test.describe("workspace summary and selection", () => {
         /Shortlisted/,
       ]);
       await expect(
+        page.getByRole("region", { name: "Start hiring" }),
+      ).toBeVisible();
+      for (const name of [
+        "Application inbox",
+        "Needs attention",
+        "Hiring requests",
+      ])
+        await expect(
+          page.getByRole("region", { name, exact: true }),
+        ).toHaveCount(0);
+      await expect(page.getByText("Up next", { exact: true })).toHaveCount(0);
+      await page.screenshot({
+        path: testInfo.outputPath("overview-first-use.png"),
+        fullPage: true,
+      });
+      const templates = await actor
+        .from("workflow_templates")
+        .select("id")
+        .eq("agency_id", first.data)
+        .limit(1);
+      if (templates.error || !templates.data?.length)
+        throw new Error("Fixture workflow missing");
+      const job = await actor.rpc("create_manual_job", {
+        p_agency_id: first.data,
+        p_client_id: null,
+        p_new_client: { name: "Synthetic Dashboard Studio" },
+        p_job: {
+          title: "Synthetic dashboard role",
+          description:
+            "A synthetic role used only for dashboard empty state checks.",
+          positionsRequired: 2,
+          workflowTemplateId: templates.data[0].id,
+          publicSlug: `dashboard-${namespace}`,
+        },
+        p_requirements: [],
+        p_questions: [],
+        p_publish: false,
+        p_request_id_header: `dashboard:${namespace}`,
+      });
+      if (job.error) throw job.error;
+      await page.reload();
+      await expect(
+        page.getByRole("link", { name: /Continue draft/ }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("region", { name: "Application inbox" }),
+      ).toHaveCount(0);
+      const published = await actor.rpc("publish_job", {
+        p_job_id: job.data,
+        p_public_slug: `dashboard-${namespace}`,
+        p_request_id_header: `dashboard-publish:${namespace}`,
+      });
+      if (published.error) throw published.error;
+      await page.reload();
+      await expect(
+        page.getByText("Waiting for applications", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Copy application link" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("region", { name: "Active jobs" }),
+      ).toContainText("Synthetic dashboard role");
+      await page.screenshot({
+        path: testInfo.outputPath("overview-published-job.png"),
+        fullPage: true,
+      });
+      expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+      await expect(
         page.getByText("Current workload", { exact: false }),
       ).toHaveCount(0);
       await page.getByRole("combobox", { name: "Summary date range" }).click();
@@ -231,6 +300,21 @@ test.describe("workspace summary and selection", () => {
         for (const agency of agencies.data ?? []) {
           if (!names.includes(agency.name) || !slugs.includes(agency.slug))
             throw new Error("Refusing non-test workspace cleanup.");
+          for (const table of [
+            "job_assignments",
+            "job_workflow_stages",
+            "job_requirements",
+            "job_application_questions",
+            "activity_events",
+            "jobs",
+            "clients",
+          ]) {
+            const removed = await admin
+              .from(table)
+              .delete()
+              .eq("agency_id", agency.id);
+            if (removed.error) throw removed.error;
+          }
           const objects = await admin.storage
             .from("agency-logos")
             .list(agency.id);

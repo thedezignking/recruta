@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError } from "@/lib/api";
+import { decodeTimeCursor, encodeTimeCursor } from "@/lib/cursor";
+import type { Database } from "@/types/database.generated";
 import {
   clarificationSchema,
   convertToJobSchema,
@@ -19,10 +21,15 @@ export async function listHiringRequests(
       "id,title,department,positions_required,location,work_arrangement,status,submitted_at,created_at,clients(name)",
     )
     .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
     .limit(26);
   if (scope.agencyId) query = query.eq("agency_id", scope.agencyId);
   if (scope.clientId) query = query.eq("client_id", scope.clientId);
-  if (cursor) query = query.lt("created_at", cursor);
+  const after = decodeTimeCursor(cursor ?? undefined);
+  if (after)
+    query = query.or(
+      `created_at.lt.${after.at},and(created_at.eq.${after.at},id.lt.${after.id})`,
+    );
   const { data, error } = await query;
   if (error)
     throw new ApiError(
@@ -38,7 +45,7 @@ export async function listHiringRequests(
   }));
   return {
     items,
-    nextCursor: data && data.length > 25 ? data[24]?.created_at : null,
+    nextCursor: data && data.length > 25 ? encodeTimeCursor(data[24]) : null,
   };
 }
 
@@ -196,13 +203,13 @@ export async function transitionRequest(
 }
 
 export async function getHiringRequest(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   requestId: string,
 ) {
   const { data, error } = await supabase
     .from("hiring_requests")
     .select(
-      "*,clients(id,name),hiring_request_requirements(id,requirement_type,label,description,sort_order),hiring_request_attachments(id,file_name,content_type,size_bytes,created_at),hiring_request_revisions(id,revision_number,created_at)",
+      "*,clients(id,name),hiring_request_requirements(id,requirement_type,label,description,sort_order),hiring_request_attachments(id,file_name,content_type,size_bytes,created_at),hiring_request_revisions!hiring_request_revisions_agency_id_hiring_request_id_fkey(id,revision_number,created_at)",
     )
     .eq("id", requestId)
     .order("sort_order", { referencedTable: "hiring_request_requirements" })

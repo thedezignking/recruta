@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getOverviewSummary, getWorkspaceOverview } from "./overview";
+import {
+  getOverviewSummary,
+  getWorkspaceOverview,
+  getOverviewJobs,
+} from "./overview";
 
 const now = new Date("2026-10-25T12:00:00Z");
 const recent = "2026-10-24T12:00:00Z";
@@ -11,6 +15,10 @@ type Row = {
   status: string;
   created_at: string;
   submitted_at: string;
+  jobs?: { id: string }[];
+  published_at?: string | null;
+  accepting_applications?: boolean;
+  public_slug?: string | null;
 };
 function row(
   id: string,
@@ -23,8 +31,18 @@ function row(
 function database(error = false) {
   const data: Record<string, Row[]> = {
     jobs: [
-      row("open", "open"),
-      row("old-open", "open", old),
+      {
+        ...row("open", "open"),
+        published_at: recent,
+        accepting_applications: true,
+        public_slug: "open",
+      },
+      {
+        ...row("old-open", "open", old),
+        published_at: old,
+        accepting_applications: true,
+        public_slug: "old-open",
+      },
       row("draft", "draft"),
       row("other", "open", recent, "other"),
     ],
@@ -40,6 +58,8 @@ function database(error = false) {
       row("active", "submitted"),
       row("old-request", "under_review", old),
       row("draft", "draft"),
+      row("waiting-client", "clarification_requested"),
+      { ...row("converted", "approved"), jobs: [{ id: "converted-job" }] },
     ],
     clients: [],
   };
@@ -56,15 +76,23 @@ function database(error = false) {
           rows = rows.filter((item) => item[key] === value);
           return query;
         },
-        in: (key: keyof Row, values: string[]) => {
+        in: (key: "status", values: string[]) => {
           rows = rows.filter((item) => values.includes(item[key]));
           return query;
         },
-        gte: (key: keyof Row, value: string) => {
+        is: (key: "jobs") => {
+          rows = rows.filter((item) => !item[key]?.length);
+          return query;
+        },
+        not: (key: keyof Row) => {
+          rows = rows.filter((item) => item[key] != null);
+          return query;
+        },
+        gte: (key: "created_at" | "submitted_at", value: string) => {
           rows = rows.filter((item) => new Date(item[key]) >= new Date(value));
           return query;
         },
-        lte: (key: keyof Row, value: string) => {
+        lte: (key: "created_at" | "submitted_at", value: string) => {
           rows = rows.filter((item) => new Date(item[key]) <= new Date(value));
           return query;
         },
@@ -88,6 +116,20 @@ function database(error = false) {
 }
 
 describe("overview summary", () => {
+  it("loads current jobs independently of the recent list and summary period", async () => {
+    const result = await getOverviewJobs(database(), "agency");
+    expect(result.totalJobs).toBe(3);
+    expect(result.publishedJobs).toBe(2);
+    expect(result.activeJobs.map((job) => job.id)).toEqual([
+      "open",
+      "old-open",
+    ]);
+    expect(result.draft?.id).toBe("draft");
+    expect(result.shareable?.id).toBe("open");
+    await expect(
+      getOverviewJobs(database(true), "agency"),
+    ).rejects.toMatchObject({ code: "OVERVIEW_LOAD_FAILED" });
+  });
   it("filters intake dates, current state and tenant without mixing new arrivals into In review", async () => {
     expect(await getOverviewSummary(database(), "agency", "7d", now)).toEqual({
       openJobs: 1,
@@ -114,6 +156,14 @@ describe("overview summary", () => {
     expect(result.requests.some((item) => item.id === "old-request")).toBe(
       true,
     );
+    expect(result.applications.some((item) => item.id === "shortlist")).toBe(
+      false,
+    );
+    expect(
+      result.requests.some(
+        (item) => item.id === "converted" || item.id === "waiting-client",
+      ),
+    ).toBe(false);
   });
   it("rejects unsupported service inputs and propagates count errors", async () => {
     await expect(

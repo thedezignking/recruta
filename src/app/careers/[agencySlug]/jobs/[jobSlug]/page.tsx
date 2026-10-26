@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { JobRoleDetails } from "@/components/jobs/job-role-details";
 import { Buildings2Icon } from "@solar-icons/react/bold";
 import {
   ArrowLeftIcon,
@@ -13,24 +14,6 @@ import { ButtonLink } from "@/components/shared/button-link";
 import { ApiError } from "@/lib/api";
 import { getPublicJob } from "@/server/services/public-jobs";
 
-function formatSalary(
-  min: number | null,
-  max: number | null,
-  currency: string | null,
-) {
-  if (min === null && max === null) return null;
-  const formatter = new Intl.NumberFormat("en", {
-    style: "currency",
-    currency: currency || "USD",
-    maximumFractionDigits: 0,
-  });
-  if (min !== null && max !== null)
-    return `${formatter.format(min)}–${formatter.format(max)}`;
-  return min !== null
-    ? `From ${formatter.format(min)}`
-    : `Up to ${formatter.format(max ?? 0)}`;
-}
-
 export default async function PublicJobPage({
   params,
 }: {
@@ -44,7 +27,6 @@ export default async function PublicJobPage({
     if (error instanceof ApiError && error.status === 404) notFound();
     throw error;
   }
-  const salary = formatSalary(job.salary_min, job.salary_max, job.currency);
 
   return (
     <main id="main-content" className="min-h-screen bg-[#f8f8fb]">
@@ -105,71 +87,23 @@ export default async function PublicJobPage({
 
       <div className="mx-auto grid max-w-6xl gap-10 px-5 py-12 sm:px-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start lg:py-16">
         <article className="min-w-0">
-          <section aria-labelledby="about-role">
-            <h2
-              id="about-role"
-              className="mt-2 text-2xl font-semibold tracking-[-0.035em]"
-            >
-              About the role
-            </h2>
-            <div className="mt-5 max-w-[70ch] whitespace-pre-wrap text-base leading-8 text-muted-foreground">
-              {job.description}
-            </div>
-          </section>
-          {job.job_requirements.length ? (
-            <section
-              aria-labelledby="requirements"
-              className="mt-12 border-t border-foreground/10 pt-10"
-            >
-              <h2
-                id="requirements"
-                className="text-2xl font-semibold tracking-[-0.035em]"
-              >
-                Requirements
-              </h2>
-              <ul className="mt-5 flex flex-col gap-4">
-                {job.job_requirements.map((requirement) => (
-                  <li
-                    key={requirement.id}
-                    className="grid grid-cols-[8px_minmax(0,1fr)] gap-3"
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="mt-2.5 size-1.5 rounded-full bg-primary"
-                    />
-                    <div>
-                      <p className="font-medium">{requirement.label}</p>
-                      {requirement.description ? (
-                        <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                          {requirement.description}
-                        </p>
-                      ) : null}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-          <section
-            aria-label="Role details"
-            className="mt-12 grid gap-4 border-t border-foreground/10 pt-10 sm:grid-cols-2"
-          >
-            <div className="rounded-xl bg-white p-5 ring-1 ring-foreground/8">
-              <p className="text-xs text-muted-foreground">
-                Working arrangement
-              </p>
-              <p className="mt-2 font-medium capitalize">
-                {job.work_arrangement?.replace("_", "-") ||
-                  "Discussed during the process"}
-              </p>
-            </div>
-            <div className="rounded-xl bg-white p-5 ring-1 ring-foreground/8">
-              <p className="text-xs text-muted-foreground">Compensation</p>
-              <p className="mt-2 font-medium">
-                {salary || "Shared during the process"}
-              </p>
-            </div>
-          </section>
+          <JobRoleDetails
+            description={job.description}
+            department={job.department}
+            location={job.location}
+            employmentType={job.employment_type}
+            workArrangement={job.work_arrangement}
+            positions={job.positions_required}
+            salaryMin={job.salary_min}
+            salaryMax={job.salary_max}
+            currency={job.currency}
+            deadline={job.deadline_at}
+            requirements={job.job_requirements.map((r) => ({
+              label: r.label,
+              description: r.description,
+              type: r.requirement_type,
+            }))}
+          />
         </article>
         <aside className="rounded-2xl bg-white p-6 ring-1 ring-foreground/8 lg:sticky lg:top-6 sm:p-8">
           <h2 className="mt-2 text-2xl font-semibold tracking-[-0.035em]">

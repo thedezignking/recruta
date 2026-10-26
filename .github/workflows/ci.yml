@@ -49,3 +49,27 @@ jobs:
       - run: supabase start -x gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
       - run: supabase db reset --local
       - run: supabase test db
+
+  authenticated-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.0
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: supabase start -x realtime,imgproxy,studio,edge-runtime,logflare,vector,supavisor > /tmp/recruta-local-stack.log
+      - run: supabase db reset --local
+      - run: npm run test:e2e:local
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: authenticated-browser-results
+          path: test-results/
+          retention-days: 7

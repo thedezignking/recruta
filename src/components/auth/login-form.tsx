@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/auth/password-input";
 
-export function LoginForm({ next = "/app" }: { next?: string }) {
+export function LoginForm({ next = "/auth/continue" }: { next?: string }) {
   const router = useRouter();
   const [error, setError] = useState<string>();
   const [pending, setPending] = useState(false);
@@ -31,7 +31,11 @@ export function LoginForm({ next = "/app" }: { next?: string }) {
         },
       );
       if (authError) throw authError;
-      router.push(next.startsWith("/") ? next : "/app");
+      router.push(
+        next.startsWith("/") && !next.startsWith("//")
+          ? next
+          : "/auth/continue",
+      );
       router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Sign in failed.");

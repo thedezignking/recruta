@@ -33,9 +33,12 @@ Do not repeat a visible “Workspace” heading below the agency identity or add
 
 1. Page title, content-width date-range select (Last 30 days by default), and New job action share the header. On small screens actions sit together below the title. Omit the greeting. Collapsed sidebar labels appear only on hover or keyboard focus and reset when the sidebar is toggled.
 2. Independent summary cards ordered Active jobs, Applications received, In review, Shortlisted. Each has its own boundary and visible space around it. The select offers All time, Last 24 hours, Last 7 days, Last 14 days, and Last 30 days. In review uses a document icon.
-3. Recent jobs with openings, applicant count, and lifecycle status.
-4. Latest applications with candidate, role, organization, status, and received date.
-5. A short list of next actions and employer hiring requests.
+3. A Needs attention section appears only for real exceptions and sits before normal work. There is no permanent Up next card or empty attention panel.
+4. An application inbox previews the five oldest received/in-review submissions, with the actual outstanding count. Hide it until a job has been published or applications exist. A published role with no applications offers its direct copy-link action; an established empty inbox says no applications are waiting for review.
+5. Active jobs show up to five currently open roles, independently of recent creation dates. An unfinished draft gets a contextual Continue draft action. A new owner's workspace gets one Start hiring panel explaining inline organization creation; an unassigned recruiter gets assignment-aware guidance. Established quiet workspaces get compact empty states.
+6. Hiring requests appear only for owners, administrators, and recruitment managers when submitted, under-review, or approved requests need agency action. Omit converted requests and those waiting for client clarification. Remove the secondary column when it has no content. Optional requests remain discoverable in navigation.
+
+The four summary cards and their existing filtering, links, order, and zero values remain unchanged, including during first use. Conditional behavior applies only below the summary row. Never infer a new agency from a summary period that has no results; use unfiltered, authorized job/application history. Loading errors must not become empty states.
 
 All production content comes from the active agency. Do not fill the dashboard with synthetic charts, growth percentages, interviews, placements, or automation counts. Empty states explain the next useful action.
 

@@ -63,7 +63,7 @@ Versions below are the installed baseline from `package.json`. Do not silently d
 
 ## 2.1 Screening Addition (October 25, 2026)
 
-OpenAI SDK `7.43.0` is installed for a disabled server-only screening backend. `screening_runs` consolidates the durable queue, source snapshots, extraction, assessment evidence, provider/version metadata, and retry state. The deployment scheduler is not provisioned. See [ADR 0001](decisions/0001-screening-execution.md) for limits, activation, privacy, and remaining scope.
+OpenAI SDK `7.43.0` is installed for server-only screening. `screening_runs` consolidates the durable queue, source snapshots, extraction, assessment evidence, provider/version metadata, and retry state. The owner activated gated GitHub Actions scheduling after a synthetic deployed pilot; workspace AI remains opt-in. See ADRs 0001 and 0004 for limits, activation, privacy, and remaining scope.
 
 ## 2.2 Planned, Not Yet Installed
 
@@ -837,6 +837,8 @@ A production release is not complete until the primary recruiter-to-application 
 
 Overview accepts a validated `range` query parameter: `all`, `24h`, `7d`, `14d`, or `30d` (default). Missing, invalid, or repeated values fall back to the last 30 days. All time remains an explicit `range=all` choice. The Server Component reads exact tenant/RLS-authorized counts through `getWorkspaceOverview`/`getOverviewSummary`. Cards are Active jobs (`status=open`), Applications received (all stages), In review (`status=in_review` only), and Shortlisted (`status=shortlisted`). Rolling UTC windows are bounded by a single server timestamp; jobs use `created_at`, applications use `submitted_at`. Counts show current state of that intake cohort, not historical transitions. Work queues remain unfiltered. A small Base UI Select island beside New job updates the URL without resetting scroll or dropping unrelated query parameters. Omit the Overview greeting. Selected navigation retains neutral surfaces and dark text with a purple solid icon. Never label application counts as unique candidates or infer placements from late-stage applications.
 
+The lower dashboard uses `getOverviewJobs` for unfiltered authorized job history, current open roles, latest draft, and eligible shareable job. This avoids filtering only the five newest jobs in memory. The inbox reads received/in-review applications oldest-first with ID tie-breaking and shows the exact outstanding count, not preview length. Request queries exclude existing job conversions through an embedded-resource anti-join; the manager-only panel excludes client-waiting clarification states. Needs attention is conditional on actual exceptions. `OverviewWork` composes first-use, draft, published-waiting, quiet, and recruiter-assignment states without changing the four summary cards. No permanent Up next or empty request/attention panels remain. The secondary column exists only when useful request content exists. Dedicated attention and request pages retain their own empty states.
+
 Agency settings supports upload, replacement, and removal of a public agency logo through `POST/DELETE /api/v1/agency/logo`. Only active owners/administrators can mutate it. Requests pin the originating agency, bound multipart bodies, and validate PNG/JPEG/WebP MIME types, signatures, and a 2 MiB limit. Immutable object paths use the existing public `agency-logos` bucket; candidate storage stays private. `update_agency_logo` verifies role, tenant path and uploaded object, checks the expected previous path under a row lock, and atomically updates metadata and audit history. Cleanup failure does not undo a successful update. A transport failure can leave an unreferenced upload for later cleanup; it must not delete an upload whose commit result is unknown.
 
 ---
@@ -867,9 +869,9 @@ Technical hardening still required:
 - Job pipeline counts and actionable overview queries.
 - Duplicate-review design.
 
-The first four items are implemented in the current slice. Duplicate identity remains protected by agency-normalized email uniqueness and one application per candidate/job; automatic merging is not implemented. Advanced duplicate review, date-range UI, pagination of the 200-job picker and older notes/history, and bulk actions remain follow-up work. Review displays the latest 100 notes/events per application. Placement is deliberately not an available review transition until opening-level placement records exist.
+The first four items are implemented. Hardening adds agency-timezone received-date filters, searchable cursor-paginated job options, independent history cursors, bounded file/signature/answer validation, private-upload recovery, payload-bound public application retries, and hashed per-job/hour abuse limits. Submitted identity is snapshotted per application; existing candidate names are preserved. Agency-normalized email uniqueness and one application per candidate/job prevent duplicates. Advanced identity merging and bulk actions remain follow-up work. Placement is not a review transition until opening-level placement records exist.
 
-Verification uses unit tests, rollback-only pgTAP fixtures, and opt-in Playwright fixtures (`RECRUTA_E2E_DATABASE=1`) against the configured staging database. Browser fixtures use their own UUID-namespaced synthetic users/workspaces, verify their namespace before cleanup, and never mutate existing agency records. Local Docker availability is required for the normal `npm run db:test`; rollback-only staging pgTAP is an alternative when Docker is unavailable.
+Verification uses unit tests, rollback-only pgTAP fixtures, and opt-in authenticated Playwright fixtures (`RECRUTA_E2E_DATABASE=1`). `npm run test:e2e:local` binds build and browser tests to the disposable local Supabase stack with providers disabled. Browser fixtures use UUID-namespaced synthetic users/workspaces and guarded cleanup. CI runs authenticated browser coverage independently of hosted secrets. Docker is required for local database replay and tests.
 
 ## Milestone 3B — AI-Assisted Screening
 
@@ -890,8 +892,9 @@ The current slice implements provider-neutral message intent in `communications`
 
 ## Milestone 4 — Hiring Manager Collaboration and Website Intake
 
-- Candidate submission/feedback data model.
-- Job-scoped external UI and authorization.
+The local collaboration implementation uses RLS-backed `candidate_submissions` and append-only `submission_feedback`, narrowly scoped transactional RPCs, explicit job grants, private résumé URLs, verified portal membership context, and invitation acceptance that cannot resurrect revoked access. Recruiters share only from assigned jobs. Portal reads expose curated job/submission data, never internal applications, notes, AI assessments, or candidate records. Invitation delivery uses generated Auth links through the SSR callback and the Resend adapter. See ADR 0005 for rollout and boundaries.
+
+Remaining website work:
 - Public hiring-request endpoint with abuse controls and organization matching.
 - Optional requestor invitation.
 

@@ -1,4 +1,10 @@
 /** Compare the browser origin to the actual HTTP host, not Next's internal hostname. */
+export function appRequestOrigin(request: Request) {
+  const url = new URL(request.url);
+  const host = request.headers.get("host");
+  if (host) url.host = host;
+  return url.origin;
+}
 export function isSameOriginRequest(request: Request) {
   const origin = request.headers.get("origin");
   if (!origin) return true;

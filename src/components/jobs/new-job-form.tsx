@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { manualJobSchema } from "@/lib/validation";
+import { JobRoleDetails } from "./job-role-details";
 import type { z } from "zod";
 
 import { CompanyPicker } from "@/components/organizations/company-picker";
@@ -94,6 +95,7 @@ export function NewJobForm({
   });
   const questions = useFieldArray({ control: form.control, name: "questions" });
   const previewTitle = useWatch({ control: form.control, name: "title" }) ?? "";
+  const preview = useWatch({ control: form.control });
   const previewQuestions =
     useWatch({ control: form.control, name: "questions" }) ?? [];
 
@@ -635,6 +637,50 @@ export function NewJobForm({
               <CardTitle>Candidate application preview</CardTitle>
             </CardHeader>
             <CardContent>
+              <div className="mb-6 border-b pb-6">
+                <p className="mb-3 text-sm font-medium">
+                  {organizationMode === "new"
+                    ? preview.newOrganization?.name
+                    : clients.find((c) => c.id === preview.clientId)?.name}
+                </p>
+                <h2 className="mb-4 text-xl font-semibold">
+                  {previewTitle.trim() || "Untitled role"}
+                </h2>
+                <JobRoleDetails
+                  description={preview.description ?? ""}
+                  department={preview.department}
+                  location={preview.location}
+                  employmentType={preview.employmentType}
+                  workArrangement={preview.workArrangement}
+                  positions={Number(preview.positionsRequired) || 1}
+                  salaryMin={
+                    preview.salaryMin === "" || preview.salaryMin == null
+                      ? null
+                      : Number(preview.salaryMin)
+                  }
+                  salaryMax={
+                    preview.salaryMax === "" || preview.salaryMax == null
+                      ? null
+                      : Number(preview.salaryMax)
+                  }
+                  currency={preview.currency}
+                  deadline={
+                    preview.deadlineAt ? String(preview.deadlineAt) : null
+                  }
+                  requirements={(preview.requirements ?? [])
+                    .filter((r) => r.label?.trim())
+                    .map((r) => ({
+                      label: r.label ?? "",
+                      description: r.description,
+                      type: r.type ?? "required",
+                    }))}
+                />
+              </div>
+              {preview.applicationFormIntro && (
+                <p className="mb-5 whitespace-pre-wrap text-sm text-muted-foreground">
+                  {preview.applicationFormIntro}
+                </p>
+              )}
               <div className="rounded-xl bg-muted/45 p-4">
                 <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
                   Applying for
@@ -689,7 +735,18 @@ export function NewJobForm({
                           key={`${question.label}-${index}`}
                           className="flex justify-between gap-4"
                         >
-                          <span>{question.label}</span>
+                          <span>
+                            {question.label}
+                            <span className="mt-1 block text-xs">
+                              {question.questionType?.replaceAll("_", " ")}
+                              {question.helpText
+                                ? ` · ${question.helpText}`
+                                : ""}
+                              {question.options?.length
+                                ? ` · ${question.options.join(", ")}`
+                                : ""}
+                            </span>
+                          </span>
                           <span className="shrink-0 text-xs">
                             {question.isRequired ? "Required" : "Optional"}
                           </span>

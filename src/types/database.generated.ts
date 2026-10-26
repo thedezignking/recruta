@@ -357,12 +357,14 @@ export type Database = {
           cover_note: string | null;
           created_at: string;
           id: string;
+          intake_payload_hash: string | null;
           job_id: string;
           owner_user_id: string | null;
           processing_status: string;
           source: string;
           status: string;
           submitted_at: string;
+          submitted_profile: NonNullable<Json>;
           updated_at: string;
         };
         ComputedFields: never;
@@ -372,12 +374,14 @@ export type Database = {
           cover_note?: string | null;
           created_at?: string;
           id?: string;
+          intake_payload_hash?: string | null;
           job_id: string;
           owner_user_id?: string | null;
           processing_status?: string;
           source?: string;
           status?: string;
           submitted_at?: string;
+          submitted_profile?: NonNullable<Json>;
           updated_at?: string;
         };
         Update: {
@@ -386,12 +390,14 @@ export type Database = {
           cover_note?: string | null;
           created_at?: string;
           id?: string;
+          intake_payload_hash?: string | null;
           job_id?: string;
           owner_user_id?: string | null;
           processing_status?: string;
           source?: string;
           status?: string;
           submitted_at?: string;
+          submitted_profile?: NonNullable<Json>;
           updated_at?: string;
         };
         Relationships: [
@@ -470,6 +476,68 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "candidates";
             referencedColumns: ["agency_id", "id"];
+          },
+        ];
+      };
+      candidate_submissions: {
+        Row: {
+          agency_id: string;
+          application_id: string;
+          candidate_name: string;
+          document_id: string | null;
+          id: string;
+          job_id: string;
+          shared_at: string;
+          shared_by: string;
+          summary: string;
+          withdrawn_at: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          agency_id: string;
+          application_id: string;
+          candidate_name: string;
+          document_id?: string | null;
+          id?: string;
+          job_id: string;
+          shared_at?: string;
+          shared_by: string;
+          summary: string;
+          withdrawn_at?: string | null;
+        };
+        Update: {
+          agency_id?: string;
+          application_id?: string;
+          candidate_name?: string;
+          document_id?: string | null;
+          id?: string;
+          job_id?: string;
+          shared_at?: string;
+          shared_by?: string;
+          summary?: string;
+          withdrawn_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "candidate_submissions_agency_id_job_id_application_id_fkey";
+            columns: ["agency_id", "job_id", "application_id"];
+            isOneToOne: false;
+            referencedRelation: "applications";
+            referencedColumns: ["agency_id", "job_id", "id"];
+          },
+          {
+            foreignKeyName: "candidate_submissions_agency_id_job_id_fkey";
+            columns: ["agency_id", "job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["agency_id", "id"];
+          },
+          {
+            foreignKeyName: "candidate_submissions_document_id_fkey";
+            columns: ["document_id"];
+            isOneToOne: false;
+            referencedRelation: "candidate_documents";
+            referencedColumns: ["id"];
           },
         ];
       };
@@ -576,6 +644,7 @@ export type Database = {
           expires_at: string;
           id: string;
           invited_by: string;
+          job_id: string | null;
           revoked_at: string | null;
           role: string;
           token_hash: string;
@@ -590,6 +659,7 @@ export type Database = {
           expires_at: string;
           id?: string;
           invited_by: string;
+          job_id?: string | null;
           revoked_at?: string | null;
           role: string;
           token_hash: string;
@@ -603,11 +673,19 @@ export type Database = {
           expires_at?: string;
           id?: string;
           invited_by?: string;
+          job_id?: string | null;
           revoked_at?: string | null;
           role?: string;
           token_hash?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "client_invitation_job_fk";
+            columns: ["client_id", "job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["client_id", "id"];
+          },
           {
             foreignKeyName: "client_invitations_agency_id_client_id_fkey";
             columns: ["agency_id", "client_id"];
@@ -1567,6 +1645,51 @@ export type Database = {
           },
         ];
       };
+      submission_feedback: {
+        Row: {
+          agency_id: string;
+          author_user_id: string;
+          comment: string;
+          concerns: string;
+          created_at: string;
+          id: string;
+          recommendation: string;
+          strengths: string;
+          submission_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          agency_id: string;
+          author_user_id: string;
+          comment: string;
+          concerns?: string;
+          created_at?: string;
+          id: string;
+          recommendation: string;
+          strengths?: string;
+          submission_id: string;
+        };
+        Update: {
+          agency_id?: string;
+          author_user_id?: string;
+          comment?: string;
+          concerns?: string;
+          created_at?: string;
+          id?: string;
+          recommendation?: string;
+          strengths?: string;
+          submission_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "submission_feedback_agency_id_submission_id_fkey";
+            columns: ["agency_id", "submission_id"];
+            isOneToOne: false;
+            referencedRelation: "candidate_submissions";
+            referencedColumns: ["agency_id", "id"];
+          },
+        ];
+      };
       user_profiles: {
         Row: {
           avatar_path: string | null;
@@ -1952,6 +2075,26 @@ export type Database = {
         };
         Returns: boolean;
       };
+      job_collaborator_directory: {
+        Args: { p_agency_id: string; p_job_id: string };
+        Returns: {
+          email: string;
+          has_access: boolean;
+          name: string;
+          role: string;
+          user_id: string;
+        }[];
+      };
+      manage_job_collaborator: {
+        Args: {
+          p_action: string;
+          p_agency_id: string;
+          p_job_id: string;
+          p_request_id: string;
+          p_user_id: string;
+        };
+        Returns: undefined;
+      };
       onboard_agency: {
         Args: {
           p_contact_email: string;
@@ -1963,6 +2106,16 @@ export type Database = {
           p_timezone: string;
         };
         Returns: string;
+      };
+      portal_memberships: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          agency_id: string;
+          agency_name: string;
+          client_id: string;
+          client_name: string;
+          role: string;
+        }[];
       };
       prepare_application_intake: {
         Args: { p_id: string; p_lease: string; p_model: string };
@@ -2081,6 +2234,10 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      reserve_public_intake: {
+        Args: { p_fingerprint: string; p_job_id: string };
+        Returns: boolean;
+      };
       retry_application_intake: {
         Args: { p_agency_id: string; p_application_id: string };
         Returns: undefined;
@@ -2104,12 +2261,14 @@ export type Database = {
           cover_note: string | null;
           created_at: string;
           id: string;
+          intake_payload_hash: string | null;
           job_id: string;
           owner_user_id: string | null;
           processing_status: string;
           source: string;
           status: string;
           submitted_at: string;
+          submitted_profile: NonNullable<Json>;
           updated_at: string;
         };
         SetofOptions: {
@@ -2119,6 +2278,15 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      save_client_request: {
+        Args: {
+          p_client_id: string;
+          p_expected_updated_at?: string;
+          p_id: string;
+          p_payload: Json;
+        };
+        Returns: Json;
+      };
       save_processing_settings: {
         Args: { p_agency_id: string; p_request_id: string; p_settings: Json };
         Returns: undefined;
@@ -2126,6 +2294,27 @@ export type Database = {
       screening_evidence_context: {
         Args: { p_agency_id: string; p_application_id: string };
         Returns: Json;
+      };
+      share_candidate: {
+        Args: {
+          p_agency_id: string;
+          p_application_id: string;
+          p_document_id?: string;
+          p_expected_submission_id?: string;
+          p_request_id: string;
+          p_summary: string;
+          p_withdraw: boolean;
+        };
+        Returns: string;
+      };
+      submit_candidate_feedback: {
+        Args: {
+          p_feedback_id: string;
+          p_payload: Json;
+          p_request_id: string;
+          p_submission_id: string;
+        };
+        Returns: string;
       };
       submit_hiring_request: {
         Args: { p_request_id: string; p_request_id_header?: string };

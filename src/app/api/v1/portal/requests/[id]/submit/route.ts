@@ -1,6 +1,9 @@
-import { apiError, ok, requestId } from "@/lib/api";
+import { apiError, ok, requestId, ApiError } from "@/lib/api";
 import { requireClientContext } from "@/server/auth/context";
-import { submitHiringRequest } from "@/server/services/hiring-requests";
+import {
+  submitHiringRequest,
+  getHiringRequest,
+} from "@/server/services/hiring-requests";
 import { notifyHiringRequest } from "@/server/services/notifications";
 
 export async function POST(
@@ -10,10 +13,12 @@ export async function POST(
   const id = requestId(request.headers);
   try {
     const route = await params;
-    const { supabase } = await requireClientContext(request, [
+    const { supabase, clientId } = await requireClientContext(request, [
       "client_administrator",
       "hiring_manager",
     ]);
+    if ((await getHiringRequest(supabase, route.id)).client_id !== clientId)
+      throw new ApiError(404, "REQUEST_NOT_FOUND", "Request not found.");
     const hiringRequest = await submitHiringRequest(supabase, route.id, id);
     const delivery = await notifyHiringRequest(
       supabase,

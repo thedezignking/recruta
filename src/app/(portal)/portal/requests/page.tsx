@@ -1,40 +1,68 @@
-import Link from "next/link";
-import { AddIcon } from "@solar-icons/react/linear";
-import { ButtonLink } from "@/components/shared/button-link";
-import { Card, CardContent } from "@/components/ui/card";
+import { requirePortalPageContext } from "@/server/auth/portal-context";
+import { listHiringRequests } from "@/server/services/hiring-requests";
 import { PageHeader } from "@/components/shared/page-header";
+import { ButtonLink } from "@/components/shared/button-link";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { requests } from "@/lib/demo-data";
-
-export default function PortalRequestsPage() {
+import { Card, CardContent } from "@/components/ui/card";
+export default async function PortalRequests({
+  searchParams,
+}: {
+  searchParams: Promise<{ cursor?: string }>;
+}) {
+  const c = await requirePortalPageContext();
+  const result = await listHiringRequests(
+    c.supabase,
+    { clientId: c.clientId },
+    (await searchParams).cursor,
+  );
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title="Hiring requests"
         actions={
-          <ButtonLink href="/portal/requests/new">
-            <AddIcon data-icon="inline-start" aria-hidden="true" />
-            New request
-          </ButtonLink>
+          c.role !== "reviewer" ? (
+            <ButtonLink href="/portal/requests/new">New request</ButtonLink>
+          ) : undefined
         }
       />
-      <div className="mt-6 grid gap-3">
-        {requests.slice(0, 3).map((r) => (
-          <Link key={r.id} href={`/portal/requests/${r.id}`}>
-            <Card className="shadow-none transition-colors hover:border-primary/30">
-              <CardContent className="flex flex-col gap-3 px-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="font-medium">{r.title}</p>
-                  <p className="mt-1 font-mono text-xs text-muted-foreground">
-                    {r.reference} · {r.positions} positions · {r.location}
-                  </p>
-                </div>
-                <StatusBadge status={r.status} />
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+      {result.items.length ? (
+        result.items.map((r) => (
+          <Card key={r.id}>
+            <CardContent className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <ButtonLink
+                  href={`/portal/requests/${r.id}`}
+                  variant="link"
+                  className="px-0"
+                >
+                  {r.title}
+                </ButtonLink>
+                <p className="text-xs text-muted-foreground">
+                  {r.positions_required} openings ·{" "}
+                  {r.location || "Location to be agreed"}
+                </p>
+              </div>
+              <StatusBadge status={r.status} />
+            </CardContent>
+          </Card>
+        ))
+      ) : (
+        <Card>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              No hiring requests yet.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+      {result.nextCursor && (
+        <ButtonLink
+          variant="outline"
+          href={`/portal/requests?cursor=${encodeURIComponent(result.nextCursor)}`}
+        >
+          Older requests
+        </ButtonLink>
+      )}
     </div>
   );
 }

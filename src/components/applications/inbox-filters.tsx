@@ -8,6 +8,8 @@ import {
   type ApplicationFilters,
 } from "@/lib/applicant-operations";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { JobFilter } from "./job-filter";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import {
   InputGroup,
@@ -61,9 +63,11 @@ function FilterSelect({
 export function InboxFilters({
   filters,
   jobs,
+  agencyId,
 }: {
   filters: ApplicationFilters;
   jobs: { id: string; title: string }[];
+  agencyId: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -104,14 +108,11 @@ export function InboxFilters({
             />
           </InputGroup>
         </Field>
-        <FilterSelect
-          label="Job"
-          value={filters.jobId ?? "all"}
+        <JobFilter
+          agencyId={agencyId}
+          value={filters.jobId}
+          label={jobs.find((j) => j.id === filters.jobId)?.title}
           onChange={(value) => navigate({ jobId: value })}
-          items={[
-            { value: "all", label: "All jobs" },
-            ...jobs.map((job) => ({ value: job.id, label: job.title })),
-          ]}
         />
         <FilterSelect
           label="Application stage"
@@ -137,6 +138,30 @@ export function InboxFilters({
             { value: "unassigned", label: "Unassigned" },
           ]}
         />
+        <Field className="w-full sm:w-auto">
+          <FieldLabel htmlFor="intake-from" className="sr-only">
+            Received from
+          </FieldLabel>
+          <Input
+            id="intake-from"
+            type="date"
+            aria-label="Received from"
+            value={filters.submittedFrom ?? ""}
+            onChange={(e) => navigate({ submittedFrom: e.target.value })}
+          />
+        </Field>
+        <Field className="w-full sm:w-auto">
+          <FieldLabel htmlFor="intake-to" className="sr-only">
+            Received through
+          </FieldLabel>
+          <Input
+            id="intake-to"
+            type="date"
+            aria-label="Received through"
+            value={filters.submittedTo ?? ""}
+            onChange={(e) => navigate({ submittedTo: e.target.value })}
+          />
+        </Field>
         <Button type="submit" variant="outline" disabled={pending}>
           {pending ? "Searching…" : "Search"}
         </Button>

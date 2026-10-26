@@ -20,6 +20,8 @@ import {
   listApplications,
 } from "@/server/services/applications";
 import { getJob } from "@/server/services/jobs";
+import { getJobCollaborators } from "@/server/services/collaboration";
+import { JobCollaborators } from "@/components/collaboration/job-collaborators";
 
 export default async function JobPage({
   params,
@@ -31,6 +33,19 @@ export default async function JobPage({
   if (!context) redirect("/login");
   const job = await getJob(context.supabase, id).catch(() => null);
   if (!job) notFound();
+  const canCollaborate =
+    context.role !== "recruiter" ||
+    job.job_assignments.some(
+      (a: { user_id: string }) => a.user_id === context.user.id,
+    );
+  const collaborators = canCollaborate
+    ? await getJobCollaborators(
+        context.supabase,
+        context.agencyId,
+        id,
+        job.client_id,
+      )
+    : null;
   const [applicationResult, agencyResult, pipeline] = await Promise.all([
     listApplications(context.supabase, context.agencyId, { jobId: id }),
     context.supabase
@@ -266,6 +281,14 @@ export default async function JobPage({
           </Card>
         </div>
       </div>
+      {collaborators && (
+        <JobCollaborators
+          agencyId={context.agencyId}
+          jobId={id}
+          clientId={job.client_id}
+          data={collaborators}
+        />
+      )}
     </div>
   );
 }
