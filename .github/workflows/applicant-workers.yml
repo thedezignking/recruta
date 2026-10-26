@@ -1,0 +1,31 @@
+name: Applicant workers
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/5 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: recruta-applicant-workers
+  cancel-in-progress: false
+
+jobs:
+  process:
+    if: vars.RECRUTA_WORKERS_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Process bounded applicant queues
+        run: node scripts/process-applicants.mjs
+        env:
+          RECRUTA_WORKER_BASE_URL: ${{ vars.RECRUTA_WORKER_BASE_URL }}
+          RECRUTA_WORKER_MAX_PER_TARGET: "2"
+          AUTOMATION_WORKER_SECRET: ${{ secrets.AUTOMATION_WORKER_SECRET }}
+          SCREENING_WORKER_SECRET: ${{ secrets.SCREENING_WORKER_SECRET }}

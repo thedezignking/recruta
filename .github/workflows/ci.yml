@@ -19,10 +19,16 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test
+      - run: npm run test:workers
       - run: npm run build
 
   browser:
     runs-on: ubuntu-latest
+    env:
+      # Anonymous route checks need a client configuration, not a live project.
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: synthetic-ci-publishable-key
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

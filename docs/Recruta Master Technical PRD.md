@@ -873,7 +873,7 @@ Verification uses unit tests, rollback-only pgTAP fixtures, and opt-in Playwrigh
 
 ## Milestone 3B — AI-Assisted Screening
 
-Backend and review UI implemented: strict schemas/prompts, OpenAI adapter, quote/criterion validation, durable queue, idempotent request/history, extracted text and evidence UI, append-only corrections, retained extraction checkpoints, workspace activation settings, and opted-in automatic intake preparation. After initial fake-provider testing, owner-authorized GPT-6 Luna evaluations passed six screening cases and simple PDF/DOCX extraction-to-evidence smoke checks. App-level AI and automatic intake remain off pending pilot activation. Broader model/document evaluation, provider activation, deployed scheduling, and operational monitoring still require operator setup; do not imply live app processing is enabled.
+Backend and review UI implemented: strict schemas/prompts, OpenAI adapter, quote/criterion validation, durable queue, idempotent history, evidence and extracted text, append-only corrections, extraction checkpoints, and workspace opt-in. GPT-6 Luna passed six screening cases, simple PDF/DOCX checks, and the deployed pilot with a real Delivered callback. The owner configured the deployed workers and approved the two encrypted credentials for gated GitHub Actions scheduling (ADR 0004). Workspace AI remains opt-in. Broader model/document evaluations and real-data privacy approval remain outstanding; scheduled runs and queue backlog require monitoring.
 
 - Background execution decision and outbox.
 - Extraction/assessment schemas.

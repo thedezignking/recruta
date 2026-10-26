@@ -1,6 +1,6 @@
 # ADR 0001 — Screening execution and provider boundary
 
-Date: October 25, 2026. Updated October 26. Status: backend and recruiter review UI implemented; app processing disabled pending pilot activation. Initial fake-provider testing was followed by owner-authorized live synthetic evaluation of GPT-6 Luna. See [ADR 0002](0002-applicant-processing-and-communication.md) for current activation state, intake, correction UI, extraction checkpoints, and email execution.
+Date: October 25, 2026. Updated October 26. Status: backend and recruiter UI implemented; owner-authorized GPT-6 Luna synthetic evaluations and the deployed pilot passed. Workspace screening remains opt-in. See [ADR 0002](0002-applicant-processing-and-communication.md) and [ADR 0004](0004-applicant-worker-scheduling.md) for activation, intake, corrections, checkpoints, email, and scheduling.
 
 ## Decision
 

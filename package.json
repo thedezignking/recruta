@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:workers": "node --test scripts/process-applicants.test.mjs",
     "test:screening:live": "node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run src/server/screening/screening.live.test.ts",
     "db:start": "supabase start -x gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor",
     "db:reset": "supabase db reset --local",

@@ -644,7 +644,7 @@ Still to complete in 3A hardening: possible-duplicate review/merge rules, date-r
 
 ### 3B: AI-assisted screening
 
-The screening backend and recruiter evidence UI are implemented with per-agency opt-in, automatic intake preparation, extraction checkpoints, retry state, and separate append-only corrections. Following initial fake-provider verification, the owner authorized live synthetic evaluation: GPT-6 Luna passed six screening cases and simple PDF/DOCX extraction-to-evidence smoke checks. App-level AI and automatic intake remain disabled pending pilot activation. Broader human-reviewed extraction/quality evaluation, real-data provider privacy approval, and deployment scheduling remain prerequisites for live operation. See `decisions/0001-screening-execution.md` and `decisions/0002-applicant-processing-and-communication.md`. Screening never changes stages or sends email.
+The screening backend and evidence UI are implemented with per-agency opt-in, automatic intake preparation, extraction checkpoints, retries, and append-only corrections. Owner-authorized GPT-6 Luna evaluations passed six screening cases, simple PDF/DOCX checks, and the deployed application-to-screening-to-email pilot, including a real Delivered callback. Deployed workers are configured; workspace screening remains opt-in. Broader human-reviewed quality evaluation and real-data privacy approval remain prerequisites for real candidate operation. ADRs 0001, 0002, and 0004 describe execution and gated scheduling. Screening never changes stages or sends email.
 
 - Document extraction pipeline.
 - Structured candidate facts and evidence references.
