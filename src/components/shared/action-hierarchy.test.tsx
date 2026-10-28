@@ -8,6 +8,28 @@ vi.mock("@/server/auth/context", () => ({
 }));
 vi.mock("@/server/services/jobs", () => ({
   listJobs: vi.fn().mockResolvedValue({ items: [] }),
+  getJobsListSummary: vi.fn().mockResolvedValue({
+    all: 0,
+    open: 0,
+    draft: 0,
+    onHold: 0,
+    filled: 0,
+    closingSoon: 0,
+  }),
+  getJobsActivity: vi.fn().mockResolvedValue({
+    periods: [],
+    series: { open: [], positions: [], nearDeadline: [], filled: [] },
+    previous: { open: 0, positions: 0, nearDeadline: 0, filled: 0 },
+    counts: { open: 0, positions: 0, nearDeadline: 0, filled: 0 },
+    comparisonLabel: "previous 30 days",
+  }),
+  getJobReviewProgress: vi.fn().mockResolvedValue(new Map()),
+}));
+vi.mock("@/server/services/applications", () => ({
+  getJobPipeline: vi.fn().mockResolvedValue([]),
+}));
+vi.mock("@/server/services/clients", () => ({
+  listClients: vi.fn().mockResolvedValue({ items: [] }),
 }));
 vi.mock("@/server/services/workspace", () => ({
   listAgencyMembers: vi.fn().mockResolvedValue({ items: [] }),
@@ -50,7 +72,7 @@ function expectOutline(element: HTMLElement) {
 
 describe("action hierarchy", () => {
   it("keeps New job primary and the Jobs empty-state action outline", async () => {
-    render(await JobsPage());
+    render(await JobsPage({ searchParams: Promise.resolve({}) }));
     expect(screen.getByRole("link", { name: "New job" }).className).toContain(
       "bg-primary",
     );
@@ -59,6 +81,8 @@ describe("action hierarchy", () => {
   it("keeps the Overview empty-state action outline", () => {
     render(
       <WorkspaceOverview
+        agencyId="agency"
+        userId="user"
         timezone="Africa/Lagos"
         work={{
           totalJobs: 0,
@@ -115,11 +139,12 @@ describe("action hierarchy", () => {
       cards[2].querySelector(".solar-document-text-linear"),
     ).not.toBeNull();
     expect(
+      screen.getByRole("heading", { name: "Hiring activity" }),
+    ).toBeTruthy();
+    expect(
       screen
-        .getByRole("combobox", { name: "Summary date range" })
-        .parentElement?.parentElement?.contains(
-          screen.getByRole("link", { name: "New job" }),
-        ),
+        .getByRole("region", { name: "Recruitment summary" })
+        .contains(screen.getByRole("group", { name: "Summary date range" })),
     ).toBe(true);
     expect(screen.queryByText("Applications to review")).toBeNull();
   });

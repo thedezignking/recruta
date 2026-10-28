@@ -5,20 +5,14 @@ import { CaseMinimalisticIcon } from "@solar-icons/react/linear/case-minimalisti
 import { CaseRoundIcon } from "@solar-icons/react/bold/case-round";
 import { ButtonLink } from "@/components/shared/button-link";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { CompanyLogo } from "@/components/organizations/company-picker";
+import { companyProfileSchema } from "@/lib/organization";
 import { CopyApplicationLink } from "@/components/jobs/copy-application-link";
-import {
-  AttentionQueue,
-  type AttentionItem,
-} from "@/components/applications/attention-queue";
+import type { AttentionItem } from "@/components/applications/attention-queue";
+import { AttentionBanner } from "@/components/applications/attention-banner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardAction,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
   Empty,
   EmptyHeader,
@@ -47,6 +41,9 @@ export type OverviewWorkProps = {
   role: AgencyRole;
   timezone: string;
   applicationBaseUrl: string;
+  reviewProgress?: Map<string, number>;
+  agencyId: string;
+  userId: string;
 };
 
 function initials(name: string) {
@@ -66,51 +63,54 @@ export function OverviewWork({
   role,
   timezone,
   applicationBaseUrl,
+  reviewProgress,
+  agencyId,
+  userId,
 }: OverviewWorkProps) {
   const requests = role === "recruiter" ? [] : overview.requests;
   const firstJob = work.totalJobs === 0 && role !== "recruiter";
   const showInbox =
     work.publishedJobs > 0 || overview.counts.applicationsReceived > 0;
   return (
-    <div className="mt-7 flex flex-col gap-6">
+    <div className="mt-5 flex flex-col gap-4">
       {attention.length > 0 && (
         <section aria-label="Needs attention">
-          <AttentionQueue items={attention} limit={4} />
+          <AttentionBanner
+            items={attention}
+            agencyId={agencyId}
+            userId={userId}
+          />
         </section>
       )}
       <div
-        className={`grid items-start gap-6 ${requests.length ? "xl:grid-cols-[minmax(0,1fr)_320px]" : "grid-cols-1"}`}
+        className={`grid items-start gap-4 ${requests.length ? "xl:grid-cols-[minmax(0,1fr)_320px]" : "grid-cols-1"}`}
       >
-        <div className="flex min-w-0 flex-col gap-6">
+        <div className="flex min-w-0 flex-col gap-4">
           {showInbox && (
             <section aria-label="Application inbox">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <CardTitle>Application inbox</CardTitle>
-                    {overview.counts.applicationsToReview > 0 && (
-                      <Badge
-                        variant="secondary"
-                        aria-label={`${overview.counts.applicationsToReview} applications in the inbox`}
-                      >
-                        {overview.counts.applicationsToReview}
-                      </Badge>
-                    )}
-                  </div>
-                  <CardAction>
-                    <ButtonLink
-                      href="/app/applications"
-                      variant="ghost"
-                      size="sm"
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-[13px] font-semibold tracking-[-0.01em]">
+                    Application inbox
+                  </h2>
+                  {overview.counts.applicationsToReview > 0 && (
+                    <Badge
+                      variant="secondary"
+                      aria-label={`${overview.counts.applicationsToReview} applications in the inbox`}
                     >
-                      Open inbox
-                      <AltArrowRightIcon
-                        data-icon="inline-end"
-                        aria-hidden="true"
-                      />
-                    </ButtonLink>
-                  </CardAction>
-                </CardHeader>
+                      {overview.counts.applicationsToReview}
+                    </Badge>
+                  )}
+                </div>
+                <ButtonLink href="/app/applications" variant="ghost" size="sm">
+                  Open inbox
+                  <AltArrowRightIcon
+                    data-icon="inline-end"
+                    aria-hidden="true"
+                  />
+                </ButtonLink>
+              </div>
+              <Card className="gap-0 py-0">
                 <CardContent className="px-0">
                   {overview.applications.length > 0 ? (
                     <div className="divide-y divide-border">
@@ -118,7 +118,7 @@ export function OverviewWork({
                         <Link
                           key={application.id}
                           href={`/app/applications/${application.id}`}
-                          className="flex flex-wrap items-center gap-3 px-5 py-4 hover:bg-muted/60"
+                          className="flex flex-wrap items-center gap-3 px-4 py-3 hover:bg-muted/60"
                         >
                           <Avatar>
                             <AvatarFallback>
@@ -183,31 +183,38 @@ export function OverviewWork({
             </section>
           )}
           <section aria-label={firstJob ? "Start hiring" : "Active jobs"}>
-            <Card>
-              <CardHeader>
-                <CardTitle>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <h2 className="text-[13px] font-semibold tracking-[-0.01em]">
                   {firstJob ? "Start hiring" : "Active jobs"}
-                </CardTitle>
-                {work.totalJobs > 0 && (
-                  <CardAction>
-                    <ButtonLink href="/app/jobs" variant="ghost" size="sm">
-                      View jobs
-                      <AltArrowRightIcon
-                        data-icon="inline-end"
-                        aria-hidden="true"
-                      />
-                    </ButtonLink>
-                  </CardAction>
+                </h2>
+                {overview.counts.openJobs > 0 && (
+                  <Badge
+                    variant="secondary"
+                    aria-label={`${overview.counts.openJobs} active jobs`}
+                  >
+                    {overview.counts.openJobs}
+                  </Badge>
                 )}
-              </CardHeader>
+              </div>
+              {work.totalJobs > 0 && (
+                <ButtonLink href="/app/jobs" variant="outline" size="sm">
+                  View all
+                </ButtonLink>
+              )}
+            </div>
+            <Card className="gap-0 py-0">
               <CardContent className="px-0">
                 {work.activeJobs.length > 0 ? (
-                  <Table>
+                  <Table className="min-w-[820px] [&_td]:px-4 [&_td]:py-2.5 [&_th]:px-4">
                     <TableHeader>
                       <TableRow>
                         <TableHead>Job</TableHead>
-                        <TableHead>Openings</TableHead>
+                        <TableHead>Organization</TableHead>
                         <TableHead>Applicants</TableHead>
+                        <TableHead>Review progress</TableHead>
+                        <TableHead>Openings</TableHead>
+                        <TableHead>Deadline</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>
                           <span className="sr-only">Open job</span>
@@ -216,33 +223,88 @@ export function OverviewWork({
                     </TableHeader>
                     <TableBody>
                       {work.activeJobs.map((job) => (
-                        <TableRow key={job.id}>
+                        <TableRow key={job.id} className="hover:bg-[#F8F9FC]">
                           <TableCell>
                             <Link
                               href={`/app/jobs/${job.id}`}
                               className="group flex items-center gap-3"
                             >
-                              <span className="grid size-8 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground">
+                              <span className="grid size-8 shrink-0 place-items-center rounded-md border border-border bg-[#F8F8F8] text-primary">
                                 <CaseMinimalisticIcon
                                   aria-hidden="true"
                                   size={18}
                                 />
                               </span>
-                              <div>
+                              <div className="min-w-0">
                                 <p className="font-medium group-hover:text-primary">
                                   {job.title}
                                 </p>
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                  {job.clients?.name ?? "Organization"}
+                                <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                                  {[job.employment_type, job.location]
+                                    .filter(Boolean)
+                                    .join(" · ") || "Role details not set"}
                                 </p>
                               </div>
                             </Link>
                           </TableCell>
+                          <TableCell>
+                            <span className="flex items-center gap-2 text-xs font-medium">
+                              <span className="grid size-7 shrink-0 place-items-center overflow-hidden rounded-md border border-border bg-white text-xs font-semibold text-primary">
+                                {companyProfileSchema.safeParse(
+                                  job.clients?.company_profile,
+                                ).data?.logoUrl ? (
+                                  <CompanyLogo
+                                    src={
+                                      companyProfileSchema.parse(
+                                        job.clients?.company_profile,
+                                      ).logoUrl!
+                                    }
+                                  />
+                                ) : (
+                                  (job.clients?.name
+                                    ?.slice(0, 1)
+                                    .toUpperCase() ?? "?")
+                                )}
+                              </span>
+                              <span className="max-w-32 truncate">
+                                {job.clients?.name ?? "—"}
+                              </span>
+                            </span>
+                          </TableCell>
+                          <TableCell className="font-medium tabular-nums">
+                            {job.applications?.[0]?.count ?? 0}
+                          </TableCell>
+                          <TableCell>
+                            <div
+                              className="flex items-center gap-2"
+                              aria-label={`${reviewProgress?.get(job.id) ?? 0} of ${job.applications?.[0]?.count ?? 0} applications reviewed`}
+                            >
+                              <span className="h-1.5 w-16 overflow-hidden rounded-full bg-[#E8E8E8]">
+                                <span
+                                  className="block h-full rounded-full bg-primary"
+                                  style={{
+                                    width: `${(job.applications?.[0]?.count ?? 0) > 0 ? Math.min(100, ((reviewProgress?.get(job.id) ?? 0) / (job.applications?.[0]?.count ?? 1)) * 100) : 0}%`,
+                                  }}
+                                />
+                              </span>
+                              <span className="text-[11px] tabular-nums text-muted-foreground">
+                                {reviewProgress?.get(job.id) ?? 0}/
+                                {job.applications?.[0]?.count ?? 0}
+                              </span>
+                            </div>
+                          </TableCell>
                           <TableCell className="tabular-nums">
                             {job.positions_required}
                           </TableCell>
-                          <TableCell className="tabular-nums">
-                            {job.applications?.[0]?.count ?? 0}
+                          <TableCell className="text-xs">
+                            {job.deadline_at
+                              ? new Intl.DateTimeFormat("en", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                  timeZone: timezone,
+                                }).format(new Date(job.deadline_at))
+                              : "—"}
                           </TableCell>
                           <TableCell>
                             <StatusBadge status={job.status} />
@@ -274,7 +336,7 @@ export function OverviewWork({
                         job.
                       </EmptyDescription>
                     </EmptyHeader>
-                    <ButtonLink href="/app/jobs/new" variant="outline">
+                    <ButtonLink href="/app?new=1" variant="outline">
                       <AddIcon data-icon="inline-start" aria-hidden="true" />
                       Create job
                     </ButtonLink>

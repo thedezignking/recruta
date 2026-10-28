@@ -4,6 +4,7 @@ import {
   getOverviewSummary,
   getWorkspaceOverview,
   getOverviewJobs,
+  getOverviewTrends,
 } from "./overview";
 
 const now = new Date("2026-10-25T12:00:00Z");
@@ -96,7 +97,16 @@ function database(error = false) {
           rows = rows.filter((item) => new Date(item[key]) <= new Date(value));
           return query;
         },
-        order: () => query,
+        lt: (key: "created_at" | "submitted_at", value: string) => {
+          rows = rows.filter((item) => new Date(item[key]) < new Date(value));
+          return query;
+        },
+        order: (key: "created_at" | "submitted_at") => {
+          rows.sort(
+            (left, right) => Date.parse(left[key]) - Date.parse(right[key]),
+          );
+          return query;
+        },
         limit: (limit: number) => {
           rows = rows.slice(0, limit);
           return query;
@@ -145,6 +155,26 @@ describe("overview summary", () => {
       shortlisted: 1,
       applicationsReceived: 5,
     });
+  });
+  it("includes the full intake history in All-time charts", async () => {
+    const trends = await getOverviewTrends(database(), "agency", "all", now);
+    expect(trends.periodLabel).toBe("All time");
+    expect(trends.openJobs.reduce((sum, value) => sum + value, 0)).toBe(2);
+    expect(
+      trends.applicationsReceived.reduce((sum, value) => sum + value, 0),
+    ).toBe(5);
+    expect(trends.inReview.reduce((sum, value) => sum + value, 0)).toBe(2);
+    expect(trends.shortlisted.reduce((sum, value) => sum + value, 0)).toBe(1);
+    expect(trends.previous).toEqual({
+      openJobs: 1,
+      applicationsReceived: 3,
+      inReview: 1,
+      shortlisted: 1,
+    });
+    expect(trends.comparisonLabel).toBe("last 30 days");
+    await expect(
+      getOverviewTrends(database(true), "agency", "7d", now),
+    ).rejects.toMatchObject({ code: "OVERVIEW_LOAD_FAILED" });
   });
   it("keeps older outstanding work in the queues when summaries are filtered", async () => {
     const result = await getWorkspaceOverview(database(), "agency", "7d", now);

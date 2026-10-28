@@ -26,12 +26,14 @@ describe("workspace selector", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Switch workspace" }));
-    expect(
-      await screen.findByRole("menuitem", {
-        name: "Example Talent, current workspace",
-      }),
-    ).toBeTruthy();
+    const current = await screen.findByRole("menuitem", {
+      name: "Example Talent, current workspace",
+    });
+    expect(current.className).toContain("bg-muted/70");
+    expect(current.querySelector(".solar-check-linear")).not.toBeNull();
+    expect(current.textContent).toContain("owner");
     expect(screen.getByRole("menuitem", { name: "Other Agency" })).toBeTruthy();
+    expect(screen.queryByRole("menuitem", { name: "My account" })).toBeNull();
     expect(
       screen
         .getByRole("menuitem", { name: "Create workspace" })

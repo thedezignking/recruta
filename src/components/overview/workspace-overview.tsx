@@ -1,41 +1,49 @@
-import Link from "next/link";
 import { AddIcon } from "@solar-icons/react/linear/add";
-import { AltArrowRightIcon } from "@solar-icons/react/linear/alt-arrow-right";
 import { CaseMinimalisticIcon as CaseRoundIcon } from "@solar-icons/react/linear/case-minimalistic";
 import { ClipboardCheckIcon } from "@solar-icons/react/linear/clipboard-check";
 import { InboxIcon } from "@solar-icons/react/linear/inbox";
 import { DocumentTextIcon } from "@solar-icons/react/linear/document-text";
 import { ButtonLink } from "@/components/shared/button-link";
 import { PageHeader } from "@/components/shared/page-header";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import type {
   getWorkspaceOverview,
   getOverviewJobs,
+  getOverviewTrends,
 } from "@/server/services/overview";
 import { OverviewRangeFilter } from "./overview-range-filter";
+import { MetricStrip } from "./metric-strip";
 import type { OverviewRange } from "@/lib/overview-range";
 import type { AttentionItem } from "@/components/applications/attention-queue";
 import type { AgencyRole } from "@/types/domain";
 import { OverviewWork } from "./overview-work";
 
 type Overview = Awaited<ReturnType<typeof getWorkspaceOverview>>;
+type Trends = Awaited<ReturnType<typeof getOverviewTrends>>;
 
 export function WorkspaceOverview({
   overview,
+  trends,
   work,
   role,
   applicationBaseUrl,
   timezone,
   range = "30d",
   attention = [],
+  reviewProgress,
+  agencyId,
+  userId,
 }: {
   overview: Overview;
+  trends?: Trends | null;
   work: Awaited<ReturnType<typeof getOverviewJobs>>;
   role: AgencyRole;
   applicationBaseUrl: string;
   timezone: string;
   range?: OverviewRange;
   attention?: AttentionItem[];
+  reviewProgress?: Map<string, number>;
+  agencyId: string;
+  userId: string;
 }) {
   const metrics = [
     {
@@ -43,82 +51,80 @@ export function WorkspaceOverview({
       value: overview.summaryCounts.openJobs,
       icon: CaseRoundIcon,
       href: "/app/jobs",
+      trend: trends?.openJobs,
+      activityLabel: "Open jobs created",
+      previous: trends?.previous.openJobs,
+      color: "text-[#cf7029]",
+      iconSurface: "bg-[#d57936]",
     },
     {
       label: "Applications received",
       value: overview.summaryCounts.applicationsReceived,
       icon: InboxIcon,
       href: "/app/applications",
+      trend: trends?.applicationsReceived,
+      activityLabel: "Applications received",
+      previous: trends?.previous.applicationsReceived,
+      color: "text-[#386bd0]",
+      iconSurface: "bg-[#4177d1]",
     },
     {
       label: "In review",
       value: overview.summaryCounts.inReview,
       icon: DocumentTextIcon,
       href: "/app/applications?status=in_review",
+      trend: trends?.inReview,
+      activityLabel: "Now in review",
+      previous: trends?.previous.inReview,
+      color: "text-[#18886d]",
+      iconSurface: "bg-[#26947b]",
     },
     {
       label: "Shortlisted",
       value: overview.summaryCounts.shortlisted,
       icon: ClipboardCheckIcon,
       href: "/app/applications?status=shortlisted",
+      trend: trends?.shortlisted,
+      activityLabel: "Now shortlisted",
+      previous: trends?.previous.shortlisted,
+      color: "text-[#8060bb]",
+      iconSurface: "bg-[#8766c5]",
     },
   ];
 
   return (
     <div className="pb-20 lg:pb-2">
-      <PageHeader
-        title="Overview"
-        actions={
-          <>
-            <OverviewRangeFilter value={range} />
-            <ButtonLink href="/app/jobs/new">
+      <div className="lg:hidden">
+        <PageHeader
+          title="Overview"
+          actions={
+            <ButtonLink href="/app?new=1">
               <AddIcon data-icon="inline-start" aria-hidden="true" />
               New job
             </ButtonLink>
-          </>
-        }
-      />
+          }
+        />
+      </div>
 
-      <section
-        aria-label="Recruitment summary"
-        className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4"
-      >
-        {metrics.map(({ label, value, icon: Icon, href }) => (
-          <Link
-            key={label}
-            href={href}
-            aria-label={`View all ${label.toLowerCase()}`}
-            aria-describedby={`summary-${label.toLowerCase().replaceAll(" ", "-")}-count summary-period`}
-            className="group min-w-0"
-          >
-            <Card className="h-full gap-3 py-4 group-hover:ring-input">
-              <CardHeader className="flex items-start justify-between gap-2 px-3 sm:px-5">
-                <p className="min-h-8 text-[11px] font-medium text-muted-foreground sm:min-h-0 sm:text-xs">
-                  {label}
-                </p>
-                <Icon
-                  aria-hidden="true"
-                  size={18}
-                  strokeWidth={1.6}
-                  className="hidden text-muted-foreground sm:block"
-                />
-              </CardHeader>
-              <CardContent className="px-3 sm:px-5">
-                <p
-                  id={`summary-${label.toLowerCase().replaceAll(" ", "-")}-count`}
-                  className="text-[26px] leading-none font-medium tracking-[-0.05em] tabular-nums sm:text-[32px]"
-                >
-                  {value}
-                  <AltArrowRightIcon
-                    aria-hidden="true"
-                    size={16}
-                    className="ml-3 hidden text-muted-foreground opacity-0 group-hover:opacity-100 sm:inline"
-                  />
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+      <section aria-label="Recruitment summary" className="mt-9 lg:mt-0">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-[13px] font-semibold tracking-[-0.01em]">
+            Hiring activity
+          </h2>
+          <OverviewRangeFilter value={range} />
+        </div>
+        {trends === null && (
+          <p role="status" className="mt-2 text-xs text-muted-foreground">
+            Activity charts are unavailable.
+          </p>
+        )}
+        <MetricStrip
+          metrics={metrics}
+          range={range}
+          periods={trends?.periods}
+          comparisonLabel={trends?.comparisonLabel}
+          idPrefix="summary"
+        />
       </section>
       <p id="summary-period" className="sr-only">
         Summary counts use application received dates and job created dates. In
@@ -130,6 +136,9 @@ export function WorkspaceOverview({
         overview={overview}
         work={work}
         attention={attention}
+        reviewProgress={reviewProgress}
+        agencyId={agencyId}
+        userId={userId}
         role={role}
         timezone={timezone}
         applicationBaseUrl={applicationBaseUrl}

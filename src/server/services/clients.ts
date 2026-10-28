@@ -10,7 +10,7 @@ export async function listClients(
   let query = supabase
     .from("clients")
     .select(
-      "id,name,industry,location,status,account_manager_id,created_at,client_contacts(full_name,email,is_primary),jobs(count),hiring_requests(count)",
+      "id,name,industry,website,location,company_profile,status,account_manager_id,created_at,client_contacts(full_name,email,is_primary),jobs(count),hiring_requests(count)",
     )
     .eq("agency_id", agencyId)
     .order("created_at", { ascending: false })

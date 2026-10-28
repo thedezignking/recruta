@@ -22,11 +22,17 @@ import { cn } from "cn";
 export function NotificationsMenu({
   agencyId,
   userId,
+  open: controlledOpen,
+  onOpenChange,
 }: {
   agencyId?: string;
   userId?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [refresh, setRefresh] = useState(0);
   const key = `recruta.notifications.read:${agencyId}:${userId}`;
   const [state, setState] = useState<{
@@ -112,12 +118,12 @@ export function NotificationsMenu({
             <Popover.Trigger
               render={
                 <Button
-                  variant="ghost"
-                  size="icon"
+                  variant="outline"
+                  size="icon-sm"
                   aria-label={
                     unread ? `Notifications, ${unread} unread` : "Notifications"
                   }
-                  className="relative shrink-0"
+                  className="relative size-8 shrink-0 bg-card shadow-none"
                 />
               }
             />
@@ -139,8 +145,8 @@ export function NotificationsMenu({
           align="end"
           className="z-50 max-w-[calc(100vw-1.5rem)]"
         >
-          <Popover.Popup className="w-[360px] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-xl border bg-popover shadow-lg outline-none">
-            <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
+          <Popover.Popup className="w-[320px] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-lg border bg-popover shadow-lg outline-none">
+            <div className="flex items-center justify-between gap-3 border-b px-3 py-2">
               <Popover.Title className="text-sm font-semibold">
                 Notifications
               </Popover.Title>
@@ -173,9 +179,9 @@ export function NotificationsMenu({
               Recent applications, hiring requests, and jobs assigned to you.
               Read status is saved on this device.
             </Popover.Description>
-            <div className="max-h-[min(480px,65dvh)] overflow-y-auto">
+            <div className="max-h-[min(400px,65dvh)] overflow-y-auto">
               {state.error ? (
-                <div className="p-5">
+                <div className="p-4">
                   <p role="alert" className="text-sm text-destructive">
                     {state.error}
                   </p>
@@ -188,11 +194,11 @@ export function NotificationsMenu({
                   </Button>
                 </div>
               ) : state.loading ? (
-                <p role="status" className="p-6 text-sm text-muted-foreground">
+                <p role="status" className="p-4 text-sm text-muted-foreground">
                   Loading notifications…
                 </p>
               ) : !items.length ? (
-                <div className="px-6 py-10 text-center">
+                <div className="px-4 py-7 text-center">
                   <BellIcon
                     aria-hidden="true"
                     size={25}
@@ -223,12 +229,12 @@ export function NotificationsMenu({
                         setOpen(false);
                       }}
                       className={cn(
-                        "flex items-start gap-3 border-b px-4 py-3.5 last:border-b-0 hover:bg-muted/50",
+                        "flex items-start gap-2.5 border-b px-3 py-2.5 last:border-b-0 hover:bg-muted/50",
                         !read && "bg-accent/35",
                       )}
                     >
-                      <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-muted">
-                        <Icon aria-hidden="true" size={18} />
+                      <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-md bg-muted">
+                        <Icon aria-hidden="true" size={16} />
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="flex items-center justify-between gap-3 text-xs font-medium">

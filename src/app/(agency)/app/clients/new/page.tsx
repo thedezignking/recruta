@@ -11,11 +11,7 @@ export default async function NewOrganizationPage() {
       <PageHeader title="New organization" />
       <NewOrganizationForm
         agencyId={agencyId}
-        lookupClientId={
-          lookup.apiKey && lookup.persistenceAllowed
-            ? lookup.clientId
-            : undefined
-        }
+        lookupClientId={lookup.clientId}
       />
     </div>
   );

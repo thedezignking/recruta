@@ -55,6 +55,143 @@ export async function getOverviewSummary(
   };
 }
 
+export async function getOverviewTrends(
+  supabase: SupabaseClient,
+  agencyId: string,
+  range: unknown,
+  now = new Date(),
+) {
+  const selectedRange = overviewRangeSchema.parse(range);
+  const window = overviewWindow(selectedRange, now);
+  const end = now.getTime();
+  let start = window ? Date.parse(window.since) : end - 86400000;
+  if (!window) {
+    const [firstJob, firstApplication] = await Promise.all([
+      supabase
+        .from("jobs")
+        .select("created_at")
+        .eq("agency_id", agencyId)
+        .eq("status", "open")
+        .order("created_at", { ascending: true })
+        .limit(1),
+      supabase
+        .from("applications")
+        .select("submitted_at")
+        .eq("agency_id", agencyId)
+        .order("submitted_at", { ascending: true })
+        .limit(1),
+    ]);
+    if (firstJob.error || firstApplication.error)
+      throw new ApiError(
+        500,
+        "OVERVIEW_LOAD_FAILED",
+        "The workspace activity could not be loaded.",
+      );
+    const earliest = [
+      firstJob.data?.[0]?.created_at,
+      firstApplication.data?.[0]?.submitted_at,
+    ]
+      .filter((value): value is string => Boolean(value))
+      .map(Date.parse)
+      .filter(Number.isFinite);
+    if (earliest.length) start = Math.min(...earliest, start);
+  }
+  const periods = Array.from({ length: 8 }, (_, index) => ({
+    since: new Date(start + ((end - start) * index) / 8).toISOString(),
+    until: new Date(start + ((end - start) * (index + 1)) / 8).toISOString(),
+  }));
+  const series = [
+    { key: "openJobs", table: "jobs", date: "created_at", status: "open" },
+    {
+      key: "applicationsReceived",
+      table: "applications",
+      date: "submitted_at",
+      status: null,
+    },
+    {
+      key: "inReview",
+      table: "applications",
+      date: "submitted_at",
+      status: "in_review",
+    },
+    {
+      key: "shortlisted",
+      table: "applications",
+      date: "submitted_at",
+      status: "shortlisted",
+    },
+  ] as const;
+  const resultsPromise = Promise.all(
+    series.flatMap(({ table, date, status }) =>
+      periods.map(({ since, until }, index) => {
+        let query = supabase
+          .from(table)
+          .select("id", { count: "exact", head: true })
+          .eq("agency_id", agencyId)
+          .gte(date, since);
+        query =
+          index === 7 && !window
+            ? query
+            : index === 7
+              ? query.lte(date, until)
+              : query.lt(date, until);
+        if (status) query = query.eq("status", status);
+        return query;
+      }),
+    ),
+  );
+  const previousStart = new Date(
+    window ? start - (end - start) : end - 30 * 86400000,
+  ).toISOString();
+  const previousEnd = window?.since ?? now.toISOString();
+  const previousPromise = Promise.all(
+    series.map(({ table, date, status }) => {
+      let query = supabase
+        .from(table)
+        .select("id", { count: "exact", head: true })
+        .eq("agency_id", agencyId)
+        .gte(date, previousStart);
+      query = window
+        ? query.lt(date, previousEnd)
+        : query.lte(date, previousEnd);
+      if (status) query = query.eq("status", status);
+      return query;
+    }),
+  );
+  const [results, previous] = await Promise.all([
+    resultsPromise,
+    previousPromise,
+  ]);
+  if ([...results, ...previous].some((result) => result.error))
+    throw new ApiError(
+      500,
+      "OVERVIEW_LOAD_FAILED",
+      "The workspace activity could not be loaded.",
+    );
+  return {
+    periods,
+    periodLabel: selectedRange === "all" ? "All time" : null,
+    comparisonLabel:
+      selectedRange === "24h"
+        ? "previous 24h"
+        : selectedRange === "all"
+          ? "last 30 days"
+          : `previous ${selectedRange.slice(0, -1)} days`,
+    previous: {
+      openJobs: previous[0].count ?? 0,
+      applicationsReceived: previous[1].count ?? 0,
+      inReview: previous[2].count ?? 0,
+      shortlisted: previous[3].count ?? 0,
+    },
+    openJobs: results.slice(0, 8).map((result) => result.count ?? 0),
+    applicationsReceived: results
+      .slice(8, 16)
+      .map((result) => result.count ?? 0),
+    inReview: results.slice(16, 24).map((result) => result.count ?? 0),
+    shortlisted: results.slice(24, 32).map((result) => result.count ?? 0),
+  };
+}
+
 export async function getWorkspaceOverview(
   supabase: SupabaseClient,
   agencyId: string,
@@ -200,7 +337,7 @@ export async function getOverviewJobs(
   agencyId: string,
 ) {
   const fields =
-    "id,title,status,positions_required,published_at,accepting_applications,public_slug,clients(name),applications(count)";
+    "id,title,status,positions_required,employment_type,location,deadline_at,published_at,accepting_applications,public_slug,clients(name,company_profile),applications(count)";
   const [all, published, active, drafts, shareable] = await Promise.all([
     supabase
       .from("jobs")

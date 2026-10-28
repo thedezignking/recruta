@@ -24,6 +24,11 @@ export function WorkspaceSearch({ agencyId }: { agencyId?: string }) {
   useEffect(() => {
     function keydown(event: KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        if (
+          window.matchMedia &&
+          !window.matchMedia("(min-width: 1024px)").matches
+        )
+          return;
         event.preventDefault();
         input.current?.focus();
         setOpen(true);
@@ -97,10 +102,10 @@ export function WorkspaceSearch({ agencyId }: { agencyId?: string }) {
           Search workspace
         </label>
         <Combobox.InputGroup
-          render={<InputGroup className="h-9 bg-muted/25" />}
+          render={<InputGroup className="h-8 bg-muted/25" />}
         >
-          <InputGroupAddon className="order-first pl-3 pr-0">
-            <MagnifierIcon aria-hidden="true" size={18} />
+          <InputGroupAddon className="order-first pl-2.5 pr-0">
+            <MagnifierIcon aria-hidden="true" size={16} />
           </InputGroupAddon>
           <Combobox.Input
             id="workspace-query"
@@ -109,6 +114,7 @@ export function WorkspaceSearch({ agencyId }: { agencyId?: string }) {
             render={<InputGroupInput />}
             maxLength={100}
             placeholder="Search workspace…"
+            className="text-xs"
             aria-describedby="search-instructions"
           />
           <InputGroupAddon className="hidden pr-2 sm:flex">

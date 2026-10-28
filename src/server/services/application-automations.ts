@@ -123,7 +123,10 @@ export async function getAttentionQueue(db: SupabaseClient, agencyId: string) {
     (rows ?? []).map((row) => ({
       id: `${kind}:${row.id}`,
       applicationId: row.id,
-      label: kind === "review" ? "Review overdue" : "Screening needs attention",
+      label:
+        kind === "review"
+          ? "Application review overdue"
+          : "Application screening failed",
       detail: [
         relation(row.candidates, "full_name"),
         relation(row.jobs, "title"),

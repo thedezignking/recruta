@@ -13,40 +13,25 @@ afterEach(() => {
   navigation.query = "keep=yes";
 });
 describe("summary range filter", () => {
-  it("selects a real URL range and preserves other parameters", async () => {
+  it("selects a real URL range and preserves other parameters", () => {
     render(<OverviewRangeFilter value="all" />);
-    fireEvent.click(
-      screen.getByRole("combobox", { name: "Summary date range" }),
-    );
-    const option = await screen.findByRole("option", { name: "Last 7 days" });
-    fireEvent.pointerDown(option);
-    fireEvent.click(option);
+    fireEvent.click(screen.getByRole("button", { name: "Last 7 days" }));
     expect(navigation.replace).toHaveBeenCalledWith("/app?keep=yes&range=7d", {
       scroll: false,
     });
   });
-  it("keeps All time explicit because the default is 30 days", async () => {
+  it("keeps All time explicit because the default is 30 days", () => {
     navigation.query = "range=7d";
     render(<OverviewRangeFilter value="7d" />);
-    fireEvent.click(
-      screen.getByRole("combobox", { name: "Summary date range" }),
-    );
-    const option = await screen.findByRole("option", { name: "All time" });
-    fireEvent.pointerDown(option);
-    fireEvent.click(option);
+    fireEvent.click(screen.getByRole("button", { name: "All time" }));
     expect(navigation.replace).toHaveBeenCalledWith("/app?range=all", {
       scroll: false,
     });
   });
-  it("removes the query for the default Last 30 days", async () => {
+  it("removes the query for the default Last 30 days", () => {
     navigation.query = "range=7d";
     render(<OverviewRangeFilter value="7d" />);
-    fireEvent.click(
-      screen.getByRole("combobox", { name: "Summary date range" }),
-    );
-    const option = await screen.findByRole("option", { name: "Last 30 days" });
-    fireEvent.pointerDown(option);
-    fireEvent.click(option);
+    fireEvent.click(screen.getByRole("button", { name: "Last 30 days" }));
     expect(navigation.replace).toHaveBeenCalledWith("/app", { scroll: false });
   });
 });

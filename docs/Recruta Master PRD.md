@@ -394,25 +394,25 @@ Optional Brandfetch search and Brand API enrichment are integrated behind creden
 
 Keep organization entry free of a manual logo-URL field; imported company logos may be previewed and removed. Job creation does not include a separate Candidate note introduction field. Use the job description and screening questions for relevant candidate-facing information.
 
-The global top bar provides a compact inline search for jobs, applicants by name/email, and organizations. Results appear in a non-modal dropdown beneath the field; show only `⌘ K` in its hint, while supporting Ctrl/Cmd+K to focus it. Results lead to real records or filtered applications. Page-specific create actions remain beside page titles.
+The desktop workspace has a slim top toolbar with the current destination, a boxed notification bell, and inline workspace search. Overview adds New job as the last toolbar action. Mobile retains the compact navigation header and places Overview's New job action with its page title. Search supports Ctrl/Cmd+K on desktop and leads to authorized jobs, applicants, and organizations.
 
-A notification bell opens recent recruitment updates: applications, hiring-request changes, and the current user's job assignments. Load real tenant-authorized records, with clear empty/error states and links to the relevant work. This first notification slice refreshes on focus/open and every minute while visible; read IDs are stored per user and agency on this device only, not synced across devices. Do not invent unread counts or activity.
-
-The sidebar account row opens one menu with My account, Password & security, keyboard-shortcut help, the agency's public careers page, and a separated destructive Log out action. Do not repeat Team and workspace Settings, which already exist in navigation. Logout is not exposed on the resting sidebar. Mobile uses the same account menu in its header. My account edits the profile name and password without giving recruiters access to agency administration.
+The top sidebar identity represents the active agency workspace: its menu lists only the user's active workspace memberships, marks the current one, and offers Create workspace. The bottom bordered account row represents the signed-in person. Its compact menu groups the user's avatar, name, email, role in the current workspace, and personal account actions in a quiet inset panel; the current agency's public careers page and separated destructive Log out follow. Do not repeat the agency name in the personal menu or put personal account actions in the workspace switcher. Role-gated Team and Settings appear beneath the workflow destinations, separated by a faint line without a group label. Mobile uses the same account menu in the header. My account edits the profile name and password without giving recruiters access to agency administration.
 
 Recruta's identity is a near-black (#111111) rounded square containing a white abstract fit symbol formed by two complementary corners. Pair it with a clean Geist wordmark throughout the app; use the symbol alone for compact branding and the favicon. No gradients or 3D effects. Previous supplied logos are legacy assets, not active branding.
 
-The default lockup pairs a 28 px square mark with a 22 px semibold wordmark and a 10 px gap. The compact sidebar variant uses a 24 px mark, 20 px wordmark, and 8 px gap. The mark's corner radius is proportional (8 units on a 40-unit square). Controls/navigation use 6 px corners and cards/overlays use 10 px corners. The workspace selector below the brand is a compact 36 px control with a small neutral initial, name, and dropdown chevron; it supports switching and creating workspaces on desktop, collapsed navigation, and mobile.
+The default lockup pairs a 28 px square mark with a 22 px semibold wordmark and a 10 px gap. The sidebar header instead pairs the active agency's dark name with its public 24 px logo or a purple initial placeholder, followed by a dark compact up/down switcher glyph. Evenkore's purple fit-symbol artwork is a local logo assigned to that workspace, not the generic fallback. The mark's corner radius is proportional (8 units on a 40-unit square). Controls/navigation use 6 px corners and cards/overlays use 10 px corners. The workspace selector supports switching and creating workspaces on desktop, collapsed navigation, and mobile; the personal profile remains a separate control at the sidebar foot.
 
 ## F03 — Jobs and Openings (P0)
 
 - Direct job creation is available to every authorized recruitment role.
+- New job opens as a spacious, centered, four-step modal over the current Overview or Jobs page. Closing it returns to that page. Essentials covers organization, title, and openings; Role details covers description, engagement, location, arrangement, and deadline; Hiring setup covers optional requirements, screening questions, and assignment; Review shows the candidate-facing posting and application form before publishing. Draft creation is available after the role description is valid. Direct links to the former New job route open the same modal on Jobs.
 - One job records one or more openings.
 - Draft, preview, publish, pause, reopen, fill, cancel, and close-unfilled lifecycle actions.
 - Requirements, screening questions, workflow snapshot, priority, deadline, and assignments.
 - Job detail shows link state, application count, filled count, owners, and recent activity.
 - Destructive deletion is allowed only for safe empty manual jobs; otherwise close or archive.
 - Creation and publication actions are idempotent and resistant to double submission.
+- Jobs shows exact, agency-scoped open, draft, on-hold, and next-seven-day deadline counts. The list supports status tabs and title search, uses role, organization, recruiter, applicant, openings, deadline, and status cells, and opens a job in a right-side overview panel. The panel shows real application stages and configured workflow, and links to the full job page for actions.
 
 ## F04 — Public Career and Application Pages (P0)
 
@@ -520,7 +520,7 @@ Preferred content:
 - Upcoming interviews when that phase exists.
 - Compact operational counts linked to the relevant queue.
 
-Avoid a row of large metrics that merely restates totals without supporting an action. Placements, trend charts, and funnel analytics belong in reporting once there is enough real data.
+Keep the top metric cards linked to operational destinations. Their small charts may show real intake by date for the selected period; avoid invented growth percentages or a hiring funnel that implies unavailable interview and placement workflows. Richer reporting belongs in its own module once sufficient data exists.
 
 ---
 
@@ -537,9 +537,9 @@ Avoid a row of large metrics that merely restates totals without supporting an a
 - Product typeface: Geist Sans.
 - Operational metadata: Geist Mono where helpful.
 
-Brand purple is for primary actions, links, focus, active workflow markers, and selected sidebar solid icons. Selected sidebar navigation keeps a neutral gray surface and dark text. Purple must not replace semantic success, warning, or destructive colors.
+Brand purple is for primary actions, links, focus, and active workflow markers. Selected sidebar navigation keeps a white surface, dark solid icon, and dark text. Purple must not replace semantic success, warning, or destructive colors.
 
-Overview omits the greeting and places its content-width date-range select beside New job, defaulting to Last 30 days. All time remains available explicitly. In review uses a document icon. Agency settings includes a public logo preview with upload, replace, and remove actions for owners and administrators. Accept PNG/JPG/WebP images up to 2 MiB. Changing a logo must not affect other agency details or private candidate documents.
+Overview omits the greeting. A slim desktop toolbar pairs its title with notifications, workspace search, and New job in that order; the profile is anchored at the sidebar foot. Hiring activity is subordinate to the Overview title. A compact segmented date-range control sits above the four summary cells, defaulting to Last 30 days with All time explicit. Each cell shows a dense dotted chart of real intake counts and a small comparison against the preceding period. All-time charts span the full recorded history; the small metric separately shows recent 30-day intake. Chart buckets reveal a compact count and date span on hover or keyboard focus. Headline counts stay dark; directional small metrics use semantic green for increases, red for decreases, and neutral color for zero. The colored icon tiles do not use the brand accent as a success state. In review uses a document icon. Agency settings includes a public logo preview with upload, replace, and remove actions for owners and administrators. Accept PNG/JPG/WebP images up to 2 MiB. Changing a logo must not affect other agency details or private candidate documents.
 
 ## 8.2 Iconography
 
@@ -555,12 +555,14 @@ Use `@solar-icons/react` version `2.3.3` with per-icon imports.
 
 ## 8.3 Interaction Quality
 
-The workspace fills the browser edge to edge, with a neutral `#F5F5F5` sidebar and a white main work area. There is no outer padding, rounded application frame, or enclosing border. Borders (`#E8E8E8`) and elevation stay quiet; broad surfaces and selected navigation are neutral rather than purple. Summary counts use independent cards with visible gaps, while recent jobs, applications, and next actions carry the page. Interface copy is concise: retain task guidance and meaningful metadata, and omit taglines and repeated descriptions. The surface direction and component guidance are documented in `docs/Recruta Design Direction.md`.
+The workspace fills the browser edge to edge, with a compact neutral `#F8F8F8` sidebar, a slim white toolbar, and a white main work area. There is no outer padding, rounded application frame, or enclosing border. Borders (`#E8E8E8`) and elevation stay quiet; broad surfaces and selected navigation are neutral rather than purple. Overview summary counts sit in a single bordered strip with clear cell dividers and true intake mini charts. Recent jobs, applications, and next actions carry the page. Interface copy is concise: retain task guidance and meaningful metadata, and omit taglines and repeated descriptions. The surface direction and component guidance are documented in `docs/Recruta Design Direction.md`.
 
 Overview summary cards are ordered Active jobs, Applications received, In review, Shortlisted. In review counts only applications currently in review, not unreviewed arrivals; Shortlisted counts the current shortlisted stage. These are job-specific submissions, not unique people. A shared All time / 24h / 7d / 14d / 30d filter applies rolling received-date windows to applications and created-date windows to jobs, combined with current status. Detailed queues remain unfiltered to retain older outstanding work. Hiring requests remain in their own panel; confirmed placements are deferred until a real placement-confirmation workflow exists. The profile menu separates identity, personal controls, utilities, and destructive logout with comfortable row spacing.
 
+The Overview active-jobs preview follows the Jobs table's compact row styling and shows the organization, applicant and review counts, openings, deadline, and status. Its heading, like Application inbox, sits above the bordered content. Real attention items appear in a compact inline banner with the affected application, a direct review action, and a dismissal control. Dismissal hides the banner for that user and workspace during the current browser session; the underlying issue remains in the attention queue.
+
 - The agency workspace is compact and desktop-efficient, with responsive fallbacks.
-- Omit the redundant visible “Workspace” sidebar heading and the divider above the account menu; use spacing to group navigation. Reserve filled primary buttons for the page's main action or a form's main submission. Supporting and repeated actions (including empty-state CTAs and Save draft) use outline, not filled secondary. Keep lightweight navigation ghost/link and destructive actions semantically destructive.
+- Omit the redundant visible “Workspace” sidebar heading and the divider above the account menu. Use a faint divider only between workflow navigation and the role-gated Team and Settings group. Reserve filled primary buttons for the page's main action or a form's main submission. Supporting and repeated actions (including empty-state CTAs and Save draft) use outline, not filled secondary. Keep lightweight navigation ghost/link and destructive actions semantically destructive.
 - Public and external experiences are mobile-first.
 - Forms preserve entered data when validation fails.
 - Publishing always includes a review/preview step.

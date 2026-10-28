@@ -8,7 +8,7 @@ export async function listUserWorkspaces(
 ) {
   const { data, error } = await supabase
     .from("agency_memberships")
-    .select("agency_id,role,created_at,agencies(id,name,slug,status)")
+    .select("agency_id,role,created_at,agencies(id,name,slug,status,logo_path)")
     .eq("user_id", userId)
     .eq("status", "active")
     .order("created_at")
@@ -29,6 +29,7 @@ export async function listUserWorkspaces(
             id: agency.id,
             name: agency.name,
             slug: agency.slug,
+            logoPath: agency.logo_path,
             role: membership.role,
           },
         ]

@@ -24,7 +24,6 @@ describe("account menu", () => {
         email="ada@example.com"
         role="owner"
         agencySlug="example-talent"
-        workspaceName="Example Talent"
       />,
     );
     expect(screen.queryByText("Log out")).toBeNull();
@@ -33,16 +32,20 @@ describe("account menu", () => {
       await screen.findByRole("menuitem", { name: "My account" }),
     ).toBeTruthy();
     expect(screen.getByText("ada@example.com")).toBeTruthy();
-    expect(screen.getByText("Example Talent ·", { exact: false })).toBeTruthy();
+    expect(screen.getAllByText("owner").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Example Talent ·", { exact: false })).toBeNull();
+    expect(
+      screen.queryByRole("menuitem", { name: "Create workspace" }),
+    ).toBeNull();
     expect(
       screen
         .getByRole("menuitem", { name: "Password & security" })
         .getAttribute("href"),
     ).toBe("/app/account#security");
     expect(
-      screen.queryByRole("menuitem", { name: "Workspace settings" }),
+      screen.queryByRole("menuitem", { name: "Agency settings" }),
     ).toBeNull();
-    expect(screen.queryByRole("menuitem", { name: "Team members" })).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: "Team" })).toBeNull();
     expect(
       screen
         .getByRole("menuitem", { name: "View careers page" })
@@ -54,17 +57,6 @@ describe("account menu", () => {
         .getAttribute("data-variant"),
     ).toBe("destructive");
   });
-  it("opens working keyboard-shortcut help", async () => {
-    render(<AccountMenu name="Ada" role="owner" />);
-    fireEvent.click(screen.getByRole("button", { name: "Open account menu" }));
-    fireEvent.click(
-      await screen.findByRole("menuitem", { name: "Keyboard shortcuts" }),
-    );
-    expect(
-      await screen.findByRole("dialog", { name: "Keyboard shortcuts" }),
-    ).toBeTruthy();
-    expect(screen.getByText("Focus workspace search")).toBeTruthy();
-  });
   it("omits administration for recruiters and permits logout retry after failure", async () => {
     const fetch = vi
       .fn()
@@ -74,7 +66,10 @@ describe("account menu", () => {
     render(<AccountMenu name="Ada" role="recruiter" />);
     fireEvent.click(screen.getByRole("button", { name: "Open account menu" }));
     await screen.findByRole("menuitem", { name: "My account" });
-    expect(screen.queryByRole("menuitem", { name: "Team members" })).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: "Team" })).toBeNull();
+    expect(
+      screen.queryByRole("menuitem", { name: "Agency settings" }),
+    ).toBeNull();
     fireEvent.click(screen.getByRole("menuitem", { name: "Log out" }));
     expect(await screen.findByRole("alert")).toBeTruthy();
     fireEvent.click(screen.getByRole("menuitem", { name: "Log out" }));

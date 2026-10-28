@@ -9,21 +9,23 @@ import { ClipboardTextIcon } from "@solar-icons/react/linear/clipboard-text";
 import { HamburgerMenuIcon } from "@solar-icons/react/linear/hamburger-menu";
 import { Home2Icon } from "@solar-icons/react/linear/home-2";
 import { InboxIcon } from "@solar-icons/react/linear/inbox";
-import { SidebarMinimalisticIcon } from "@solar-icons/react/linear/sidebar-minimalistic";
-import { SettingsMinimalisticIcon } from "@solar-icons/react/linear/settings-minimalistic";
 import { UsersGroupTwoRoundedIcon } from "@solar-icons/react/linear/users-group-two-rounded";
+import { SettingsMinimalisticIcon } from "@solar-icons/react/linear/settings-minimalistic";
+import { SidebarMinimalisticIcon } from "@solar-icons/react/linear/sidebar-minimalistic";
 import { BuildingsIcon as BuildingsSolidIcon } from "@solar-icons/react/bold/buildings";
 import { CaseMinimalisticIcon as CaseSolidIcon } from "@solar-icons/react/bold/case-minimalistic";
 import { ClipboardTextIcon as RequestSolidIcon } from "@solar-icons/react/bold/clipboard-text";
 import { Home2Icon as HomeSolidIcon } from "@solar-icons/react/bold/home-2";
 import { InboxIcon as InboxSolidIcon } from "@solar-icons/react/bold/inbox";
-import { SettingsMinimalisticIcon as SettingsSolidIcon } from "@solar-icons/react/bold/settings-minimalistic";
 import { UsersGroupTwoRoundedIcon as UsersSolidIcon } from "@solar-icons/react/bold/users-group-two-rounded";
+import { SettingsMinimalisticIcon as SettingsSolidIcon } from "@solar-icons/react/bold/settings-minimalistic";
+import { AddIcon } from "@solar-icons/react/linear/add";
 import { WorkspaceSwitcher, type WorkspaceOption } from "./workspace-switcher";
 import { AccountMenu } from "./account-menu";
-import { WorkspaceSearch } from "./workspace-search";
 import { NotificationsMenu } from "./notifications-menu";
+import { WorkspaceSearch } from "./workspace-search";
 import { Button } from "@/components/ui/button";
+import { ButtonLink } from "@/components/shared/button-link";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,7 +39,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { RecrutaLogo } from "@/components/shared/recruta-mark";
 import type { AgencyRole } from "@/types/domain";
 import { cn } from "cn";
 
@@ -72,56 +73,84 @@ const items = [
     icon: ClipboardTextIcon,
     activeIcon: RequestSolidIcon,
   },
+];
+
+const utilityItems = [
   {
     label: "Team",
     href: "/app/team",
     icon: UsersGroupTwoRoundedIcon,
     activeIcon: UsersSolidIcon,
-    roles: ["owner", "administrator"] as AgencyRole[],
   },
   {
     label: "Settings",
     href: "/app/settings",
     icon: SettingsMinimalisticIcon,
     activeIcon: SettingsSolidIcon,
-    roles: ["owner", "administrator"] as AgencyRole[],
   },
 ];
+
+type ShellMenu =
+  | "desktop-workspace"
+  | "mobile-workspace"
+  | "desktop-account"
+  | "mobile-account"
+  | "mobile-navigation"
+  | "notifications";
 
 export function AppShell({
   children,
   workspaceName,
+  workspaceLogoUrl,
   userName,
+  userId,
   userRole,
   userEmail,
   agencyId,
-  userId,
   agencySlug,
   workspaces,
 }: {
   children: React.ReactNode;
   workspaceName: string;
+  workspaceLogoUrl?: string | null;
   userName: string;
+  userId?: string;
   userRole: AgencyRole;
   userEmail?: string;
   agencyId?: string;
-  userId?: string;
   agencySlug?: string;
   workspaces?: WorkspaceOption[];
 }) {
   const pathname = usePathname();
   const workspaceOptions = workspaces ?? [
-    { id: agencyId ?? "", name: workspaceName, role: userRole },
+    {
+      id: agencyId ?? "",
+      name: workspaceName,
+      role: userRole,
+      slug: agencySlug,
+    },
   ];
   const [collapsed, setCollapsed] = useState(false);
-  const visibleItems = items.filter(
-    (item) => !("roles" in item) || item.roles?.includes(userRole),
-  );
+  const [openMenu, setOpenMenu] = useState<ShellMenu | null>(null);
+  const handleMenuOpenChange = (menu: ShellMenu) => (open: boolean) =>
+    setOpenMenu((current) => (open ? menu : current === menu ? null : current));
+  const visibleItems = items;
+  const mobileItems =
+    userRole === "owner" || userRole === "administrator"
+      ? [...items, ...utilityItems]
+      : items;
   const activeItem = visibleItems.find((item) =>
     item.href === "/app"
       ? pathname === item.href
       : pathname.startsWith(item.href),
   );
+  const currentLabel =
+    activeItem?.label ??
+    (pathname.startsWith("/app/team")
+      ? "Team"
+      : pathname.startsWith("/app/settings")
+        ? "Settings"
+        : "Workspace");
   const isActive = (href: string) =>
     href === "/app" ? pathname === href : pathname.startsWith(href);
 
@@ -131,58 +160,123 @@ export function AppShell({
         className={cn(
           "min-h-dvh lg:grid",
           collapsed
-            ? "lg:grid-cols-[76px_minmax(0,1fr)]"
-            : "lg:grid-cols-[240px_minmax(0,1fr)]",
+            ? "lg:grid-cols-[60px_minmax(0,1fr)]"
+            : "lg:grid-cols-[208px_minmax(0,1fr)]",
         )}
       >
-        <aside className="sticky top-0 hidden h-dvh flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex">
+        <aside className="sticky top-0 hidden h-dvh flex-col bg-sidebar text-sidebar-foreground lg:flex">
           <div
             className={cn(
-              "flex h-16 shrink-0 items-center px-5",
+              "flex h-14 shrink-0 items-center gap-1 px-2.5",
               collapsed && "justify-center px-0",
             )}
           >
-            {!collapsed && (
-              <Link href="/app" aria-label="Recruta overview">
-                <RecrutaLogo size="sm" />
-              </Link>
-            )}
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(!collapsed && "ml-auto")}
-                    aria-label={
-                      collapsed ? "Expand sidebar" : "Collapse sidebar"
-                    }
-                    aria-expanded={!collapsed}
-                    onClick={() => setCollapsed(!collapsed)}
-                  />
-                }
-              >
-                <SidebarMinimalisticIcon aria-hidden="true" size={18} />
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                {collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              </TooltipContent>
-            </Tooltip>
-          </div>
-
-          <div className={cn("px-3", collapsed && "px-2")}>
-            <div className={cn("mb-5", collapsed && "flex justify-center")}>
+            <div className={cn("min-w-0 flex-1", collapsed && "flex-none")}>
               <WorkspaceSwitcher
                 currentId={agencyId}
                 name={workspaceName}
                 workspaces={workspaceOptions}
                 compact={collapsed}
+                sidebar
+                logoUrl={workspaceLogoUrl}
+                agencySlug={agencySlug}
+                open={openMenu === "desktop-workspace"}
+                onOpenChange={handleMenuOpenChange("desktop-workspace")}
               />
             </div>
+            {!collapsed && (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Collapse sidebar"
+                      aria-expanded="true"
+                      onClick={() => {
+                        setOpenMenu(null);
+                        setCollapsed(true);
+                      }}
+                    />
+                  }
+                >
+                  <SidebarMinimalisticIcon aria-hidden="true" size={16} />
+                </TooltipTrigger>
+                <TooltipContent side="right">Collapse sidebar</TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+
+          {collapsed && (
+            <div className="flex justify-center pb-2">
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Expand sidebar"
+                      aria-expanded="false"
+                      onClick={() => {
+                        setOpenMenu(null);
+                        setCollapsed(false);
+                      }}
+                    />
+                  }
+                >
+                  <SidebarMinimalisticIcon aria-hidden="true" size={16} />
+                </TooltipTrigger>
+                <TooltipContent side="right">Expand sidebar</TooltipContent>
+              </Tooltip>
+            </div>
+          )}
+
+          <div className={cn("px-2.5 pt-5", collapsed && "px-2")}>
             <nav aria-label="Agency workspace" className="flex flex-col gap-1">
-              {visibleItems
-                .filter((item) => !item.roles)
-                .map((item) => {
+              {visibleItems.map((item) => {
+                const active = isActive(item.href);
+                const Icon = active ? item.activeIcon : item.icon;
+                return (
+                  <Tooltip
+                    key={`${item.href}-${collapsed}`}
+                    disabled={!collapsed}
+                  >
+                    <TooltipTrigger
+                      render={
+                        <Link
+                          href={item.href}
+                          aria-label={item.label}
+                          aria-current={active ? "page" : undefined}
+                          className={cn(
+                            "flex h-9 items-center gap-2.5 rounded-md px-2.5 text-xs hover:bg-sidebar-accent hover:text-foreground",
+                            active &&
+                              "bg-card font-medium text-sidebar-accent-foreground shadow-[0_1px_3px_rgb(0_0_0_/_0.06)] hover:bg-card",
+                            collapsed && "justify-center px-0",
+                          )}
+                        />
+                      }
+                    >
+                      <Icon
+                        aria-hidden="true"
+                        size={18}
+                        strokeWidth={1.6}
+                        className={cn(active && "text-foreground")}
+                      />
+                      {!collapsed && item.label}
+                    </TooltipTrigger>
+                    {collapsed && (
+                      <TooltipContent side="right">{item.label}</TooltipContent>
+                    )}
+                  </Tooltip>
+                );
+              })}
+            </nav>
+            {(userRole === "owner" || userRole === "administrator") && (
+              <nav
+                aria-label="Workspace management"
+                className="mt-5 flex flex-col gap-1 border-t border-[#E8E8E8] pt-4"
+              >
+                {utilityItems.map((item) => {
                   const active = isActive(item.href);
                   const Icon = active ? item.activeIcon : item.icon;
                   return (
@@ -197,9 +291,9 @@ export function AppShell({
                             aria-label={item.label}
                             aria-current={active ? "page" : undefined}
                             className={cn(
-                              "flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] hover:bg-sidebar-accent hover:text-foreground",
+                              "flex h-9 items-center gap-2.5 rounded-md px-2.5 text-xs hover:bg-sidebar-accent hover:text-foreground",
                               active &&
-                                "bg-sidebar-accent font-medium text-sidebar-accent-foreground",
+                                "bg-card font-medium text-sidebar-accent-foreground shadow-[0_1px_3px_rgb(0_0_0_/_0.06)] hover:bg-card",
                               collapsed && "justify-center px-0",
                             )}
                           />
@@ -207,9 +301,9 @@ export function AppShell({
                       >
                         <Icon
                           aria-hidden="true"
-                          size={20}
+                          size={18}
                           strokeWidth={1.6}
-                          className={cn(active && "text-primary")}
+                          className={cn(active && "text-foreground")}
                         />
                         {!collapsed && item.label}
                       </TooltipTrigger>
@@ -221,62 +315,33 @@ export function AppShell({
                     </Tooltip>
                   );
                 })}
-            </nav>
-          </div>
-
-          <div className="mt-auto p-3">
-            {visibleItems.some((item) => item.roles) && (
-              <nav
-                aria-label="Workspace administration"
-                className="mb-4 flex flex-col gap-1"
-              >
-                {visibleItems
-                  .filter((item) => item.roles)
-                  .map((item) => {
-                    const active = isActive(item.href);
-                    const Icon = active ? item.activeIcon : item.icon;
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        title={collapsed ? item.label : undefined}
-                        aria-label={item.label}
-                        aria-current={active ? "page" : undefined}
-                        className={cn(
-                          "flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] hover:bg-sidebar-accent hover:text-foreground",
-                          active &&
-                            "bg-sidebar-accent font-medium text-sidebar-accent-foreground",
-                          collapsed && "justify-center px-0",
-                        )}
-                      >
-                        <Icon
-                          aria-hidden="true"
-                          size={20}
-                          strokeWidth={1.6}
-                          className={cn(active && "text-primary")}
-                        />
-                        {!collapsed && item.label}
-                      </Link>
-                    );
-                  })}
               </nav>
             )}
-            <AccountMenu
-              name={userName}
-              email={userEmail}
-              role={userRole}
-              agencySlug={agencySlug}
-              workspaceName={workspaceName}
-              compact={collapsed}
-            />
+          </div>
+
+          <div className="mt-auto p-2.5">
+            <div>
+              <AccountMenu
+                name={userName}
+                email={userEmail}
+                role={userRole}
+                compact={collapsed}
+                agencySlug={agencySlug}
+                open={openMenu === "desktop-account"}
+                onOpenChange={handleMenuOpenChange("desktop-account")}
+              />
+            </div>
           </div>
         </aside>
 
         <div className="min-w-0 bg-card">
-          <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-border bg-card px-4 sm:px-7 lg:px-8">
+          <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-border bg-card px-4 sm:px-7 lg:px-6">
             <div className="flex min-w-0 items-center gap-3 lg:hidden">
-              <div className="lg:hidden">
-                <DropdownMenu>
+              <div>
+                <DropdownMenu
+                  open={openMenu === "mobile-navigation"}
+                  onOpenChange={handleMenuOpenChange("mobile-navigation")}
+                >
                   <DropdownMenuTrigger
                     render={
                       <Button
@@ -291,7 +356,7 @@ export function AppShell({
                   <DropdownMenuContent className="min-w-60">
                     <DropdownMenuGroup>
                       <DropdownMenuLabel>{workspaceName}</DropdownMenuLabel>
-                      {visibleItems.map((item) => {
+                      {mobileItems.map((item) => {
                         const Icon = isActive(item.href)
                           ? item.activeIcon
                           : item.icon;
@@ -319,30 +384,59 @@ export function AppShell({
                 name={workspaceName}
                 workspaces={workspaceOptions}
                 compact
+                open={openMenu === "mobile-workspace"}
+                onOpenChange={handleMenuOpenChange("mobile-workspace")}
               />
-              <span className="hidden text-[13px] font-medium sm:inline lg:hidden">
-                {activeItem?.label ?? "Workspace"}
+              <span className="hidden text-[13px] font-medium sm:inline">
+                {currentLabel}
               </span>
             </div>
-            <WorkspaceSearch agencyId={agencyId} />
-            <div className="ml-auto flex shrink-0 items-center gap-2">
-              <NotificationsMenu agencyId={agencyId} userId={userId} />
-              <div className="shrink-0 lg:hidden">
+            {pathname === "/app" ? (
+              <h1 className="hidden text-base font-semibold lg:block">
+                Overview
+              </h1>
+            ) : (
+              <span className="hidden text-sm font-semibold lg:block">
+                {currentLabel}
+              </span>
+            )}
+            <div className="ml-auto flex min-w-0 items-center gap-2">
+              <NotificationsMenu
+                agencyId={agencyId}
+                userId={userId}
+                open={openMenu === "notifications"}
+                onOpenChange={handleMenuOpenChange("notifications")}
+              />
+              <div className="hidden w-[260px] lg:block">
+                <WorkspaceSearch agencyId={agencyId} />
+              </div>
+              {(pathname === "/app" || pathname === "/app/jobs") && (
+                <ButtonLink
+                  href={pathname === "/app" ? "/app?new=1" : "/app/jobs?new=1"}
+                  size="sm"
+                  className="hidden h-8 px-3 lg:inline-flex"
+                >
+                  <AddIcon aria-hidden="true" data-icon="inline-start" />
+                  New job
+                </ButtonLink>
+              )}
+              <div className="lg:hidden">
                 <AccountMenu
                   name={userName}
                   email={userEmail}
                   role={userRole}
                   compact
-                  mobile
+                  header
                   agencySlug={agencySlug}
-                  workspaceName={workspaceName}
+                  open={openMenu === "mobile-account"}
+                  onOpenChange={handleMenuOpenChange("mobile-account")}
                 />
               </div>
             </div>
           </header>
           <main
             id="main-content"
-            className="mx-auto w-full max-w-[1480px] px-4 py-7 sm:px-7 lg:px-9 lg:py-9"
+            className="mx-auto w-full max-w-[1480px] px-4 py-7 sm:px-7 lg:px-6 lg:py-6"
           >
             {children}
           </main>

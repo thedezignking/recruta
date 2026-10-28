@@ -13,6 +13,8 @@ afterEach(cleanup);
 function fixture(): OverviewWorkProps {
   return {
     role: "owner",
+    agencyId: "agency",
+    userId: "user",
     timezone: "Africa/Lagos",
     applicationBaseUrl: "https://example.invalid/careers/test",
     attention: [],

@@ -5,12 +5,7 @@ import { Combobox } from "@base-ui/react/combobox";
 import { AddIcon, Buildings2Icon } from "@solar-icons/react/linear";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import {
-  Field,
-  FieldLabel,
-  FieldDescription,
-  FieldError,
-} from "@/components/ui/field";
+import { Field, FieldLabel, FieldError } from "@/components/ui/field";
 import {
   companyDomain,
   organizationDetailsSchema,
@@ -28,9 +23,9 @@ type Suggestion = {
 };
 const suggestionsSchema = z.array(
   z.object({
-    name: z.string(),
+    name: z.string().nullish(),
     domain: z.string(),
-    icon: z.string().url().optional(),
+    icon: z.string().url().nullish(),
   }),
 );
 
@@ -93,6 +88,7 @@ export function CompanyPicker({
                 kind: "saved",
                 name: details.name,
                 domain: companyDomain(details.website),
+                icon: details.companyProfile?.logoUrl || undefined,
                 organization: { ...details, id: item.id },
               });
             }
@@ -127,7 +123,9 @@ export function CompanyPicker({
               external.push({
                 key: `external:${item.domain}`,
                 kind: "external",
-                ...item,
+                name: item.name || item.domain,
+                domain: item.domain,
+                icon: item.icon ?? undefined,
               });
           } catch {
             messages.push(
@@ -164,6 +162,7 @@ export function CompanyPicker({
           key: item.id,
           kind: "saved",
           name: item.name,
+          icon: item.companyProfile?.logoUrl || undefined,
           organization: item,
         }))
       : (current?.items ?? []);
@@ -243,7 +242,7 @@ export function CompanyPicker({
         <Combobox.Input
           id={id}
           aria-invalid={Boolean(error)}
-          aria-describedby={`${id}-status${error ? ` ${id}-error` : ""}`}
+          aria-describedby={error ? `${id}-error` : undefined}
           maxLength={100}
           placeholder="Search by company name or domain…"
           className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -297,21 +296,20 @@ export function CompanyPicker({
         </Combobox.Portal>
       </Combobox.Root>
       <FieldError id={`${id}-error`}>{error}</FieldError>
-      <div
-        id={`${id}-status`}
-        role="status"
-        className="text-xs text-muted-foreground"
-      >
-        {loading
-          ? "Loading company details…"
-          : (message ??
-            current?.message ??
-            (query.trim().length >= 2 && !current
-              ? "Searching organizations…"
-              : !lookupClientId
-                ? "Search saved organizations or enter one manually."
-                : "Saved organizations appear first. Review company details before saving."))}
-      </div>
+      {(loading ||
+        message ||
+        current?.message ||
+        (query.trim().length >= 2 && !current)) && (
+        <div
+          id={`${id}-status`}
+          role="status"
+          className="text-xs text-muted-foreground"
+        >
+          {loading
+            ? "Loading company details…"
+            : (message ?? current?.message ?? "Searching organizations…")}
+        </div>
+      )}
       <Button
         type="button"
         variant="link"
@@ -325,12 +323,6 @@ export function CompanyPicker({
       >
         Enter details manually
       </Button>
-      {lookupClientId && (
-        <FieldDescription>
-          Company-name searches are sent to Brandfetch. Contacts and internal
-          notes are not shared.
-        </FieldDescription>
-      )}
     </Field>
   );
 }

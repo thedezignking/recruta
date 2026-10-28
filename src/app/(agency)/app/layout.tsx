@@ -2,6 +2,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { redirect } from "next/navigation";
 import { requireAgencyPageContext } from "@/server/auth/context";
 import { listUserWorkspaces } from "@/server/services/workspace";
+import { agencyLogoUrl } from "@/server/services/agency-logo";
 
 export default async function AgencyLayout({
   children,
@@ -13,7 +14,7 @@ export default async function AgencyLayout({
   const [agencyResult, profileResult, workspaces] = await Promise.all([
     context.supabase
       .from("agencies")
-      .select("name,slug")
+      .select("name,slug,logo_path")
       .eq("id", context.agencyId)
       .single(),
     context.supabase
@@ -26,15 +27,22 @@ export default async function AgencyLayout({
   return (
     <AppShell
       workspaceName={agencyResult.data?.name ?? "Agency workspace"}
+      workspaceLogoUrl={agencyLogoUrl(
+        context.supabase,
+        agencyResult.data?.logo_path ?? null,
+      )}
       userName={
         profileResult.data?.full_name ?? context.user.email ?? "Team member"
       }
+      userId={context.user.id}
       userRole={context.role}
       userEmail={context.user.email}
       agencyId={context.agencyId}
-      userId={context.user.id}
       agencySlug={agencyResult.data?.slug}
-      workspaces={workspaces}
+      workspaces={workspaces.map((workspace) => ({
+        ...workspace,
+        logoUrl: agencyLogoUrl(context.supabase, workspace.logoPath),
+      }))}
     >
       {children}
     </AppShell>

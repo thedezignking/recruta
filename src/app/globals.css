@@ -70,11 +70,11 @@
   --radius: 0.375rem;
   --solar-size: 20px;
   --solar-stroke-width: 1.6;
-  --sidebar: #f5f5f5;
-  --sidebar-foreground: #555555;
+  --sidebar: #f8f8f8;
+  --sidebar-foreground: #454545;
   --sidebar-primary: #5c5aed;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #eaeaea;
+  --sidebar-accent: #eeeeee;
   --sidebar-accent-foreground: #262626;
   --sidebar-border: #e8e8e8;
   --sidebar-ring: #5c5aed;
