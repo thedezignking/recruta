@@ -9,9 +9,15 @@ export async function POST(
   const id = requestId(request.headers);
   try {
     const route = await params;
-    const { supabase } = await requireAgencyContext(request);
+    const { supabase, agencyId } = await requireAgencyContext(request);
     return ok(
-      await transitionJob(supabase, route.id, await readJson(request), id),
+      await transitionJob(
+        supabase,
+        agencyId,
+        route.id,
+        await readJson(request),
+        id,
+      ),
       { headers: { "x-request-id": id } },
     );
   } catch (error) {

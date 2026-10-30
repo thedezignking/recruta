@@ -46,10 +46,12 @@ export function JobSidePanel({
   job,
   pipeline,
   returnHref,
+  canEditDraft = false,
 }: {
   job: PanelJob;
   pipeline: { status: string; count: number }[];
   returnHref: string;
+  canEditDraft?: boolean;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<"overview" | "applications" | "workflow">(
@@ -228,10 +230,34 @@ export function JobSidePanel({
               </div>
             )}
           </div>
-          <div className="border-t border-border bg-white px-5 py-4">
+          <div className="grid gap-2 border-t border-border bg-white px-5 py-4">
+            {job.status === "draft" && canEditDraft && (
+              <div className="grid grid-cols-2 gap-2">
+                <Link
+                  href={`/app/jobs/${job.id}?edit=1`}
+                  className="inline-flex h-9 items-center justify-center rounded-md border border-border px-3 text-sm font-medium hover:bg-muted"
+                >
+                  Edit draft
+                </Link>
+                <Link
+                  href={`/app/jobs/${job.id}?edit=1&review=1`}
+                  className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  Review & publish
+                </Link>
+              </div>
+            )}
+            {job.status !== "draft" && count > 0 && (
+              <Link
+                href={`/app/applications?jobId=${job.id}`}
+                className="inline-flex h-9 items-center justify-center rounded-md border border-border px-3 text-sm font-medium hover:bg-muted"
+              >
+                Review {count} {count === 1 ? "application" : "applications"}
+              </Link>
+            )}
             <Link
               href={`/app/jobs/${job.id}`}
-              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border border-border px-4 text-sm font-medium hover:bg-muted"
             >
               Open full job <ArrowRightIcon size={16} aria-hidden="true" />
             </Link>

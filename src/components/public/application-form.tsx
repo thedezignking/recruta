@@ -42,12 +42,14 @@ export function ApplicationForm({
   jobTitle,
   agencyName,
   questions,
+  preview = false,
 }: {
   agencySlug: string;
   jobSlug: string;
   jobTitle: string;
   agencyName: string;
   questions: PublicQuestion[];
+  preview?: boolean;
 }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const submissionKey = useRef<string | null>(null);
@@ -67,6 +69,7 @@ export function ApplicationForm({
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (preview) return;
     if (busy.current) return;
     busy.current = true;
     submissionKey.current ??= crypto.randomUUID();
@@ -143,6 +146,11 @@ export function ApplicationForm({
       <CardContent>
         <form onSubmit={handleSubmit} noValidate>
           <FieldGroup>
+            {preview && (
+              <div className="rounded-lg border border-primary/20 bg-primary/[0.04] px-4 py-3 text-sm text-foreground">
+                Preview only. Candidates can apply after this job is published.
+              </div>
+            )}
             {error ? (
               <div
                 role="alert"
@@ -351,10 +359,14 @@ export function ApplicationForm({
             <Button
               type="submit"
               size="lg"
-              disabled={pending}
+              disabled={pending || preview}
               className="w-full"
             >
-              {pending ? "Submitting application…" : "Submit application"}
+              {preview
+                ? "Publish job to accept applications"
+                : pending
+                  ? "Submitting application…"
+                  : "Submit application"}
             </Button>
             <p className="text-center text-xs leading-5 text-muted-foreground">
               Do not include sensitive identity or financial documents in your

@@ -36,6 +36,8 @@ export function CompanyPicker({
   onManual,
   initialOrganizations = [],
   error,
+  label = "Find an organization",
+  manualLabel = "Enter details manually",
 }: {
   agencyId: string;
   lookupClientId?: string;
@@ -43,6 +45,8 @@ export function CompanyPicker({
   onManual: (name: string) => void;
   initialOrganizations?: OrganizationOption[];
   error?: string;
+  label?: string;
+  manualLabel?: string;
 }) {
   const id = useId();
   const [query, setQuery] = useState("");
@@ -226,7 +230,7 @@ export function CompanyPicker({
   }
   return (
     <Field data-invalid={Boolean(error)}>
-      <FieldLabel htmlFor={id}>Find an organization</FieldLabel>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <Combobox.Root<Suggestion>
         items={items}
         filter={null}
@@ -321,7 +325,7 @@ export function CompanyPicker({
           onManual(query.trim());
         }}
       >
-        Enter details manually
+        {manualLabel}
       </Button>
     </Field>
   );

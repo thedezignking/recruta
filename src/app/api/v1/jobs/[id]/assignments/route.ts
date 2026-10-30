@@ -9,13 +9,19 @@ export async function POST(
   const id = requestId(request.headers);
   try {
     const route = await params;
-    const { supabase } = await requireAgencyContext(request, [
+    const { supabase, agencyId } = await requireAgencyContext(request, [
       "owner",
       "administrator",
       "recruitment_manager",
     ]);
     return ok(
-      await assignJob(supabase, route.id, await readJson(request), id),
+      await assignJob(
+        supabase,
+        agencyId,
+        route.id,
+        await readJson(request),
+        id,
+      ),
       {
         status: 201,
         headers: { "x-request-id": id },

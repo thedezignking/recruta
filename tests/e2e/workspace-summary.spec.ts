@@ -99,6 +99,9 @@ test.describe("workspace summary and selection", () => {
           description:
             "A synthetic role used only for dashboard empty state checks.",
           positionsRequired: 2,
+          workArrangement: "remote",
+          employmentArrangement: "permanent",
+          remoteEligibility: "anywhere",
           workflowTemplateId: templates.data[0].id,
           publicSlug: `dashboard-${namespace}`,
         },
@@ -139,14 +142,13 @@ test.describe("workspace summary and selection", () => {
       await expect(
         page.getByText("Current workload", { exact: false }),
       ).toHaveCount(0);
-      await page.getByRole("combobox", { name: "Summary date range" }).click();
       await page
-        .getByRole("option", { name: "Last 7 days", exact: true })
+        .getByRole("button", { name: "Last 7 days", exact: true })
         .click();
       await expect(page).toHaveURL(/range=7d/);
       await expect(
-        page.getByRole("combobox", { name: "Summary date range" }),
-      ).toContainText("Last 7 days");
+        page.getByRole("button", { name: "Last 7 days", exact: true }),
+      ).toHaveAttribute("aria-pressed", "true");
       await expect(
         page.getByRole("link", { name: "View all in review", exact: true }),
       ).toHaveAttribute("href", "/app/applications?status=in_review");

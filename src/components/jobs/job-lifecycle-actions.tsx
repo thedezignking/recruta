@@ -1,7 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Dialog } from "@base-ui/react/dialog";
 import {
+  AltArrowDownIcon,
   CheckCircleIcon,
   CloseCircleIcon,
   PauseCircleIcon,
@@ -10,6 +12,12 @@ import {
 } from "@solar-icons/react/linear";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type JobStatus =
   | "draft"
@@ -52,11 +60,13 @@ const transitionOptions: Partial<
 };
 
 export function JobLifecycleActions({
+  agencyId,
   jobId,
   status,
   source,
   applicationCount,
 }: {
+  agencyId: string;
   jobId: string;
   status: string;
   source: string;
@@ -88,6 +98,7 @@ export function JobLifecycleActions({
           method: input.method,
           headers: {
             "content-type": "application/json",
+            "x-agency-id": agencyId,
             "x-request-id": requestId,
           },
           body: input.body ? JSON.stringify(input.body) : undefined,
@@ -116,76 +127,94 @@ export function JobLifecycleActions({
   if (!options.length && !canDelete) return null;
 
   return (
-    <div className="flex flex-col gap-3">
-      {options.map((option) => {
-        const Icon = option.icon;
-        return (
-          <Button
-            key={option.status}
-            type="button"
-            variant={option.destructive ? "destructive" : "outline"}
-            className="w-full justify-start"
-            disabled={pendingAction !== null}
-            onClick={() =>
-              request(option.status, {
-                method: "POST",
-                body: { status: option.status },
-              })
-            }
-          >
-            <Icon data-icon="inline-start" aria-hidden="true" />
-            {pendingAction === option.status ? "Updating…" : option.label}
-          </Button>
-        );
-      })}
-
-      {canDelete ? (
-        confirmDelete ? (
-          <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
-            <p className="text-sm font-medium">Delete this job permanently?</p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Its public link and setup will be removed. This cannot be undone.
-            </p>
-            <div className="mt-3 flex gap-2">
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={pendingAction !== null}
+            />
+          }
+        >
+          More
+          <AltArrowDownIcon aria-hidden="true" data-icon="inline-end" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-44">
+          {options.map((option) => {
+            const Icon = option.icon;
+            return (
+              <DropdownMenuItem
+                key={option.status}
+                variant={option.destructive ? "destructive" : undefined}
+                onClick={() =>
+                  void request(option.status, {
+                    method: "POST",
+                    body: { status: option.status },
+                  })
+                }
+              >
+                <Icon aria-hidden="true" />
+                {option.label}
+              </DropdownMenuItem>
+            );
+          })}
+          {canDelete && (
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => setConfirmDelete(true)}
+            >
+              <TrashBin2Icon aria-hidden="true" />
+              Delete empty job
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Dialog.Root open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <Dialog.Portal>
+          <Dialog.Backdrop className="fixed inset-0 z-50 bg-[#111111]/35" />
+          <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-[10px] border border-border bg-white p-5 shadow-2xl outline-none">
+            <Dialog.Title className="text-base font-semibold">
+              Delete this job?
+            </Dialog.Title>
+            <Dialog.Description className="mt-2 text-sm leading-5 text-muted-foreground">
+              Its setup will be removed permanently. This cannot be undone.
+            </Dialog.Description>
+            {error && (
+              <p role="alert" className="mt-3 text-xs text-destructive">
+                {error}
+              </p>
+            )}
+            <div className="mt-5 flex justify-end gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setConfirmDelete(false)}
+                disabled={pendingAction !== null}
+              >
+                Cancel
+              </Button>
               <Button
                 type="button"
                 size="sm"
                 variant="destructive"
                 disabled={pendingAction !== null}
-                onClick={() => request("delete", { method: "DELETE" })}
+                onClick={() => void request("delete", { method: "DELETE" })}
               >
-                <TrashBin2Icon data-icon="inline-start" aria-hidden="true" />
                 {pendingAction === "delete" ? "Deleting…" : "Delete job"}
               </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                disabled={pendingAction !== null}
-                onClick={() => setConfirmDelete(false)}
-              >
-                Cancel
-              </Button>
             </div>
-          </div>
-        ) : (
-          <Button
-            type="button"
-            variant="ghost"
-            className="w-full justify-start text-destructive hover:text-destructive"
-            onClick={() => setConfirmDelete(true)}
-          >
-            <TrashBin2Icon data-icon="inline-start" aria-hidden="true" />
-            Delete empty job
-          </Button>
-        )
-      ) : null}
-
-      {error ? (
-        <p role="alert" className="text-xs leading-5 text-destructive">
+          </Dialog.Popup>
+        </Dialog.Portal>
+      </Dialog.Root>
+      {error && !confirmDelete && (
+        <p role="alert" className="text-xs text-destructive">
           {error}
         </p>
-      ) : null}
-    </div>
+      )}
+    </>
   );
 }

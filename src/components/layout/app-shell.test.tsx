@@ -207,21 +207,14 @@ describe("workspace navigation", () => {
     ).toBeTruthy();
   });
 
-  it("puts Overview's primary action and notifications in the toolbar", () => {
+  it("keeps Overview's toolbar to search and notifications without New job", () => {
     navigationState.pathname = "/app";
     renderShell();
     const header = screen.getByRole("banner");
     expect(
       within(header).getByRole("heading", { name: "Overview" }),
     ).toBeTruthy();
-    expect(within(header).getByRole("link", { name: "New job" })).toBeTruthy();
-    expect(
-      within(header)
-        .getByRole("button", { name: "Notifications" })
-        .compareDocumentPosition(
-          within(header).getByRole("link", { name: "New job" }),
-        ) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    expect(within(header).queryByRole("link", { name: "New job" })).toBeNull();
     expect(
       within(header).getByRole("combobox", { name: "Search workspace" }),
     ).toBeTruthy();
@@ -232,6 +225,20 @@ describe("workspace navigation", () => {
       within(screen.getByRole("complementary")).getByRole("button", {
         name: "Open account menu",
       }),
+    ).toBeTruthy();
+  });
+
+  it("puts the New job action in the Jobs toolbar after notifications", () => {
+    navigationState.pathname = "/app/jobs";
+    renderShell();
+    const header = screen.getByRole("banner");
+    expect(within(header).getByRole("link", { name: "New job" })).toBeTruthy();
+    expect(
+      within(header)
+        .getByRole("button", { name: "Notifications" })
+        .compareDocumentPosition(
+          within(header).getByRole("link", { name: "New job" }),
+        ) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { arrangementLabels } from "@/lib/job-content";
 import { JobRoleDetails } from "@/components/jobs/job-role-details";
 import { Buildings2Icon } from "@solar-icons/react/bold";
 import {
@@ -63,7 +64,9 @@ export default async function PublicJobPage({
             </span>
             <span className="inline-flex items-center gap-2">
               <CaseRoundIcon aria-hidden="true" size={17} />
-              {job.employment_type || "Employment type discussed"}
+              {arrangementLabels[job.employment_arrangement ?? ""] ||
+                job.employment_type ||
+                "Arrangement discussed"}
             </span>
             {job.deadline_at ? (
               <span className="inline-flex items-center gap-2">
@@ -92,11 +95,21 @@ export default async function PublicJobPage({
             department={job.department}
             location={job.location}
             employmentType={job.employment_type}
+            employmentArrangement={job.employment_arrangement}
+            workingHours={job.working_hours}
+            contractDuration={job.contract_duration}
+            remoteEligibility={job.remote_eligibility}
+            remoteDetails={job.remote_details}
+            salaryVisibility={job.salary_visibility}
+            salaryBasis={job.salary_basis}
             workArrangement={job.work_arrangement}
+            experienceMinYears={job.experience_min_years}
+            seniorityLevel={job.seniority_level}
             positions={job.positions_required}
             salaryMin={job.salary_min}
             salaryMax={job.salary_max}
             currency={job.currency}
+            salaryPeriod={job.salary_period}
             deadline={job.deadline_at}
             requirements={job.job_requirements.map((r) => ({
               label: r.label,

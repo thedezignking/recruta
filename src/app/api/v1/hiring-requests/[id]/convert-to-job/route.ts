@@ -16,7 +16,7 @@ export async function POST(
         "IDEMPOTENCY_KEY_REQUIRED",
         "Provide an Idempotency-Key header.",
       );
-    const { supabase } = await requireAgencyContext(request, [
+    const { supabase, agencyId } = await requireAgencyContext(request, [
       "owner",
       "administrator",
       "recruitment_manager",
@@ -24,6 +24,7 @@ export async function POST(
     const route = await params;
     const job = await convertHiringRequest(
       supabase,
+      agencyId,
       route.id,
       await readJson(request),
       idempotencyKey,

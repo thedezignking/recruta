@@ -134,6 +134,7 @@ export default async function JobsPage({
       id: client.id,
       name: client.name,
       website: client.website ?? undefined,
+      location: client.location ?? undefined,
       logoUrl:
         companyProfileSchema.safeParse(client.company_profile).data?.logoUrl ||
         undefined,
@@ -145,7 +146,7 @@ export default async function JobsPage({
   ) {
     const { data } = await context.supabase
       .from("clients")
-      .select("id,name,website,company_profile")
+      .select("id,name,website,location,company_profile")
       .eq("agency_id", context.agencyId)
       .eq("id", clientId)
       .neq("status", "archived")
@@ -155,16 +156,19 @@ export default async function JobsPage({
         id: data.id,
         name: data.name,
         website: data.website ?? undefined,
+        location: data.location ?? undefined,
         logoUrl:
           companyProfileSchema.safeParse(data.company_profile).data?.logoUrl ||
           undefined,
       });
   }
   const memberNames = new Map(
-    memberResult.items.map((member) => [
-      member.user_id,
-      member.profile?.full_name ?? "Team member",
-    ]),
+    memberResult.items
+      .filter((member) => member.status === "active")
+      .map((member) => [
+        member.user_id,
+        member.profile?.full_name ?? "Team member",
+      ]),
   );
   const listHref = (
     next: {
@@ -581,6 +585,13 @@ export default async function JobsPage({
           job={panelJob}
           pipeline={pipeline}
           returnHref={baseHref}
+          canEditDraft={
+            context.role !== "recruiter" ||
+            panelJob.job_assignments.some(
+              (assignment: { user_id: string }) =>
+                assignment.user_id === context.user.id,
+            )
+          }
         />
       )}
       {showNewJob && (
@@ -592,13 +603,16 @@ export default async function JobsPage({
             workflowResult?.items.map((workflow) => ({
               id: workflow.id,
               name: workflow.name,
+              stages: workflow.workflow_stages,
             })) ?? []
           }
-          recruiters={memberResult.items.map((member) => ({
-            userId: member.user_id,
-            name: member.profile?.full_name ?? "Team member",
-            role: member.role,
-          }))}
+          recruiters={memberResult.items
+            .filter((member) => member.status === "active")
+            .map((member) => ({
+              userId: member.user_id,
+              name: member.profile?.full_name ?? "Team member",
+              role: member.role,
+            }))}
           currentUserId={context.user.id}
           initialClientId={clientId}
         />

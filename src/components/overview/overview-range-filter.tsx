@@ -3,14 +3,14 @@
 import { useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { overviewRanges, type OverviewRange } from "@/lib/overview-range";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-const labels: Record<OverviewRange, string> = {
-  "24h": "24h",
-  "7d": "7d",
-  "14d": "14d",
-  "30d": "30d",
-  all: "All",
-};
 const accessibleLabels: Record<OverviewRange, string> = {
   "24h": "Last 24 hours",
   "7d": "Last 7 days",
@@ -29,6 +29,7 @@ export function OverviewRangeFilter({
   const router = useRouter();
   const search = useSearchParams();
   const [pending, startTransition] = useTransition();
+
   function selectRange(next: OverviewRange) {
     if (next === value) return;
     const params = new URLSearchParams(search.toString());
@@ -40,30 +41,55 @@ export function OverviewRangeFilter({
       }),
     );
   }
+
   return (
     <div className="min-w-0">
       <span role="status" className="sr-only">
         {pending ? "Updating summary…" : ""}
       </span>
-      <div
-        role="group"
-        aria-label="Summary date range"
-        className="inline-flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full bg-[#efefef] p-0.5"
+      <Select
+        value={value}
+        onValueChange={(next) => selectRange(next as OverviewRange)}
+        disabled={pending}
       >
-        {overviewRanges.map(({ value: option }) => (
-          <button
-            key={option}
-            type="button"
-            aria-pressed={value === option}
-            aria-label={accessibleLabels[option]}
-            disabled={pending}
-            onClick={() => selectRange(option)}
-            className="h-6 shrink-0 rounded-full px-2.5 text-[11px] font-medium whitespace-nowrap text-[#666666] outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-white aria-pressed:font-semibold aria-pressed:text-[#111111] aria-pressed:shadow-[0_1px_3px_rgb(0_0_0_/_0.1)]"
-          >
-            {labels[option]}
-          </button>
-        ))}
-      </div>
+        <SelectTrigger
+          aria-label="Summary date range"
+          className="h-9 w-fit rounded-md px-3 text-[12px] font-medium text-[#111111] transition-[transform,background-color,border-color] duration-150 ease-out hover:bg-black/[0.02] active:scale-[0.98]"
+        >
+          {/* Reserve the width of the widest label so the trigger hugs it
+              without shifting as the selection changes. */}
+          <span className="grid">
+            {overviewRanges.map(({ value: option }) => (
+              <span
+                key={option}
+                aria-hidden="true"
+                className="invisible col-start-1 row-start-1"
+              >
+                {accessibleLabels[option]}
+              </span>
+            ))}
+            <SelectValue className="col-start-1 row-start-1">
+              {(current: unknown) => accessibleLabels[current as OverviewRange]}
+            </SelectValue>
+          </span>
+        </SelectTrigger>
+        <SelectContent
+          align="end"
+          sideOffset={6}
+          alignItemWithTrigger={false}
+          className="w-[168px] origin-(--transform-origin) p-1 duration-200 ease-out"
+        >
+          {overviewRanges.map(({ value: option }) => (
+            <SelectItem
+              key={option}
+              value={option}
+              className="rounded-[6px] py-1.5 text-[12px] font-medium"
+            >
+              {accessibleLabels[option]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import { QuestionLibrary } from "@/components/settings/question-library";
+import { listLibraryQuestions } from "@/server/services/question-library";
 import { AgencySettingsForm } from "@/components/settings/agency-settings-form";
 import { AgencyLogo } from "@/components/settings/agency-logo";
 import { agencyLogoUrl } from "@/server/services/agency-logo";
@@ -19,6 +21,20 @@ import {
 export default async function SettingsPage() {
   const context = await requireAgencyPageContext().catch(() => null);
   if (!context) redirect("/login");
+  if (context.role === "recruitment_manager")
+    return (
+      <div className="max-w-4xl pb-20">
+        <PageHeader title="Agency settings" />
+        <QuestionLibrary
+          agencyId={context.agencyId}
+          initial={await listLibraryQuestions(
+            context.supabase,
+            context.agencyId,
+            true,
+          )}
+        />
+      </div>
+    );
   if (!agencyCan(context.role, "manage_agency")) redirect("/app");
   const [agency, workflows, processing] = await Promise.all([
     getAgencyProfile(context.supabase, context.agencyId),
@@ -46,6 +62,14 @@ export default async function SettingsPage() {
         agencyId={context.agencyId}
         initial={processing}
         available={processingAvailability()}
+      />
+      <QuestionLibrary
+        agencyId={context.agencyId}
+        initial={await listLibraryQuestions(
+          context.supabase,
+          context.agencyId,
+          true,
+        )}
       />
       <Card className="mt-5 shadow-none">
         <CardHeader className="border-b pb-4">

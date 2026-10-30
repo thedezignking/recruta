@@ -2,20 +2,22 @@
 
 ## Master Technical Product Requirements Document
 
-**Version:** 4.0  
-**Date:** October 24, 2026  
+**Version:** 4.1\
+**Date:** October 30, 2026\
 **Company:** Evenkore  
 **Product:** Recruta  
 **Document type:** Engineering and system architecture specification  
 **Status:** Revised technical source of truth  
-**Product source:** Recruta Master PRD v4.0  
-**Supersedes:** Recruta Master Technical PRD v3.0
+**Product source:** Recruta Master PRD v4.1\
+**Supersedes:** Recruta Master Technical PRD v4.0
+
+Create-job revision status: the owner authorized P0, then P1 and continued product implementation. Local forward migrations now protect job mutations and store incomplete draft configuration in an authenticated, job-scoped relation; publication validates and compiles that configuration transactionally. Database types are regenerated. The [implementation plan](prd/create-job-flow-and-content-implementation-plan.md) tracks remaining work, including atomic save-and-publish receipts. [ADR 0006](decisions/0006-job-drafting-publication-and-data-boundaries.md) remains the full target, not a claim of deployment.
 
 ---
 
 # 1. Purpose and Architecture Goal
 
-This document defines how Recruta is built and how its current foundation should evolve. It reflects the repository as of October 24, 2026 and distinguishes implemented systems from planned ones.
+This document defines how Recruta is built and how its current foundation should evolve. It reflects the October 24 foundation with the October 30 create-job implementation revision, distinguishing local implementation from remaining target contracts and deployed behavior.
 
 The primary engineering goal is to support this recruiter-first path securely and reliably:
 
@@ -204,7 +206,7 @@ The product UI calls these employer records **Organizations**. Do not rename dat
 
 An organization can be created independently or as part of the transactional manual-job flow. An organization does not imply a portal user.
 
-The next organization-entry enhancement is company autocomplete in both entry points. Search existing agency organizations first, then use a server-side adapter for a verified company-data provider. Return only the company information needed for selection and editable autofill, including logo and address where available. Debounce searches, cancel stale responses, bound results, and handle provider failures with manual entry. A selection does not persist an organization until confirmed. Provider access, licensing, privacy, and cost are unresolved; no LinkedIn integration is assumed or installed.
+Company autocomplete already shares a picker across standalone organization and job creation. Search saved agency organizations first; optional browser-only Brandfetch suggestions remain temporary. Separately retrieved, reviewed enrichment requires server credentials and explicit storage permission. Debounce/cancel/bound searches and preserve immediate manual entry through outages. A selection does not persist a record until confirmed; no LinkedIn integration is assumed. Operator verification of provider licensing, storage rights and spending remains required before enrichment activation. The P5 target adds country names, safe website normalization and advisory near-duplicate guidance without persisting search images.
 
 ## 4.3 Hiring Requests
 
@@ -237,6 +239,20 @@ Important invariants:
 - A publicly accepting job is open and has `public_slug` and `published_at`.
 - Job requirements and workflow stages are copied/snapshotted so later template edits do not rewrite history.
 - Manual job creation and request conversion are separate supported entry points into the same job model.
+
+### 4.4.1 Create-job target contract (partially implemented locally)
+
+- Draft completeness is independent of publication: require tenant, organization, title and positive openings; retain safe incomplete description/owner/workflow/question configuration in a protected versioned draft relation. Compile valid public criteria/questions atomically on publication. Do not relax published-question validity to allow blank draft rows.
+- Keep employment arrangement, hours, public role details, public compensation representation, and frequently filtered values typed and constrained. Keep private budgets, contacts, references, hiring reasons, sourcing/evaluation notes and agreement context in separately protected relations. Anonymous and employer-portal projections must exclude them at the database boundary.
+- Authenticated app job mutations use authorized transactional RPCs. Revoke direct insert/update/delete paths to jobs, requirements, questions, workflow snapshots and assignments only after all callers have compatible replacements. Preserve service-only intake and existing history protections.
+- Active agency managers have agency-wide job authority. Active recruiters create roles and edit/publish owned unpublished drafts or explicitly assigned jobs. Managers control cross-user reassignment. Creation alone does not extend applicant access after reassignment; contact selection does not create membership or job access.
+- Every edit/publish/lifecycle mutation binds expected version and actor/agency/resource/operation/payload to an atomic receipt. Identical retries return the receipt; changed payload under the same key conflicts. Save-and-publish is one transaction; initial publication and resume are distinct audited operations.
+- Workflow selection shows usable stage snapshots. Primary recruiter and the one primary assignment remain synchronized; drafts may be explicitly unassigned, publication may not. Configuration snapshots preserve existing application-stage and screening semantics.
+- Questions add number/date/URL/multi-select only after every intake/history/hash/worker consumer supports the versioned answer contract. Legacy string/Boolean answers remain valid; canonical decimal/date/URL strings and string arrays have type-specific validation. Agency library edits/archive never mutate job snapshots or prior answers.
+- Closing dates use a frozen job IANA time zone and an exclusive UTC cutoff at the next local day's start. Enforce cutoff consistently in reads, links, public projection/RLS and the submission transaction. Extend through a narrow versioned operation; never resume automatically or claim a placement.
+- Migrate additively and preserve legacy values: full-time does not imply permanent; existing public salaries keep intentional visibility; existing deadline instants do not move on agency-zone changes. Review legacy impact before enabling changed intake/visibility rules. Preserve request provenance and one conversion; converted roles target drafts and explicit employer grants.
+
+Local migrations implement the mutation boundary, incomplete draft configuration, canonical arrangement/hours and conditional public role fields. `job_internal_briefs` isolates hiring reason, target start, sourcing text and private budgets; hidden public salary columns are constrained to null. The agency question library has manager-authorized writes, private payload-bound retry receipts, optimistic versions, audit and independent job copies. See [content-pass evidence](verification/create-job-content-pass.md). Atomic job save-and-publish receipts, ownerless drafts, additional role/compensation models, richer answer types and frozen-zone deadline cutoffs remain target work. No deployment is claimed.
 
 ## 4.5 Candidates and Applications
 
@@ -290,6 +306,8 @@ Existing functions cover operations such as:
 - request submission and transition
 - request approval and conversion
 - `create_manual_job`
+- `update_draft_job` atomically edits an unpublished draft, its requirements, questions, workflow snapshot, and primary assignment after tenant, role, status, and `updated_at` checks. A request ID makes successful retries idempotent and each edit records an audit event.
+- Manual job creation and draft editing persist optional `experience_min_years` and `seniority_level` on the job; these are public posting details and do not alter application screening or stages. Bounds and supported levels are checked in validation and database constraints. Optional salary amounts use `salary_period` (`hourly`, `daily`, `weekly`, `monthly`, or `annually`) alongside currency, and public posting previews show the chosen period. Existing salary records with no period remain valid.
 - `publish_job`
 - job assignment and transition
 - `submit_public_application`
@@ -409,6 +427,7 @@ Authenticated agency API:
 - `/api/v1/workflow-templates`
 - `/api/v1/jobs`
 - `/api/v1/jobs/[id]`
+- `PATCH /api/v1/jobs/[id]` requires the explicit agency header and `x-expected-updated-at` value to edit a draft; stale edits return a conflict.
 - `/api/v1/jobs/[id]/publish`
 - `/api/v1/jobs/[id]/assignments`
 - `/api/v1/jobs/[id]/transitions`
@@ -451,6 +470,8 @@ An `Idempotency-Key` is required for invitation sends, request conversion, outbo
 
 Idempotency records or unique constraints must bind the key to tenant, operation, and relevant payload identity. Reusing a key with a materially different payload returns a conflict.
 
+Create-job target (P2): bind the actor and resource as well, store a protected transactional operation receipt, return saved version/state, and reconcile ambiguous outcomes. The current creation-request unique key and draft audit-key lookup are not full payload-bound receipts. Do not let a changed form reuse a successful edit key, and do not expose a conversion retry receipt before authorization. See ADR 0006 and the baseline inventory for current callable paths.
+
 ---
 
 # 8. Public Job and Application Architecture
@@ -470,6 +491,8 @@ A job is public only when all are true:
 - `accepting_applications = true`.
 - `public_slug` is set.
 - `published_at` is set.
+
+P3 target adds a null closing cutoff or current time strictly before that cutoff. Validate publication readiness under the same transaction/version lock, not only in the browser. At or after closing, reject intake regardless of when the form loaded. Deadline expiry does not mutate job lifecycle/application stages. Legacy cutover requires the impact review in ADR 0006; P0 has not enabled this predicate.
 
 The public query uses the publishable Supabase client and RLS-limited policies. The secret/admin client may be used only inside the controlled submission service for operations the anonymous role cannot safely perform directly.
 
@@ -502,7 +525,11 @@ Before publishing, the internal job form must provide a general preview of:
 - Configured screening questions and which are required.
 - Public salary visibility if/when configurable.
 
-Preview should use the same presentation components or data contract as the public page to reduce divergence.
+P9 target: preview and live career/job/apply pages use the same safe public projection and presentation components, including configured agency logo/fallback, consent, upload rules, exact controls, options/help and required states. Show the private setup summary separately and reject preview submissions at the boundary. The current form's summary preview is not full parity; the existing saved draft preview remains authenticated/read-only.
+
+## 8.4 Public projection and private job data (target)
+
+New internal budget and brief fields must not become reachable through raw anonymous table selects, portal endpoints, serialized page props, or network responses. Public salary visibility therefore requires a safe projection and coordinated reader/grant rollout, not only conditional rendering. Public access continues to use the publishable client with least-privilege grants/RLS or a narrowly designed eligible projection RPC/view. Existing candidate résumé storage remains private. Selecting a hiring contact never grants employer access. Detailed storage, migration and privacy tests are in ADR 0006 and T16 of the implementation plan.
 
 ---
 

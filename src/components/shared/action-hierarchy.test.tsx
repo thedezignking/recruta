@@ -120,7 +120,9 @@ describe("action hierarchy", () => {
     expectOutline(screen.getByRole("link", { name: "Create job" }));
     const cards = within(
       screen.getByRole("region", { name: "Recruitment summary" }),
-    ).getAllByRole("link");
+    )
+      .getAllByRole("link")
+      .filter((link) => link.getAttribute("aria-label"));
     expect(cards.map((card) => card.getAttribute("aria-label"))).toEqual([
       "View all active jobs",
       "View all applications received",
@@ -144,7 +146,7 @@ describe("action hierarchy", () => {
     expect(
       screen
         .getByRole("region", { name: "Recruitment summary" })
-        .contains(screen.getByRole("group", { name: "Summary date range" })),
+        .contains(screen.getByRole("combobox", { name: "Summary date range" })),
     ).toBe(true);
     expect(screen.queryByText("Applications to review")).toBeNull();
   });

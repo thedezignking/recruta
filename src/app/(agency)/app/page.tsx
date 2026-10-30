@@ -106,14 +106,17 @@ export default async function OverviewPage({
             workflowResult?.items.map((workflow) => ({
               id: workflow.id,
               name: workflow.name,
+              stages: workflow.workflow_stages,
             })) ?? []
           }
           recruiters={
-            memberResult?.items.map((member) => ({
-              userId: member.user_id,
-              name: member.profile?.full_name ?? "Team member",
-              role: member.role,
-            })) ?? []
+            memberResult?.items
+              .filter((member) => member.status === "active")
+              .map((member) => ({
+                userId: member.user_id,
+                name: member.profile?.full_name ?? "Team member",
+                role: member.role,
+              })) ?? []
           }
           currentUserId={context.user.id}
           returnTo="/app"

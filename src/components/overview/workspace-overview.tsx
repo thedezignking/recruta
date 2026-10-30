@@ -95,15 +95,7 @@ export function WorkspaceOverview({
   return (
     <div className="pb-20 lg:pb-2">
       <div className="lg:hidden">
-        <PageHeader
-          title="Overview"
-          actions={
-            <ButtonLink href="/app?new=1">
-              <AddIcon data-icon="inline-start" aria-hidden="true" />
-              New job
-            </ButtonLink>
-          }
-        />
+        <PageHeader title="Overview" />
       </div>
 
       <section aria-label="Recruitment summary" className="mt-9 lg:mt-0">
@@ -111,7 +103,13 @@ export function WorkspaceOverview({
           <h2 className="text-[13px] font-semibold tracking-[-0.01em]">
             Hiring activity
           </h2>
-          <OverviewRangeFilter value={range} />
+          <div className="flex items-center gap-2">
+            <OverviewRangeFilter value={range} />
+            <ButtonLink href="/app?new=1">
+              <AddIcon data-icon="inline-start" aria-hidden="true" />
+              New job
+            </ButtonLink>
+          </div>
         </div>
         {trends === null && (
           <p role="status" className="mt-2 text-xs text-muted-foreground">

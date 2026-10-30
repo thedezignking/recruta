@@ -6,7 +6,7 @@ import { cn } from "cn";
 import {
   AltArrowDownIcon,
   AltArrowUpIcon,
-  CheckReadIcon,
+  CheckIcon,
 } from "@solar-icons/react/linear";
 
 const Select = SelectPrimitive.Root;
@@ -136,7 +136,7 @@ function SelectItem({
           <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" />
         }
       >
-        <CheckReadIcon className="pointer-events-none" />
+        <CheckIcon className="pointer-events-none" />
       </SelectPrimitive.ItemIndicator>
     </SelectPrimitive.Item>
   );

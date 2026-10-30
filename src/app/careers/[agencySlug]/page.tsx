@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { arrangementLabels } from "@/lib/job-content";
 import { Buildings2Icon } from "@solar-icons/react/bold";
 import {
   ArrowRightIcon,
@@ -100,7 +101,9 @@ export default async function CareerSitePage({
                         "Arrangement discussed"}
                     </span>
                     <span>
-                      {job.employment_type || "Employment type discussed"}
+                      {arrangementLabels[job.employment_arrangement ?? ""] ||
+                        job.employment_type ||
+                        "Arrangement discussed"}
                     </span>
                   </div>
                 </div>

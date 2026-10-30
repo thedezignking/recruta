@@ -12,7 +12,7 @@ select has_table('public', 'job_application_questions', 'job application questio
 select col_is_pk('public', 'agencies', 'id', 'agencies use UUID primary keys');
 select col_is_unique('public', 'jobs', 'hiring_request_id', 'one job per hiring request');
 select policies_are('public', 'agencies', array['agencies_read_member','agencies_update_admin','agencies_public_active_read'], 'agency policies are explicit');
-select policies_are('public', 'jobs', array['jobs_read_authorized','jobs_insert_authorized_agency','jobs_update_authorized_agency','jobs_delete_authorized_agency','jobs_public_published_read'], 'job policies are explicit');
+select policies_are('public', 'jobs', array['jobs_read_authorized','jobs_public_published_read'], 'jobs are read-only outside authorized mutation functions');
 select policies_are('public', 'applications', array['applications_read_reviewers'], 'applications are read-only outside audited review functions');
 select has_function('public', 'onboard_agency', 'atomic onboarding exists');
 select has_function('public', 'accept_agency_invitation', 'atomic agency invitation acceptance exists');

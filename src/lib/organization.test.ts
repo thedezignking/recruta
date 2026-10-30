@@ -51,6 +51,8 @@ describe("organization entry", () => {
       description: "A detailed role for our growing design team.",
       positionsRequired: 2,
       workArrangement: "hybrid",
+      location: "Lagos",
+      employmentArrangement: "permanent",
       newOrganization: {
         name: "Studio",
         website: "https://example.com",

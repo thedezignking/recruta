@@ -72,6 +72,8 @@ describe("manual job validation", () => {
     description: "A candidate-facing description with enough useful detail.",
     positionsRequired: 1,
     workArrangement: "hybrid",
+    location: "Lagos",
+    employmentArrangement: "permanent",
     requirements: [],
     questions: [],
     publish: true,

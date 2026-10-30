@@ -12,26 +12,37 @@ afterEach(() => {
   navigation.replace.mockClear();
   navigation.query = "keep=yes";
 });
+
+async function choose(name: string) {
+  fireEvent.keyDown(
+    screen.getByRole("combobox", { name: "Summary date range" }),
+    { key: "ArrowDown" },
+  );
+  fireEvent.keyDown(await screen.findByRole("option", { name }), {
+    key: "Enter",
+  });
+}
+
 describe("summary range filter", () => {
-  it("selects a real URL range and preserves other parameters", () => {
+  it("selects a real URL range and preserves other parameters", async () => {
     render(<OverviewRangeFilter value="all" />);
-    fireEvent.click(screen.getByRole("button", { name: "Last 7 days" }));
+    await choose("Last 7 days");
     expect(navigation.replace).toHaveBeenCalledWith("/app?keep=yes&range=7d", {
       scroll: false,
     });
   });
-  it("keeps All time explicit because the default is 30 days", () => {
+  it("keeps All time explicit because the default is 30 days", async () => {
     navigation.query = "range=7d";
     render(<OverviewRangeFilter value="7d" />);
-    fireEvent.click(screen.getByRole("button", { name: "All time" }));
+    await choose("All time");
     expect(navigation.replace).toHaveBeenCalledWith("/app?range=all", {
       scroll: false,
     });
   });
-  it("removes the query for the default Last 30 days", () => {
+  it("removes the query for the default Last 30 days", async () => {
     navigation.query = "range=7d";
     render(<OverviewRangeFilter value="7d" />);
-    fireEvent.click(screen.getByRole("button", { name: "Last 30 days" }));
+    await choose("Last 30 days");
     expect(navigation.replace).toHaveBeenCalledWith("/app", { scroll: false });
   });
 });

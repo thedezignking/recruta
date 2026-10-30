@@ -98,7 +98,7 @@ export function AccountMenu({
           }
         >
           <Avatar className={cn("size-6", !header && !compact && "size-8")}>
-            <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+            <AvatarFallback className="bg-primary/10 text-xs font-semibold text-foreground">
               {initials}
             </AvatarFallback>
           </Avatar>
@@ -129,7 +129,7 @@ export function AccountMenu({
           <DropdownMenuGroup className="rounded-md border border-border bg-muted/30 p-0.5">
             <DropdownMenuLabel className="flex items-center gap-1.5 px-1.5 py-1.5">
               <Avatar className="size-5">
-                <AvatarFallback className="bg-primary/10 text-[10px] text-primary">
+                <AvatarFallback className="bg-primary/10 text-[10px] text-foreground">
                   {initials}
                 </AvatarFallback>
               </Avatar>

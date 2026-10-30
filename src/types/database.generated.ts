@@ -1280,6 +1280,81 @@ export type Database = {
           },
         ];
       };
+      job_draft_content: {
+        Row: {
+          agency_id: string;
+          job_id: string;
+          questions: NonNullable<Json>;
+          requirements: NonNullable<Json>;
+        };
+        ComputedFields: never;
+        Insert: {
+          agency_id: string;
+          job_id: string;
+          questions?: NonNullable<Json>;
+          requirements?: NonNullable<Json>;
+        };
+        Update: {
+          agency_id?: string;
+          job_id?: string;
+          questions?: NonNullable<Json>;
+          requirements?: NonNullable<Json>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "job_draft_content_agency_id_job_id_fkey";
+            columns: ["agency_id", "job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["agency_id", "id"];
+          },
+        ];
+      };
+      job_internal_briefs: {
+        Row: {
+          agency_id: string;
+          currency: string | null;
+          hiring_reason: string | null;
+          job_id: string;
+          salary_max: number | null;
+          salary_min: number | null;
+          salary_period: string | null;
+          sourcing_brief: string | null;
+          target_start_date: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          agency_id: string;
+          currency?: string | null;
+          hiring_reason?: string | null;
+          job_id: string;
+          salary_max?: number | null;
+          salary_min?: number | null;
+          salary_period?: string | null;
+          sourcing_brief?: string | null;
+          target_start_date?: string | null;
+        };
+        Update: {
+          agency_id?: string;
+          currency?: string | null;
+          hiring_reason?: string | null;
+          job_id?: string;
+          salary_max?: number | null;
+          salary_min?: number | null;
+          salary_period?: string | null;
+          sourcing_brief?: string | null;
+          target_start_date?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "job_internal_briefs_agency_id_job_id_fkey";
+            columns: ["agency_id", "job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["agency_id", "id"];
+          },
+        ];
+      };
       job_requirements: {
         Row: {
           agency_id: string;
@@ -1376,6 +1451,8 @@ export type Database = {
           agency_id: string;
           application_form_intro: string | null;
           client_id: string;
+          content_version: number;
+          contract_duration: string | null;
           created_at: string;
           created_by: string;
           creation_request_id: string | null;
@@ -1383,7 +1460,9 @@ export type Database = {
           deadline_at: string | null;
           department: string | null;
           description: string;
+          employment_arrangement: string | null;
           employment_type: string | null;
+          experience_min_years: number | null;
           hiring_request_id: string | null;
           id: string;
           location: string | null;
@@ -1392,8 +1471,14 @@ export type Database = {
           priority: string;
           public_slug: string | null;
           published_at: string | null;
+          remote_details: string | null;
+          remote_eligibility: string | null;
+          salary_basis: string;
           salary_max: number | null;
           salary_min: number | null;
+          salary_period: string | null;
+          salary_visibility: string;
+          seniority_level: string | null;
           source: string;
           source_revision_id: string | null;
           status: string;
@@ -1401,6 +1486,7 @@ export type Database = {
           updated_at: string;
           work_arrangement: string | null;
           workflow_template_id: string | null;
+          working_hours: string;
         };
         ComputedFields: never;
         Insert: {
@@ -1408,6 +1494,8 @@ export type Database = {
           agency_id: string;
           application_form_intro?: string | null;
           client_id: string;
+          content_version?: number;
+          contract_duration?: string | null;
           created_at?: string;
           created_by: string;
           creation_request_id?: string | null;
@@ -1415,7 +1503,9 @@ export type Database = {
           deadline_at?: string | null;
           department?: string | null;
           description?: string;
+          employment_arrangement?: string | null;
           employment_type?: string | null;
+          experience_min_years?: number | null;
           hiring_request_id?: string | null;
           id?: string;
           location?: string | null;
@@ -1424,8 +1514,14 @@ export type Database = {
           priority?: string;
           public_slug?: string | null;
           published_at?: string | null;
+          remote_details?: string | null;
+          remote_eligibility?: string | null;
+          salary_basis?: string;
           salary_max?: number | null;
           salary_min?: number | null;
+          salary_period?: string | null;
+          salary_visibility?: string;
+          seniority_level?: string | null;
           source?: string;
           source_revision_id?: string | null;
           status?: string;
@@ -1433,12 +1529,15 @@ export type Database = {
           updated_at?: string;
           work_arrangement?: string | null;
           workflow_template_id?: string | null;
+          working_hours?: string;
         };
         Update: {
           accepting_applications?: boolean;
           agency_id?: string;
           application_form_intro?: string | null;
           client_id?: string;
+          content_version?: number;
+          contract_duration?: string | null;
           created_at?: string;
           created_by?: string;
           creation_request_id?: string | null;
@@ -1446,7 +1545,9 @@ export type Database = {
           deadline_at?: string | null;
           department?: string | null;
           description?: string;
+          employment_arrangement?: string | null;
           employment_type?: string | null;
+          experience_min_years?: number | null;
           hiring_request_id?: string | null;
           id?: string;
           location?: string | null;
@@ -1455,8 +1556,14 @@ export type Database = {
           priority?: string;
           public_slug?: string | null;
           published_at?: string | null;
+          remote_details?: string | null;
+          remote_eligibility?: string | null;
+          salary_basis?: string;
           salary_max?: number | null;
           salary_min?: number | null;
+          salary_period?: string | null;
+          salary_visibility?: string;
+          seniority_level?: string | null;
           source?: string;
           source_revision_id?: string | null;
           status?: string;
@@ -1464,6 +1571,7 @@ export type Database = {
           updated_at?: string;
           work_arrangement?: string | null;
           workflow_template_id?: string | null;
+          working_hours?: string;
         };
         Relationships: [
           {
@@ -1545,6 +1653,57 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "screening_runs";
             referencedColumns: ["agency_id", "id"];
+          },
+        ];
+      };
+      screening_question_library: {
+        Row: {
+          agency_id: string;
+          archived: boolean;
+          category: string;
+          help_text: string;
+          id: string;
+          is_required: boolean;
+          label: string;
+          options: NonNullable<Json>;
+          question_type: string;
+          updated_at: string;
+          version: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          agency_id: string;
+          archived?: boolean;
+          category: string;
+          help_text?: string;
+          id: string;
+          is_required?: boolean;
+          label: string;
+          options?: NonNullable<Json>;
+          question_type: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          agency_id?: string;
+          archived?: boolean;
+          category?: string;
+          help_text?: string;
+          id?: string;
+          is_required?: boolean;
+          label?: string;
+          options?: NonNullable<Json>;
+          question_type?: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "screening_question_library_agency_id_fkey";
+            columns: ["agency_id"];
+            isOneToOne: false;
+            referencedRelation: "agencies";
+            referencedColumns: ["id"];
           },
         ];
       };
@@ -2132,6 +2291,8 @@ export type Database = {
           agency_id: string;
           application_form_intro: string | null;
           client_id: string;
+          content_version: number;
+          contract_duration: string | null;
           created_at: string;
           created_by: string;
           creation_request_id: string | null;
@@ -2139,7 +2300,9 @@ export type Database = {
           deadline_at: string | null;
           department: string | null;
           description: string;
+          employment_arrangement: string | null;
           employment_type: string | null;
+          experience_min_years: number | null;
           hiring_request_id: string | null;
           id: string;
           location: string | null;
@@ -2148,8 +2311,14 @@ export type Database = {
           priority: string;
           public_slug: string | null;
           published_at: string | null;
+          remote_details: string | null;
+          remote_eligibility: string | null;
+          salary_basis: string;
           salary_max: number | null;
           salary_min: number | null;
+          salary_period: string | null;
+          salary_visibility: string;
+          seniority_level: string | null;
           source: string;
           source_revision_id: string | null;
           status: string;
@@ -2157,6 +2326,7 @@ export type Database = {
           updated_at: string;
           work_arrangement: string | null;
           workflow_template_id: string | null;
+          working_hours: string;
         };
         SetofOptions: {
           from: "*";
@@ -2287,6 +2457,28 @@ export type Database = {
         };
         Returns: Json;
       };
+      save_library_question: {
+        Args: { p_agency_id: string; p_input: Json; p_request_key: string };
+        Returns: {
+          agency_id: string;
+          archived: boolean;
+          category: string;
+          help_text: string;
+          id: string;
+          is_required: boolean;
+          label: string;
+          options: NonNullable<Json>;
+          question_type: string;
+          updated_at: string;
+          version: number;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "screening_question_library";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       save_processing_settings: {
         Args: { p_agency_id: string; p_request_id: string; p_settings: Json };
         Returns: undefined;
@@ -2414,6 +2606,8 @@ export type Database = {
           agency_id: string;
           application_form_intro: string | null;
           client_id: string;
+          content_version: number;
+          contract_duration: string | null;
           created_at: string;
           created_by: string;
           creation_request_id: string | null;
@@ -2421,7 +2615,9 @@ export type Database = {
           deadline_at: string | null;
           department: string | null;
           description: string;
+          employment_arrangement: string | null;
           employment_type: string | null;
+          experience_min_years: number | null;
           hiring_request_id: string | null;
           id: string;
           location: string | null;
@@ -2430,8 +2626,14 @@ export type Database = {
           priority: string;
           public_slug: string | null;
           published_at: string | null;
+          remote_details: string | null;
+          remote_eligibility: string | null;
+          salary_basis: string;
           salary_max: number | null;
           salary_min: number | null;
+          salary_period: string | null;
+          salary_visibility: string;
+          seniority_level: string | null;
           source: string;
           source_revision_id: string | null;
           status: string;
@@ -2439,6 +2641,7 @@ export type Database = {
           updated_at: string;
           work_arrangement: string | null;
           workflow_template_id: string | null;
+          working_hours: string;
         };
         SetofOptions: {
           from: "*";
@@ -2455,6 +2658,67 @@ export type Database = {
           p_request_id: string;
         };
         Returns: undefined;
+      };
+      update_draft_job: {
+        Args: {
+          p_agency_id: string;
+          p_client_id: string;
+          p_expected_updated_at: string;
+          p_job: Json;
+          p_job_id: string;
+          p_new_client: Json;
+          p_questions: Json;
+          p_request_id_header?: string;
+          p_requirements: Json;
+        };
+        Returns: {
+          accepting_applications: boolean;
+          agency_id: string;
+          application_form_intro: string | null;
+          client_id: string;
+          content_version: number;
+          contract_duration: string | null;
+          created_at: string;
+          created_by: string;
+          creation_request_id: string | null;
+          currency: string | null;
+          deadline_at: string | null;
+          department: string | null;
+          description: string;
+          employment_arrangement: string | null;
+          employment_type: string | null;
+          experience_min_years: number | null;
+          hiring_request_id: string | null;
+          id: string;
+          location: string | null;
+          positions_required: number;
+          primary_recruiter_id: string | null;
+          priority: string;
+          public_slug: string | null;
+          published_at: string | null;
+          remote_details: string | null;
+          remote_eligibility: string | null;
+          salary_basis: string;
+          salary_max: number | null;
+          salary_min: number | null;
+          salary_period: string | null;
+          salary_visibility: string;
+          seniority_level: string | null;
+          source: string;
+          source_revision_id: string | null;
+          status: string;
+          title: string;
+          updated_at: string;
+          work_arrangement: string | null;
+          workflow_template_id: string | null;
+          working_hours: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "jobs";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
     };
     Enums: {

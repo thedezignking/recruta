@@ -43,7 +43,7 @@ export async function getPublicCareerSite(agencySlug: string) {
   const { data: jobs, error: jobsError } = await publicClient
     .from("jobs")
     .select(
-      "id,title,public_slug,department,location,employment_type,work_arrangement,published_at,positions_required,clients(name)",
+      "id,title,public_slug,department,location,employment_type,employment_arrangement,working_hours,contract_duration,remote_eligibility,remote_details,salary_visibility,salary_basis,work_arrangement,published_at,positions_required,clients(name)",
     )
     .eq("agency_id", agency.id)
     .eq("status", "open")
@@ -78,7 +78,7 @@ export async function getPublicJob(agencySlug: string, jobSlug: string) {
   const { data, error } = await publicClient
     .from("jobs")
     .select(
-      "id,agency_id,title,description,department,location,employment_type,work_arrangement,salary_min,salary_max,currency,positions_required,deadline_at,application_form_intro,public_slug,published_at,clients(name,industry),job_requirements(id,label,description,requirement_type,sort_order),job_application_questions(id,label,help_text,question_type,options,is_required,sort_order)",
+      "id,agency_id,title,description,department,location,employment_type,employment_arrangement,working_hours,contract_duration,remote_eligibility,remote_details,salary_visibility,salary_basis,work_arrangement,experience_min_years,seniority_level,salary_min,salary_max,currency,salary_period,positions_required,deadline_at,application_form_intro,public_slug,published_at,clients(name,industry),job_requirements(id,label,description,requirement_type,sort_order),job_application_questions(id,label,help_text,question_type,options,is_required,sort_order)",
     )
     .eq("public_slug", jobSlug)
     .eq("agency_id", agency.id)

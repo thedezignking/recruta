@@ -1,0 +1,610 @@
+{
+  "schemaVersion": 1,
+  "capturedDate": "2026-10-30",
+  "timezone": "Africa/Lagos",
+  "purpose": "P0 pre-edit working-tree manifest; hashes only, not a recoverable content backup",
+  "head": "748558f6ef814c43d91786243434dac109ced8a2",
+  "branch": "main",
+  "entries": [
+    {
+      "path": "docs/Recruta Master PRD.md",
+      "status": " M",
+      "bytes": 49043,
+      "sha256": "828119833debcd6572a9987f64467498418b668ab93820668a255f976d14d8ef"
+    },
+    {
+      "path": "docs/Recruta Master Technical PRD.md",
+      "status": " M",
+      "bytes": 58095,
+      "sha256": "b21e09c803861c7de80de1702f3bd85fe5b731e7f2462a13d4487dd9441bab28"
+    },
+    {
+      "path": "package-lock.json",
+      "status": " M",
+      "bytes": 343805,
+      "sha256": "a52981356e377094236c129ad71c7fa5ab9ec73080dabe16c9e06ba8cb65ba80"
+    },
+    {
+      "path": "package.json",
+      "status": " M",
+      "bytes": 2541,
+      "sha256": "910489acf461d82a0a13e1a7689ed1909cdc7e1e0a09b92ca0f37a54d02f3d2c"
+    },
+    {
+      "path": "src/app/(agency)/app/jobs/[id]/page.tsx",
+      "status": " M",
+      "bytes": 21814,
+      "sha256": "6205dbc7974bef14aba5a664a1d1061c6821099a2174580490a8e17d60810a51"
+    },
+    {
+      "path": "src/app/(agency)/app/jobs/page.tsx",
+      "status": " M",
+      "bytes": 25060,
+      "sha256": "883de69f41d600ea8743d3f33a631a0dd2f45ddd154c1037d15f5e252660fc4d"
+    },
+    {
+      "path": "src/app/api/v1/jobs/[id]/route.ts",
+      "status": " M",
+      "bytes": 1695,
+      "sha256": "743a3514a45158d613d0b2dba2374267bf488f869e04a0e3038aac01248114e2"
+    },
+    {
+      "path": "src/app/careers/[agencySlug]/jobs/[jobSlug]/page.tsx",
+      "status": " M",
+      "bytes": 5415,
+      "sha256": "a7513172bd2de76c56ce792aabe47b397d774532f9dd76c8f33dbda433c5fd4e"
+    },
+    {
+      "path": "src/components/collaboration/job-collaborators.tsx",
+      "status": " M",
+      "bytes": 12303,
+      "sha256": "9edea018789b58b9982996a2afee01428663fa463ba44e18dbe61120a29864fb"
+    },
+    {
+      "path": "src/components/jobs/job-lifecycle-actions.tsx",
+      "status": " M",
+      "bytes": 6330,
+      "sha256": "e7f854664a58d1369f649b3d4a3bf0398ae3c9a45742c51f52d4846acde44a13"
+    },
+    {
+      "path": "src/components/jobs/job-role-details.tsx",
+      "status": " M",
+      "bytes": 5543,
+      "sha256": "8c213a6639aa1f75aacf9ef5fe03b2bb9f9bf79822e76c6452158b85f20540f9"
+    },
+    {
+      "path": "src/components/jobs/job-side-panel.tsx",
+      "status": " M",
+      "bytes": 10518,
+      "sha256": "e15522f0684932f4e4576feb0827ef7bc900dd3734d24cbed7ff5affa07c377b"
+    },
+    {
+      "path": "src/components/jobs/new-job-dialog.tsx",
+      "status": " M",
+      "bytes": 9283,
+      "sha256": "0e01af0320ad5f843653ab90aa6e57647c16a6bd00e3c73465678f55589c7908"
+    },
+    {
+      "path": "src/components/jobs/new-job-form.test.tsx",
+      "status": " M",
+      "bytes": 7706,
+      "sha256": "71934a84f05a7cdeb4421c0db589b3476155f77bcecac00747add78243f803a6"
+    },
+    {
+      "path": "src/components/jobs/new-job-form.tsx",
+      "status": " M",
+      "bytes": 69706,
+      "sha256": "2dff20aedc77020ebd53261daf038f3774ed580cda6afee5909cc89e14dbc093"
+    },
+    {
+      "path": "src/components/layout/app-shell.tsx",
+      "status": " M",
+      "bytes": 19133,
+      "sha256": "3c6d95102078082f05e77ad2e38e133a4941efea0be01f33251975c5d32e2d87"
+    },
+    {
+      "path": "src/components/organizations/company-picker.tsx",
+      "status": " M",
+      "bytes": 11643,
+      "sha256": "9c08ed08f28247f555c123a1d67de794ec4c2796da1d36b69e419512ca2c971d"
+    },
+    {
+      "path": "src/components/public/application-form.tsx",
+      "status": " M",
+      "bytes": 14299,
+      "sha256": "d9ed7cd3cd5bed7504017bce7e419c5b10c3c7b14a6b3f1f965d54146c26869d"
+    },
+    {
+      "path": "src/lib/validation.ts",
+      "status": " M",
+      "bytes": 8013,
+      "sha256": "5731f1d9dec14075bf62cb344ab013c2613e34e3de41a5b3d6eca020906f5f32"
+    },
+    {
+      "path": "src/server/services/jobs.ts",
+      "status": " M",
+      "bytes": 16820,
+      "sha256": "f28b1d384e9ee920650de52eec016cdbd5e6a454eb46c343ef27e9d5dddd07ca"
+    },
+    {
+      "path": "src/server/services/public-jobs.ts",
+      "status": " M",
+      "bytes": 9232,
+      "sha256": "04006db560dff167e813be10faf4137e91b8e5a3a5bc85c6796985eee2303938"
+    },
+    {
+      "path": "src/types/database.generated.ts",
+      "status": " M",
+      "bytes": 78864,
+      "sha256": "b631268a978b2daab6edfeddaa93f4f9d631dcc32674ac5ea0938b91a2564519"
+    },
+    {
+      "path": ".claude/launch.json",
+      "status": "??",
+      "bytes": 199,
+      "sha256": "5611cd7966c91875e917d6e0a675397e881b445cb5f6c1b31275a8d2a657b9b2"
+    },
+    {
+      "path": "build.out",
+      "status": "??",
+      "bytes": 1880,
+      "sha256": "bdd671e2c5eb99aff588f3dad041a78f398a051e7646a8532a927b817687a2c1"
+    },
+    {
+      "path": "build10.out",
+      "status": "??",
+      "bytes": 1880,
+      "sha256": "7af5aeeb0d72d3320567633cbea228abda1f7e7ce44e813beeabec2178edfd9a"
+    },
+    {
+      "path": "build11.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "342f65ff462bf29e428b5ddf35ec927066ef9de735de0c5ef6dde18e6cd8adfe"
+    },
+    {
+      "path": "build12.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "0fa1f3f3b7f75a9e3e6fe0c8e797be1c25bd93b094d73041f1eb343e9cbf9243"
+    },
+    {
+      "path": "build13.out",
+      "status": "??",
+      "bytes": 1884,
+      "sha256": "daa85d40524055d6b2dd2c23c30111c5a9826a3b05f7c1eae449cd71bc81b835"
+    },
+    {
+      "path": "build14.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "e1670ba029e5ae5af37eabb50ab157c08ad7686cb3d602373821a8a876994c77"
+    },
+    {
+      "path": "build15.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "dec8db115140593c8473af404e660475a682baddd43a6521431364c7f75c30b1"
+    },
+    {
+      "path": "build16.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "00a8c666fb828ef1e864b167b1c44ead9d880feb33053469f29f73671f78174b"
+    },
+    {
+      "path": "build17.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "52b6a72ac2955a1b1f0eadc4bc64e9a4fa059c62e69c5a442f2b5041f803f8c2"
+    },
+    {
+      "path": "build18.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "08ae2daaa34baf1ab9974b1cab0cfcaac6a2010257606ed1e4a3866568925119"
+    },
+    {
+      "path": "build19.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "9c31f271398a1dfe7f578e5c7526269088e0e95d2f29e79efc44ac8e3ba8a531"
+    },
+    {
+      "path": "build2.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "841ecef13fdb1a2ec45a1b034e3f9b74c2e87a7fd41b647041eea681932d303e"
+    },
+    {
+      "path": "build20.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "031b7942b4d12b3df04836b3714e2b31ca042c09e01fbfaf2521c58c839bb12e"
+    },
+    {
+      "path": "build21.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "b3f561df3c1c5c21e586e5066769db6e98a9c98c11b4e0d2f6baf4c97dfb0b28"
+    },
+    {
+      "path": "build22.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "f15dd7b5bc495d6330dbf9413c9b279bcd42ce00dc13a2dff3b65a596f10593f"
+    },
+    {
+      "path": "build23.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "87126c7c982215741a7c634a19f5f38a72ef64e81f950e177afe603f471a617a"
+    },
+    {
+      "path": "build24.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "874570e4067a1af302875dc544ef4deb8eaa1959c4dae78d2cab42cbe6cc9cea"
+    },
+    {
+      "path": "build25.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "aaccb2761c9132f1b658798b1911f7fe4f02326fd8ead714184e9596581a74d7"
+    },
+    {
+      "path": "build26.out",
+      "status": "??",
+      "bytes": 1884,
+      "sha256": "0fe81c2b34c87b853ad8ae9c8fd32c88cedba00ced0905e5c4bfe4a7094efbf9"
+    },
+    {
+      "path": "build27.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "ef1fd3cae4f6e820203e405ed9fde76efc5dfaf8c5b21b861ec16b6b0e168ff1"
+    },
+    {
+      "path": "build28.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "b2d3bb3ad191fae5a29e7fb63ecb3487a22010c03fb153f11f6a7d8b1c25d1cc"
+    },
+    {
+      "path": "build29.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "4872b0b66fabe90d991dafa80f48fdb5314d985a1592ff049b4fd18b18e63765"
+    },
+    {
+      "path": "build3.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "796f1b144aa7ee930f07b3dec0a935932f904c5d4db3dd97e2a87e268cd04302"
+    },
+    {
+      "path": "build30.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "0be94a126ca977093823dc3d090613ae35372d81fd1f675075052a848ac13232"
+    },
+    {
+      "path": "build31.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "c06fa3990cd1572d17e70d54be4e356a78f3045ff1955a32b2ca50cd666a1e83"
+    },
+    {
+      "path": "build32.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "3b026bb4aaaaad5b388d49b765f81469d846b8d7128362aecbbd58b94fe37ecb"
+    },
+    {
+      "path": "build33.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "e58baff65b03ff7367f7758aaf503520851071f3a1ccc30bde437a0333f0c631"
+    },
+    {
+      "path": "build34.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "d0f664fe29a3df6725726432092c6db5b12e21709684a4fd5d366d5952953b4e"
+    },
+    {
+      "path": "build35.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "3e05c4e8019788c21aa0d110115f83231c92e3a5c808a7930f5480caa75815a5"
+    },
+    {
+      "path": "build36.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "b0891323646a6889c5921ba5cc9594fd35110a5cacecf9afaf148706fe5e8909"
+    },
+    {
+      "path": "build37.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "6e972ba0d676720b17676f18880ec672ec5c3258376a5799595ce889fa62adb7"
+    },
+    {
+      "path": "build38.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "d5b625688d1177336d0933697888e12f5f24c07742bb38fbebab7a11ef990e82"
+    },
+    {
+      "path": "build39.out",
+      "status": "??",
+      "bytes": 1982,
+      "sha256": "71a9999f6ef0085a5af5defe13ebc4c5d1be311ba7528ba265997f8abcebb8ac"
+    },
+    {
+      "path": "build4.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "01d2fa294464e5e7e2efdb731e0bbc32363165d77f45d553531e1a7917a4f302"
+    },
+    {
+      "path": "build40.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "49cde1d4cc57be3ba69402404ef4db29f3ec462c9a11074a47980996e683fa61"
+    },
+    {
+      "path": "build41.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "924c640b2abbd7a25ca775d7acdb1183939d4f48c062b00ddd012318eee8ed2b"
+    },
+    {
+      "path": "build42.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "9e65f3a8373096e749dabde3426335658639e24ce29b66ae4fc1eed133b711b3"
+    },
+    {
+      "path": "build43.out",
+      "status": "??",
+      "bytes": 1878,
+      "sha256": "593b15588c50bd9c6ddde0ae2489e6d4c76ae6385f424bafcaf71ba7dd133731"
+    },
+    {
+      "path": "build44.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "052676968f30da231e1918c93921fa778f9c0778744db8aff8427701f94505b4"
+    },
+    {
+      "path": "build45.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "48de0b16df3e164604bcfe19d73c6855ca284853581e17be0315a25b3e79c45a"
+    },
+    {
+      "path": "build46.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "8092d5b5c35307dff3e17704594a805170bf5b9da3107c8090d7cc1836a5f1d2"
+    },
+    {
+      "path": "build47.out",
+      "status": "??",
+      "bytes": 508,
+      "sha256": "fd473551a3045f820feace24bd15373a8bee268a581fb8819f9241cb926931c8"
+    },
+    {
+      "path": "build5.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "480810617b60b2c7d362fe5b241ccf657525a1d7bdadaa00529532f9d8d1496b"
+    },
+    {
+      "path": "build6.out",
+      "status": "??",
+      "bytes": 1880,
+      "sha256": "4f494fbcc8a6efa798bb636edb6321ee780c54936ec1783846b8a243c5320cc1"
+    },
+    {
+      "path": "build7.out",
+      "status": "??",
+      "bytes": 1878,
+      "sha256": "823923a302b1f999901c4ff87d6addd866e8e183902b2f4f41b5f945bf99f1d7"
+    },
+    {
+      "path": "build8.out",
+      "status": "??",
+      "bytes": 1882,
+      "sha256": "964c4d31d6b3a7376630bf68f78a4595cbed7b3d0fb2b6138bd99f99dcfa97e5"
+    },
+    {
+      "path": "build9.out",
+      "status": "??",
+      "bytes": 1878,
+      "sha256": "feced161a4156237ab4e2db1c637e264ba82537d1f4494b5d11f3a49cee45bdf"
+    },
+    {
+      "path": "diffnames.txt",
+      "status": "??",
+      "bytes": 1500,
+      "sha256": "3e9ce1db41b449b4d0ef5f8a581b4a28d3cdde1db6e559e1a1d0a3cd8eaccd9f"
+    },
+    {
+      "path": "docs/prd/create-job-flow-and-content-implementation-plan.md",
+      "status": "??",
+      "bytes": 79589,
+      "sha256": "b488b990e70c6dc783ed826420c4b764dff218b1a95bb445ec3305891d89c14b"
+    },
+    {
+      "path": "git_diff.txt",
+      "status": "??",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "git_status.txt",
+      "status": "??",
+      "bytes": 2828,
+      "sha256": "37573a72e6fce0aaa838c3d3b4b5be568c77bcdc4dd39b9170bc255e997aa3cd"
+    },
+    {
+      "path": "jobs_files.txt",
+      "status": "??",
+      "bytes": 876,
+      "sha256": "719b525f89093286daf52cd8858156808e67ad2b63ce4ca91d7b15c7265bb944"
+    },
+    {
+      "path": "src/app/preview/jobs/[id]/page.tsx",
+      "status": "??",
+      "bytes": 3571,
+      "sha256": "2c2f61761e42df19a70d9af0849d09a43f8bf0acf92fc1f65090947048712e5a"
+    },
+    {
+      "path": "src/components/jobs/job-description-editor.test.tsx",
+      "status": "??",
+      "bytes": 635,
+      "sha256": "a79f9be19445b5725108e9afd55eb5570e2316b5a26f2863950a119147efa752"
+    },
+    {
+      "path": "src/components/jobs/job-description-editor.tsx",
+      "status": "??",
+      "bytes": 3798,
+      "sha256": "7cf887f87a701fafacca2362ed6f988836d580af1012032fe674a9e12b9a41f5"
+    },
+    {
+      "path": "src/components/layout/toolbar-title-context.tsx",
+      "status": "??",
+      "bytes": 681,
+      "sha256": "c3c067b8c9f7599c719572b6e377454db065c74412b66c88877484178596f2ec"
+    },
+    {
+      "path": "src/components/public/application-form.test.tsx",
+      "status": "??",
+      "bytes": 960,
+      "sha256": "11886ac1ddcfde829f4ca8f70c6fce88930a6887f705291a2f5211871a373801"
+    },
+    {
+      "path": "src/components/ui/date-picker.test.tsx",
+      "status": "??",
+      "bytes": 684,
+      "sha256": "2d1d58622b29e6fba6b2d9cf3373fcf22a9db019ef3009c0db70be4145c85993"
+    },
+    {
+      "path": "src/components/ui/date-picker.tsx",
+      "status": "??",
+      "bytes": 12813,
+      "sha256": "dcdf9dac35be0807666a14eef37f8f3071f5027ff242c86c1ec3675519bf058b"
+    },
+    {
+      "path": "src/lib/job-publication.test.ts",
+      "status": "??",
+      "bytes": 1074,
+      "sha256": "62274f569389e909841622d9b9786b079987fab1ce43a0626be3a6626d22e0b8"
+    },
+    {
+      "path": "src/lib/job-publication.ts",
+      "status": "??",
+      "bytes": 302,
+      "sha256": "88694f5e67d3b38f024336a86cf68c2d899269e69c216ca7cc8c6688767d3fb1"
+    },
+    {
+      "path": "supabase/migrations/20261029152536_edit_draft_jobs.sql",
+      "status": "??",
+      "bytes": 7219,
+      "sha256": "1632d436c2245d862ff4cdeab8a4c66c2568119566d7457f6aaeb6c1c06ae1b0"
+    },
+    {
+      "path": "supabase/migrations/20261029152651_job_experience_preferences.sql",
+      "status": "??",
+      "bytes": 5778,
+      "sha256": "38df9a4f1bcfcaab15a205fe4bb2069c7b9692257400ba63b037cd806d3545ae"
+    },
+    {
+      "path": "supabase/migrations/20261029152822_job_salary_period.sql",
+      "status": "??",
+      "bytes": 12945,
+      "sha256": "e96fa25ef4422cfdb579542cc010b30bac05915daf5fb07806ce1ec7dd6ef153"
+    },
+    {
+      "path": "supabase/tests/draft_job_edit.test.sql",
+      "status": "??",
+      "bytes": 4341,
+      "sha256": "716850fca54c2cbac6aea219c7206b5a86e8b44b9be30dc5cc8042f0035727c6"
+    },
+    {
+      "path": "tmp2.txt",
+      "status": "??",
+      "bytes": 1482,
+      "sha256": "a6d8ade4f7b081471578e72d87541a67c4de3fb87d4341366f2c3a697e3c4f57"
+    },
+    {
+      "path": "typecheck.out",
+      "status": "??",
+      "bytes": 1520,
+      "sha256": "851d90c38bd672140d2bc34306c30860f6b02cf756e7ae7274feb92b164c14b3"
+    },
+    {
+      "path": "typecheck10.out",
+      "status": "??",
+      "bytes": 772,
+      "sha256": "0e4d3a8aad27b69b008978d96119e65654953dfc4deb559caa3e9c9a551c7549"
+    },
+    {
+      "path": "typecheck11.out",
+      "status": "??",
+      "bytes": 772,
+      "sha256": "0e4d3a8aad27b69b008978d96119e65654953dfc4deb559caa3e9c9a551c7549"
+    },
+    {
+      "path": "typecheck2.out",
+      "status": "??",
+      "bytes": 772,
+      "sha256": "0e4d3a8aad27b69b008978d96119e65654953dfc4deb559caa3e9c9a551c7549"
+    },
+    {
+      "path": "typecheck3.out",
+      "status": "??",
+      "bytes": 772,
+      "sha256": "0e4d3a8aad27b69b008978d96119e65654953dfc4deb559caa3e9c9a551c7549"
+    },
+    {
+      "path": "typecheck4.out",
+      "status": "??",
+      "bytes": 772,
+      "sha256": "0e4d3a8aad27b69b008978d96119e65654953dfc4deb559caa3e9c9a551c7549"
+    },
+    {
+      "path": "typecheck5.out",
+      "status": "??",
+      "bytes": 772,
+      "sha256": "0e4d3a8aad27b69b008978d96119e65654953dfc4deb559caa3e9c9a551c7549"
+    },
+    {
+      "path": "typecheck6.out",
+      "status": "??",
+      "bytes": 772,
+      "sha256": "0e4d3a8aad27b69b008978d96119e65654953dfc4deb559caa3e9c9a551c7549"
+    },
+    {
+      "path": "typecheck7.out",
+      "status": "??",
+      "bytes": 772,
+      "sha256": "0e4d3a8aad27b69b008978d96119e65654953dfc4deb559caa3e9c9a551c7549"
+    },
+    {
+      "path": "typecheck8.out",
+      "status": "??",
+      "bytes": 772,
+      "sha256": "0e4d3a8aad27b69b008978d96119e65654953dfc4deb559caa3e9c9a551c7549"
+    },
+    {
+      "path": "typecheck9.out",
+      "status": "??",
+      "bytes": 772,
+      "sha256": "0e4d3a8aad27b69b008978d96119e65654953dfc4deb559caa3e9c9a551c7549"
+    }
+  ]
+}

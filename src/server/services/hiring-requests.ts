@@ -9,6 +9,10 @@ import {
   requestMessageSchema,
 } from "@/lib/validation";
 import type { HiringRequestAction } from "@/features/hiring-requests/state-machine";
+import {
+  jobAuthorizationError,
+  requireJobMutationResource,
+} from "./job-mutation-access";
 
 export async function listHiringRequests(
   supabase: SupabaseClient,
@@ -165,10 +169,17 @@ export async function approveHiringRequest(
 
 export async function convertHiringRequest(
   supabase: SupabaseClient,
+  agencyId: string,
   requestId: string,
   input: unknown,
   idempotencyKey: string,
 ) {
+  await requireJobMutationResource(
+    supabase,
+    agencyId,
+    requestId,
+    "hiring_requests",
+  );
   const payload = convertToJobSchema.parse(input);
   const { data, error } = await supabase.rpc("convert_hiring_request_to_job", {
     p_request_id: requestId,
@@ -178,7 +189,15 @@ export async function convertHiringRequest(
     p_primary_recruiter_id: payload.primaryRecruiterId,
     p_idempotency_key: idempotencyKey,
   });
-  if (error) throw new ApiError(409, "JOB_CONVERSION_FAILED", error.message);
+  if (error)
+    throw (
+      jobAuthorizationError(error) ??
+      new ApiError(
+        409,
+        "JOB_CONVERSION_FAILED",
+        "The request could not be converted. Check its approval, workflow and recruiter.",
+      )
+    );
   return { jobId: data };
 }
 

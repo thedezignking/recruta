@@ -2,8 +2,8 @@
 
 ## Master Product Requirements Document
 
-**Version:** 4.0  
-**Date:** October 24, 2026  
+**Version:** 4.1\
+**Date:** October 30, 2026\
 **Company:** Evenkore  
 **Product:** Recruta  
 **Category:** Recruitment Operations and Automation  
@@ -11,11 +11,15 @@
 **Future market:** Internal recruitment teams  
 **Platform:** Web application  
 **Status:** Revised product source of truth  
-**Supersedes:** Recruta Master PRD v3.0
+**Supersedes:** Recruta Master PRD v4.0
+
+Create-job revision status: the owner authorized P0, then P1 and continued implementation of the improved product flow. The local implementation now includes minimal draft capture, private unfinished criteria/questions, optional Department or team, criterion evidence, save/discard protection on modal close, and mutation-boundary repairs. The [complete implementation plan](prd/create-job-flow-and-content-implementation-plan.md) distinguishes this slice from remaining work; these changes are not a deployment claim. [ADR 0006](decisions/0006-job-drafting-publication-and-data-boundaries.md) records the full target contract.
 
 ---
 
 # 1. Executive Summary
+
+October 30 content implementation: the fourteen priority changes are implemented locally, including arrangement/hours, conditional location/duration, remote eligibility, private hiring/sourcing details, salary visibility/basis, workflow-stage preview, priority guidance, readiness and the four-type agency question library. See [content-pass evidence](verification/create-job-content-pass.md) for exact scope and remaining audit work. Requirements elsewhere remain broader than this pass.
 
 ## 1.1 What Recruta Is
 
@@ -217,25 +221,45 @@ External collaborators are not the primary product operator. Their experience sh
 - Public visitors can read only published, open, application-accepting jobs.
 - Public applicants can submit only to an eligible job and cannot enumerate private records.
 
+Create-job target authority: active owners, administrators, and recruitment managers may manage and publish agency-wide jobs. An active recruiter may create a job, edit/publish an owned unpublished draft, and manage an explicitly assigned job; creator status alone does not retain access to applicants after reassignment. Managers control reassignment to another recruiter. Hiring contacts do not receive portal membership or job access merely by being selected. Private briefs, budget, contacts, hiring reasons, sourcing notes, and evaluation rationale are excluded from public and employer-portal projections. Direct table mutations must not bypass the authorized job operations. These are P1–P12 target rules; see ADR 0006 for the exact authority matrix and current gaps.
+
 ---
 
 # 5. Core Product Workflows
 
 ## 5.1 Direct Job Creation — Primary Workflow
 
+This is the create-job target workflow established during P0; implementation and release status are tracked by package in the linked plan.
+
 1. An authorized agency user selects **Open a job**.
 2. They select an existing organization or create a new organization inline.
-3. They enter the role, location, employment type, work arrangement, description, compensation when appropriate, number of openings, deadline, priority, and recruiter assignment.
-4. They define required and preferred criteria.
+3. Organization and a working title of 2–160 characters are sufficient to save a draft; openings default to one. Description, workplace type, lead recruiter, workflow, and unfinished custom questions may remain incomplete. Safe types, lengths, bounds, and tenant relationships are always validated. Organization-free or automatically untitled drafts are outside this scope.
+4. They develop the public role: description, employment arrangement separate from working hours, workplace type, conditional public location/remote eligibility, optional department, duration, schedule, travel, authorization/relocation policy, reporting line, compensation, benefits, and experience guidance. They add required/preferred structured criteria only when useful; retyping the description is never mandatory. Internal hiring reason, reference, target start, contact, priority, and sourcing guidance remain separate.
 5. They configure application questions in addition to Recruta's standard applicant fields.
 6. Before publishing, Recruta shows a complete preview of the public role and application experience, including all fields already collected.
-7. The user saves a draft or publishes.
+7. The user saves a draft at any step or publishes the reviewed version. Publication requires a valid organization/title/description, employment arrangement, workplace type, on-site/hybrid location or explicit remote eligibility, active eligible lead recruiter, usable workflow snapshot, and answerable required questions. Closing date is optional. Recommendations for richer content do not become arbitrary blockers. Closing or navigating away with changes offers Save draft, Discard changes, and Keep editing.
 8. Publishing produces:
    - A public job page.
    - A dedicated application page.
    - Copyable job and application links.
    - An open job in the agency workspace.
 9. Repeated submission caused by a retry or double click must not create duplicate organizations or jobs.
+
+### Create-job content and publication contract
+
+- Essentials adds optional internal job reference, hiring reason (including confidential replacement), target start date or flexible state, and hiring contact. A confidential replacement flag does not promise anonymous-employer publication. Contacts and portal accounts remain separate.
+- Country inputs show country names and store validated codes. Bare website domains normalize to HTTPS. Organization address and public job location are distinct. Initial location autofill never overwrites a recruiter edit. Duplicate guidance includes bounded near-name matches; no silent merge or persistence of search results.
+- Employment arrangement uses stable values: permanent, fixed-term, temporary, contract, freelance/consulting, internship, apprenticeship, volunteer, other. Working hours separately records full-time, part-time, variable, or not specified. Relevant fixed-duration engagements require a duration or explicit to-be-agreed state at publication. Legacy full-time never silently implies permanent.
+- Department or team is optional under additional details. Remote roles require an explicit eligibility state; hybrid roles can describe office attendance. Working schedule, travel, work authorization/sponsorship, relocation, reports-to role title, benefits, and experience/seniority guidance are optional and conditional. Experience never automatically rejects candidates or changes stages.
+- Compensation supports exact/range/from/up-to amounts, validated currency and pay period, gross/net/not-specified basis, benefits and additional compensation. Workspace defaults may prefill new jobs. New compensation remains internal until deliberately disclosed as amount or recruiter-authored public text; existing published salaries retain their visibility through a reviewed compatibility migration. Public/private protection must hold at the database boundary.
+- Public criteria support categories, detail/evidence guidance, required/preferred classification, and accessible ordering. Internal sourcing and evaluation notes remain private. Optional criteria never force duplication of the description.
+- Candidate questions support short/long text, yes/no, single choice, then compatible number/date/URL/multi-select types. Choice questions need 2–20 distinct nonempty options. Maximum 20 questions; warn above five total or two required long answers. Required means an answer is needed, not that Yes is needed. Questions never automatically reject, move stages, or send email. Concise guidance discourages requesting sensitive information and identity/financial documents.
+- The agency question library lives in existing Settings. Owners/admins/managers manage items; recruiters copy/use them. Job questions are snapshots unaffected by later library edits/archive. Private evaluation rationale is not candidate-facing.
+- Lead recruiter defaults to the actor when eligible; Assign later is allowed for drafts. Workflow selection shows actual ordered stages and snapshot behavior. Priority is internal: Low (no immediate deadline), Normal (standard timeline), High (active client need), Urgent (immediate attention).
+- Review renders the actual public role and application controls with agency branding, consent, upload requirements, required states, help and choices, plus a separately labeled internal setup summary. Success exposes both stable job and apply links and actual acceptance state. Publishing is not an instruction to email candidates or invite contacts.
+- A selected application closing date includes the whole date in the job's saved time zone. Intake stops at the exclusive start of the next local day, without marking the job filled/closed. No date means open until paused/closed. Extension is a deliberate versioned action and does not automatically resume a paused job. Existing deadline instants require an impact review before cutover.
+
+Detailed field lengths, options, visibility, compatibility, accessibility, and acceptance tests are specified in the implementation plan. Autosave, AI writing, anonymous-employer publication, full agreement management, workload routing, separate sourcing ownership, formal eligibility flags, and job-board distribution retain explicit separate gates.
 
 ## 5.2 Public Job and Application Experience
 
@@ -405,14 +429,18 @@ The default lockup pairs a 28 px square mark with a 22 px semibold wordmark and 
 ## F03 — Jobs and Openings (P0)
 
 - Direct job creation is available to every authorized recruitment role.
-- New job opens as a spacious, centered, four-step modal over the current Overview or Jobs page. Closing it returns to that page. Essentials covers organization, title, and openings; Role details covers description, engagement, location, arrangement, and deadline; Hiring setup covers optional requirements, screening questions, and assignment; Review shows the candidate-facing posting and application form before publishing. Draft creation is available after the role description is valid. Direct links to the former New job route open the same modal on Jobs.
+- Application deadline uses a compact calendar picker in the job modal. It opens at the saved date or current month, prevents choosing past days, supports keyboard day navigation, offers month selection and Today/Tomorrow shortcuts, and can clear the date.
+- New job opens in a spacious, centered modal over the current Overview or Jobs page. Its opening screen asks whether to create the role from scratch or use an editable template; editing an existing draft skips this choice. The opening choice has no step sidebar. The four stages remain Essentials, Role details, Hiring setup, and Review, with conditional optional details under the content contract in §5.1. The description editor renders headings, emphasis, and lists while storing portable Markdown; public rendering must preserve supported formatting. Templates are reviewed structural starting points, never promises about an employer. Direct links to the former New job route open the same modal on Jobs. The local implementation now permits Save draft from Essentials without a description or workplace type, restores incomplete criteria/questions privately, and includes optional Department or team. Modal close offers Keep editing, Discard changes or Save draft; unload warns about unsaved changes. Publication still requires complete role and question content.
+- The description is the source of truth for the public role brief. Structured criteria are optional and should be added only when the recruiter needs individual requirements available for screening and comparison; never require users to re-enter description text as criteria. The form should explain this distinction in plain language. Review presents the role and application form in clear, separate sections, with missing publication information called out before publish.
 - One job records one or more openings.
 - Draft, preview, publish, pause, reopen, fill, cancel, and close-unfilled lifecycle actions.
+- A draft job detail offers Edit draft and Review & publish. Editing reopens the four-step job modal with saved values; publishing follows the review preview. Drafts do not show a copyable application link or an “applications open” state. The detail toolbar shows Jobs as a breadcrumb followed by the current role title. Drafts also offer an authenticated, read-only preview of the actual candidate application page; it cannot accept a submission before publication.
+- Configured job stages appear as a compact numbered workflow. Hiring-manager access is displayed separately from pending invitations; adding a person opens a focused dialog with existing organization members and email invitation. Job lifecycle controls sit in the detail page's More menu; permanent deletion requires a separate confirmation.
 - Requirements, screening questions, workflow snapshot, priority, deadline, and assignments.
 - Job detail shows link state, application count, filled count, owners, and recent activity.
 - Destructive deletion is allowed only for safe empty manual jobs; otherwise close or archive.
 - Creation and publication actions are idempotent and resistant to double submission.
-- Jobs shows exact, agency-scoped open, draft, on-hold, and next-seven-day deadline counts. The list supports status tabs and title search, uses role, organization, recruiter, applicant, openings, deadline, and status cells, and opens a job in a right-side overview panel. The panel shows real application stages and configured workflow, and links to the full job page for actions.
+- Jobs shows exact, agency-scoped open, draft, on-hold, and next-seven-day deadline counts. The list supports status tabs and title search, uses role, organization, recruiter, applicant, openings, deadline, and status cells, and opens a job in a right-side overview panel. The panel shows real application stages and configured workflow, with draft edit/publish or application review actions alongside the full job link.
 
 ## F04 — Public Career and Application Pages (P0)
 

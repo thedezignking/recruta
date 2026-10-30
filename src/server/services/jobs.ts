@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError } from "@/lib/api";
+import { contentShape } from "@/lib/job-content";
 import { decodeTimeCursor, encodeTimeCursor } from "@/lib/cursor";
 import { searchPattern } from "@/lib/workspace-search";
 import { overviewRangeSchema, overviewWindow } from "@/lib/overview-range";
@@ -7,8 +8,13 @@ import {
   jobAssignmentSchema,
   jobTransitionSchema,
   manualJobSchema,
+  jobDraftSchema,
 } from "@/lib/validation";
 import type { Json } from "@/types/database.generated";
+import {
+  jobAuthorizationError,
+  requireJobMutationResource,
+} from "./job-mutation-access";
 
 function slugify(value: string) {
   return value
@@ -271,6 +277,7 @@ export async function getJob(supabase: SupabaseClient, jobId: string) {
     )
     .eq("id", jobId)
     .order("sort_order", { referencedTable: "job_requirements" })
+    .order("sort_order", { referencedTable: "job_application_questions" })
     .order("sort_order", { referencedTable: "job_workflow_stages" })
     .single();
   if (error || !data)
@@ -298,8 +305,49 @@ export async function getJob(supabase: SupabaseClient, jobId: string) {
       requires_approval: boolean;
     }>;
   };
+  const internalResult = await supabase
+    .from("job_internal_briefs")
+    .select(
+      "hiring_reason,target_start_date,sourcing_brief,salary_min,salary_max,currency,salary_period",
+    )
+    .eq("agency_id", raw.agency_id)
+    .eq("job_id", jobId)
+    .maybeSingle();
+  if (internalResult.error)
+    throw new ApiError(
+      500,
+      "BRIEF_LOAD_FAILED",
+      "The internal hiring brief could not be loaded.",
+    );
+  const draftResult =
+    raw.status === "draft"
+      ? await supabase
+          .from("job_draft_content")
+          .select("requirements,questions")
+          .eq("agency_id", raw.agency_id)
+          .eq("job_id", jobId)
+          .maybeSingle()
+      : { data: null, error: null };
+  if (draftResult.error)
+    throw new ApiError(
+      500,
+      "DRAFT_LOAD_FAILED",
+      "Your saved draft could not be loaded. Try again.",
+    );
+  const draftContent = draftResult.data
+    ? {
+        requirements: jobDraftSchema.shape.requirements.parse(
+          draftResult.data.requirements,
+        ),
+        questions: jobDraftSchema.shape.questions.parse(
+          draftResult.data.questions,
+        ),
+      }
+    : null;
   return {
     ...raw,
+    draftContent,
+    internalBrief: internalResult.data,
     clients: Array.isArray(raw.clients)
       ? (raw.clients[0] ?? null)
       : raw.clients,
@@ -312,7 +360,14 @@ export async function createManualJob(
   input: unknown,
   requestId: string,
 ) {
-  const payload = manualJobSchema.parse(input);
+  const payload = (
+    typeof input === "object" &&
+    input !== null &&
+    "publish" in input &&
+    input.publish === true
+      ? manualJobSchema
+      : jobDraftSchema
+  ).parse(input);
   const publicSlug = `${slugify(payload.title) || "role"}-${crypto
     .randomUUID()
     .slice(0, 8)}`;
@@ -321,6 +376,12 @@ export async function createManualJob(
     p_client_id: payload.clientId ?? null,
     p_new_client: (payload.newOrganization ?? null) as Json,
     p_job: {
+      ...Object.fromEntries(
+        Object.keys(contentShape).map((key) => [
+          key,
+          payload[key as keyof typeof payload],
+        ]),
+      ),
       title: payload.title,
       description: payload.description,
       department: payload.department,
@@ -328,9 +389,12 @@ export async function createManualJob(
       location: payload.location,
       employmentType: payload.employmentType,
       workArrangement: payload.workArrangement,
+      experienceMinYears: payload.experienceMinYears,
+      seniorityLevel: payload.seniorityLevel || undefined,
       salaryMin: payload.salaryMin,
       salaryMax: payload.salaryMax,
       currency: payload.currency || undefined,
+      salaryPeriod: payload.salaryPeriod,
       deadlineAt: payload.deadlineAt?.toISOString(),
       priority: payload.priority,
       workflowTemplateId: payload.workflowTemplateId || undefined,
@@ -344,6 +408,8 @@ export async function createManualJob(
     p_request_id_header: requestId,
   });
   if (error || !data) {
+    if (error && jobAuthorizationError(error))
+      throw jobAuthorizationError(error);
     const duplicate = error?.message.includes("jobs_agency_public_slug_idx");
     throw new ApiError(
       duplicate ? 409 : 400,
@@ -358,9 +424,11 @@ export async function createManualJob(
 
 export async function publishJob(
   supabase: SupabaseClient,
+  agencyId: string,
   jobId: string,
   requestId: string,
 ) {
+  await requireJobMutationResource(supabase, agencyId, jobId);
   const job = await getJob(supabase, jobId);
   const publicSlug = `${slugify(job.title) || "role"}-${crypto.randomUUID().slice(0, 8)}`;
   const { data, error } = await supabase.rpc("publish_job", {
@@ -369,6 +437,8 @@ export async function publishJob(
     p_request_id_header: requestId,
   });
   if (error || !data) {
+    if (error && jobAuthorizationError(error))
+      throw jobAuthorizationError(error);
     throw new ApiError(
       400,
       "JOB_PUBLISH_FAILED",
@@ -378,12 +448,93 @@ export async function publishJob(
   return data;
 }
 
+export async function updateDraftJob(
+  supabase: SupabaseClient,
+  agencyId: string,
+  jobId: string,
+  input: unknown,
+  expectedUpdatedAt: string,
+  requestId: string,
+) {
+  const payload = jobDraftSchema.parse({
+    ...(input as Record<string, unknown>),
+    publish: false,
+  });
+  if (!expectedUpdatedAt || Number.isNaN(Date.parse(expectedUpdatedAt))) {
+    throw new ApiError(
+      400,
+      "MISSING_VERSION",
+      "Refresh the job before saving changes.",
+    );
+  }
+  const { data, error } = await supabase.rpc("update_draft_job", {
+    p_agency_id: agencyId,
+    p_job_id: jobId,
+    p_expected_updated_at: expectedUpdatedAt,
+    p_client_id: payload.clientId ?? null,
+    p_new_client: (payload.newOrganization ?? null) as Json,
+    p_job: {
+      ...Object.fromEntries(
+        Object.keys(contentShape).map((key) => [
+          key,
+          payload[key as keyof typeof payload],
+        ]),
+      ),
+      title: payload.title,
+      description: payload.description,
+      department: payload.department,
+      positionsRequired: payload.positionsRequired,
+      location: payload.location,
+      employmentType: payload.employmentType,
+      workArrangement: payload.workArrangement,
+      experienceMinYears: payload.experienceMinYears,
+      seniorityLevel: payload.seniorityLevel || undefined,
+      salaryMin: payload.salaryMin,
+      salaryMax: payload.salaryMax,
+      currency: payload.currency || undefined,
+      salaryPeriod: payload.salaryPeriod,
+      deadlineAt: payload.deadlineAt?.toISOString(),
+      priority: payload.priority,
+      workflowTemplateId: payload.workflowTemplateId || undefined,
+      primaryRecruiterId: payload.primaryRecruiterId || undefined,
+      applicationFormIntro: payload.applicationFormIntro,
+    } as Json,
+    p_requirements: payload.requirements as Json,
+    p_questions: payload.questions as Json,
+    p_request_id_header: requestId,
+  });
+  if (error || !data) {
+    if (error && jobAuthorizationError(error))
+      throw jobAuthorizationError(error);
+    if (error?.message.includes("stale_job"))
+      throw new ApiError(
+        409,
+        "STALE_JOB",
+        "This draft changed elsewhere. Refresh it and try again.",
+      );
+    if (error?.message.includes("job_not_draft"))
+      throw new ApiError(
+        409,
+        "JOB_NOT_DRAFT",
+        "Only unpublished drafts can be edited here.",
+      );
+    throw new ApiError(
+      400,
+      "JOB_UPDATE_FAILED",
+      "The draft could not be saved. Review its details and try again.",
+    );
+  }
+  return getJob(supabase, jobId);
+}
+
 export async function assignJob(
   supabase: SupabaseClient,
+  agencyId: string,
   jobId: string,
   input: unknown,
   requestId: string,
 ) {
+  await requireJobMutationResource(supabase, agencyId, jobId);
   const payload = jobAssignmentSchema.parse(input);
   const { data, error } = await supabase.rpc("assign_job", {
     p_job_id: jobId,
@@ -391,36 +542,58 @@ export async function assignJob(
     p_assignment_role: payload.assignmentRole,
     p_request_id_header: requestId,
   });
-  if (error) throw new ApiError(409, "JOB_ASSIGNMENT_FAILED", error.message);
+  if (error)
+    throw (
+      jobAuthorizationError(error) ??
+      new ApiError(
+        409,
+        "JOB_ASSIGNMENT_FAILED",
+        "The recruiter could not be assigned. Check their active workspace membership.",
+      )
+    );
   return data;
 }
 
 export async function transitionJob(
   supabase: SupabaseClient,
+  agencyId: string,
   jobId: string,
   input: unknown,
   requestId: string,
 ) {
+  await requireJobMutationResource(supabase, agencyId, jobId);
   const payload = jobTransitionSchema.parse(input);
   const { data, error } = await supabase.rpc("transition_job", {
     p_job_id: jobId,
     p_status: payload.status,
     p_request_id_header: requestId,
   });
-  if (error) throw new ApiError(409, "JOB_TRANSITION_FAILED", error.message);
+  if (error)
+    throw (
+      jobAuthorizationError(error) ??
+      new ApiError(
+        409,
+        "JOB_TRANSITION_FAILED",
+        "The job state could not be changed. Refresh and try again.",
+      )
+    );
   return data;
 }
 
 export async function deleteEmptyManualJob(
   supabase: SupabaseClient,
+  agencyId: string,
   jobId: string,
   requestId: string,
 ) {
+  await requireJobMutationResource(supabase, agencyId, jobId);
   const { data, error } = await supabase.rpc("delete_empty_manual_job", {
     p_job_id: jobId,
     p_request_id_header: requestId,
   });
   if (error) {
+    const authorizationError = jobAuthorizationError(error);
+    if (authorizationError) throw authorizationError;
     const message = error.message;
     if (message.includes("job_has_collaboration_history")) {
       throw new ApiError(
