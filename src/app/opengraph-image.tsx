@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
 export const alt =
-  "Recruta — Turn every job into a placement. A Recruta workspace showing jobs and applications.";
+  "Recruta — Make more placements. Spend less time on admin. A Recruta workspace showing jobs and applications.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -187,7 +187,7 @@ export default function OpengraphImage() {
             position: "absolute",
             left: 0,
             width: 1200,
-            top: 104,
+            top: 92,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -196,36 +196,41 @@ export default function OpengraphImage() {
           <div
             style={{
               display: "flex",
-              alignItems: "flex-end",
-              fontSize: 64,
+              flexDirection: "column",
+              alignItems: "center",
+              fontSize: 58,
               fontWeight: 600,
-              letterSpacing: "-0.05em",
-              lineHeight: 1,
+              letterSpacing: "-0.045em",
+              lineHeight: 1.06,
             }}
           >
-            <div style={{ display: "flex" }}>Turn every job into a&nbsp;</div>
-            <div
-              style={{
-                display: "flex",
-                color: violet,
-                borderBottom: `4px dashed rgba(92,90,237,0.5)`,
-                paddingBottom: 4,
-              }}
-            >
-              placement
+            <div style={{ display: "flex", alignItems: "flex-end" }}>
+              <div style={{ display: "flex" }}>Make more&nbsp;</div>
+              <div
+                style={{
+                  display: "flex",
+                  color: violet,
+                  borderBottom: "4px dashed rgba(92,90,237,0.5)",
+                  paddingBottom: 2,
+                }}
+              >
+                placements
+              </div>
+            </div>
+            <div style={{ display: "flex", color: "#8A8B99" }}>
+              Spend less time on admin
             </div>
           </div>
           <div
             style={{
               display: "flex",
-              marginTop: 22,
+              marginTop: 18,
               fontFamily: "Geist Mono",
               fontSize: 17,
               color: muted,
             }}
           >
-            recruitment software for agencies · automation prepares, people
-            decide
+            post → screen → shortlist → place
           </div>
         </div>
 
@@ -235,7 +240,7 @@ export default function OpengraphImage() {
             position: "absolute",
             left: 180,
             right: 180,
-            top: 300,
+            top: 316,
             bottom: -40,
             display: "flex",
             background: "#FFFFFF",

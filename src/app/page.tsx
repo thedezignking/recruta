@@ -250,16 +250,21 @@ export default function Home() {
               <Reveal>
                 <h1
                   id="hero-heading"
-                  className="mx-auto max-w-4xl text-[40px] leading-[1.05] font-semibold tracking-[-0.045em] text-balance sm:text-[60px]"
+                  className="mx-auto max-w-3xl text-[40px] leading-[1.06] font-semibold tracking-[-0.045em] sm:text-[58px]"
                 >
-                  Turn every job into a <Accent>placement</Accent>
+                  <span className="block">
+                    Make more <Accent>placements</Accent>
+                  </span>
+                  <span className="block text-[#8A8B99]">
+                    Spend less time on admin
+                  </span>
                 </h1>
               </Reveal>
               <Reveal delay={120}>
-                <p className="mx-auto mt-6 max-w-xl text-[17px] leading-7 text-muted-foreground">
-                  Recruta runs the admin around every job and applicant, from
-                  the application page to the client shortlist, so your
-                  recruiters spend their day placing people.
+                <p className="mx-auto mt-6 max-w-[640px] text-[17px] leading-7 text-balance text-muted-foreground">
+                  Recruta posts your jobs, collects every application and checks
+                  each CV against the role&rsquo;s requirements, then builds the
+                  shortlist. You decide who moves forward.
                 </p>
               </Reveal>
               <Reveal delay={220}>
@@ -272,10 +277,31 @@ export default function Home() {
                     <ArrowRightIcon aria-hidden="true" size={16} />
                   </Link>
                 </div>
-                <p className="mt-5 font-mono text-[11px] text-muted-foreground">
-                  No candidate accounts · Works on any phone · AI that shows its
-                  evidence
-                </p>
+                <ol
+                  aria-label="How it works"
+                  className="mt-7 flex flex-wrap items-center justify-center gap-x-2 gap-y-2 font-mono text-[11px] text-muted-foreground"
+                >
+                  {["Post", "Screen", "Shortlist", "Place"].map(
+                    (step, index) => (
+                      <li key={step} className="flex items-center gap-2">
+                        {index > 0 && (
+                          <span aria-hidden="true" className="text-[#C4C4CC]">
+                            →
+                          </span>
+                        )}
+                        <span
+                          className={
+                            index === 3
+                              ? "font-medium text-[#5C5AED]"
+                              : undefined
+                          }
+                        >
+                          {step}
+                        </span>
+                      </li>
+                    ),
+                  )}
+                </ol>
               </Reveal>
             </div>
           </div>
