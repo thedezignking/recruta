@@ -201,7 +201,7 @@ export default function Home() {
             href="/"
             className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[#5C5AED]"
           >
-            <RecrutaLogo size="sm" />
+            <RecrutaLogo />
           </Link>
           <nav aria-label="Main" className="hidden md:block">
             <ul className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -610,7 +610,7 @@ export default function Home() {
           )}
         >
           <div>
-            <RecrutaLogo size="sm" />
+            <RecrutaLogo />
             <p className="mt-4 max-w-xs text-sm leading-6 text-muted-foreground">
               Recruitment software for agencies that hire for other companies.
             </p>

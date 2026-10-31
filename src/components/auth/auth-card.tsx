@@ -35,7 +35,7 @@ export function AuthCard({
             href="/"
             className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[#5C5AED]"
           >
-            <RecrutaLogo size="sm" />
+            <RecrutaLogo />
           </Link>
           {switchLink && (
             <p className="text-sm text-muted-foreground">
