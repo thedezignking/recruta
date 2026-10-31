@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import {
   ArrowRightIcon,
@@ -26,6 +26,8 @@ import { Reveal, TypedEyebrow } from "@/components/marketing/motion";
 import { ProductShowcase } from "@/components/marketing/product-showcase";
 import { RecrutaLogo } from "@/components/shared/recruta-mark";
 import { cn } from "cn";
+
+export const viewport: Viewport = { themeColor: "#ffffff" };
 
 export const metadata: Metadata = {
   title: { absolute: "Recruta — Recruitment software for agencies" },
@@ -246,11 +248,11 @@ export default function Home() {
               aria-hidden="true"
               className="mk-halftone pointer-events-none absolute inset-0"
             />
-            <div className="relative px-5 pt-20 pb-16 text-center sm:pt-28 sm:pb-20">
+            <div className="relative px-5 pt-14 pb-14 text-center sm:pt-28 sm:pb-20">
               <Reveal>
                 <h1
                   id="hero-heading"
-                  className="mx-auto max-w-3xl text-[40px] leading-[1.06] font-semibold tracking-[-0.045em] sm:text-[58px]"
+                  className="mx-auto max-w-3xl text-[27px] leading-[1.1] font-semibold tracking-[-0.045em] min-[400px]:text-[34px] sm:text-[58px] sm:leading-[1.06]"
                 >
                   <span className="block">
                     Make more <Accent>placements</Accent>
@@ -261,10 +263,9 @@ export default function Home() {
                 </h1>
               </Reveal>
               <Reveal delay={120}>
-                <p className="mx-auto mt-6 max-w-[640px] text-[17px] leading-7 text-balance text-muted-foreground">
-                  Recruta posts your jobs, collects every application and checks
-                  each CV against the role&rsquo;s requirements, then builds the
-                  shortlist. You decide who moves forward.
+                <p className="mx-auto mt-5 max-w-[520px] text-[16px] leading-7 text-balance text-muted-foreground sm:mt-6 sm:text-[17px]">
+                  Recruta screens every application against the role and builds
+                  your shortlist. You decide who moves forward.
                 </p>
               </Reveal>
               <Reveal delay={220}>

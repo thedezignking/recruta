@@ -126,6 +126,12 @@
   }
 }
 
+/* Marketing and auth pages sit on white edge to edge, including overscroll. */
+html:has(.mk),
+body:has(.mk) {
+  background-color: #ffffff;
+}
+
 /* Marketing site motion. Transform, opacity and filter only. */
 .mk {
   --mk-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
