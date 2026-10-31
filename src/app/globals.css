@@ -90,8 +90,13 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* White canvas so iOS overscroll and browser chrome match every page. */
+  html,
   body {
-    @apply bg-background text-foreground antialiased;
+    background-color: #ffffff;
+  }
+  body {
+    @apply text-foreground antialiased;
   }
 
   button,
@@ -124,12 +129,6 @@
       linear-gradient(to bottom, rgb(23 24 43 / 0.035) 1px, transparent 1px);
     background-size: 24px 24px;
   }
-}
-
-/* Marketing and auth pages sit on white edge to edge, including overscroll. */
-html:has(.mk),
-body:has(.mk) {
-  background-color: #ffffff;
 }
 
 /* Marketing site motion. Transform, opacity and filter only. */

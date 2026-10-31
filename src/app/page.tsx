@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRightIcon,
@@ -26,8 +26,6 @@ import { Reveal, TypedEyebrow } from "@/components/marketing/motion";
 import { ProductShowcase } from "@/components/marketing/product-showcase";
 import { RecrutaLogo } from "@/components/shared/recruta-mark";
 import { cn } from "cn";
-
-export const viewport: Viewport = { themeColor: "#ffffff" };
 
 export const metadata: Metadata = {
   title: { absolute: "Recruta — Recruitment software for agencies" },
