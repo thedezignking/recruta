@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import {
   Buildings2Icon,
   CaseMinimalisticIcon,
@@ -23,7 +23,9 @@ const tabs = [
   { id: "messages", label: "Candidate email", icon: ChatRoundDotsIcon },
 ] as const;
 type TabId = (typeof tabs)[number]["id"];
+// Phones have no tab strip to read, so the tour moves faster there.
 const DURATION = 6000;
+const MOBILE_DURATION = 3200;
 
 // Deterministic bar heights so server and client render the same field.
 const bars = Array.from({ length: 110 }, (_, i) => {
@@ -36,14 +38,24 @@ export function ProductShowcase() {
   const [active, setActive] = useState<TabId>("jobs");
   const [paused, setPaused] = useState(false);
   const reduced = useReducedMotion();
+  const compact = useSyncExternalStore(
+    (onChange) => {
+      const query = window.matchMedia("(max-width: 639px)");
+      query.addEventListener("change", onChange);
+      return () => query.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia("(max-width: 639px)").matches,
+    () => false,
+  );
+  const duration = compact ? MOBILE_DURATION : DURATION;
   useEffect(() => {
     if (paused || reduced) return;
     const timer = window.setTimeout(() => {
       const index = tabs.findIndex((tab) => tab.id === active);
       setActive(tabs[(index + 1) % tabs.length].id);
-    }, DURATION);
+    }, duration);
     return () => window.clearTimeout(timer);
-  }, [active, paused, reduced]);
+  }, [active, paused, reduced, duration]);
 
   return (
     <div

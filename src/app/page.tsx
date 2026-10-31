@@ -316,20 +316,24 @@ export default function Home() {
               <Reveal>
                 <h1
                   id="hero-heading"
-                  className="mx-auto max-w-3xl text-[36px] leading-[1.08] font-semibold tracking-[-0.045em] text-balance min-[400px]:text-[40px] sm:text-[58px] sm:leading-[1.06]"
+                  className="mx-auto max-w-5xl text-[32px] leading-[1.15] font-semibold tracking-[-0.02em] text-balance sm:text-[52px] sm:leading-[1.05] sm:tracking-[-0.045em] lg:text-[60px]"
                 >
-                  <span className="block">
-                    Make more <Accent>placements</Accent>
+                  <span className="sm:block">
+                    Turn repetitive hiring tasks{" "}
                   </span>
-                  <span className="block text-[#8A8B99]">
-                    Spend less time on admin
+                  <span className="text-[#8A8B99] sm:block">
+                    into <Accent>automated</Accent> workflows
                   </span>
                 </h1>
               </Reveal>
               <Reveal delay={120}>
-                <p className="mx-auto mt-5 max-w-[520px] text-[16px] leading-7 text-balance text-muted-foreground sm:mt-6 sm:text-[17px]">
-                  Recruta screens every application against the role and builds
-                  your shortlist. You decide who moves forward.
+                <p className="mx-auto mt-4 max-w-[600px] text-[16px] leading-[26px] text-pretty text-muted-foreground sm:mt-6 sm:text-[17px] sm:leading-7 sm:text-balance">
+                  Post jobs, collect applications, screen candidates with AI,
+                  and automate{" "}
+                  <span className="whitespace-nowrap">
+                    follow-ups&mdash;all
+                  </span>{" "}
+                  in one workspace built for recruiters.
                 </p>
               </Reveal>
               <Reveal delay={220}>
@@ -338,7 +342,7 @@ export default function Home() {
                     href="#product"
                     className={cn(
                       secondaryCta,
-                      "w-full justify-center sm:w-auto",
+                      "w-full justify-center max-sm:h-9 max-sm:text-base sm:w-auto",
                     )}
                   >
                     See how it works
@@ -347,7 +351,7 @@ export default function Home() {
                     href="/signup"
                     className={cn(
                       primaryCta,
-                      "w-full justify-center sm:w-auto",
+                      "w-full justify-center max-sm:h-9 max-sm:text-base sm:w-auto",
                     )}
                   >
                     Create your workspace
@@ -356,7 +360,7 @@ export default function Home() {
                 </div>
                 <ol
                   aria-label="How it works"
-                  className="mt-7 flex flex-wrap items-center justify-center gap-x-2 gap-y-2 font-mono text-[11px] text-muted-foreground"
+                  className="mt-7 hidden flex-wrap items-center justify-center gap-x-2 gap-y-2 font-mono text-[11px] text-muted-foreground sm:flex"
                 >
                   {["Post", "Screen", "Shortlist", "Place"].map(
                     (step, index) => (

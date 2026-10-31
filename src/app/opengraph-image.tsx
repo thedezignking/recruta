@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
 export const alt =
-  "Recruta — Make more placements. Spend less time on admin. A Recruta workspace showing jobs and applications.";
+  "Recruta — Turn repetitive hiring tasks into automated workflows. A Recruta workspace showing jobs and applications.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -198,14 +198,21 @@ export default function OpengraphImage() {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              fontSize: 58,
+              fontSize: 52,
               fontWeight: 600,
               letterSpacing: "-0.045em",
               lineHeight: 1.06,
             }}
           >
-            <div style={{ display: "flex", alignItems: "flex-end" }}>
-              <div style={{ display: "flex" }}>Make more&nbsp;</div>
+            <div style={{ display: "flex" }}>Turn repetitive hiring tasks</div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-end",
+                color: "#8A8B99",
+              }}
+            >
+              <div style={{ display: "flex" }}>into&nbsp;</div>
               <div
                 style={{
                   display: "flex",
@@ -214,11 +221,9 @@ export default function OpengraphImage() {
                   paddingBottom: 2,
                 }}
               >
-                placements
+                automated
               </div>
-            </div>
-            <div style={{ display: "flex", color: "#8A8B99" }}>
-              Spend less time on admin
+              <div style={{ display: "flex" }}>&nbsp;workflows</div>
             </div>
           </div>
           <div
@@ -230,7 +235,7 @@ export default function OpengraphImage() {
               color: muted,
             }}
           >
-            post → screen → shortlist → place
+            post jobs · screen with AI · automate follow-ups
           </div>
         </div>
 
