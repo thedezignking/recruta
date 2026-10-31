@@ -22,7 +22,11 @@ import {
   PhoneMock,
   PipelineChartMock,
 } from "@/components/marketing/feature-mocks";
-import { Reveal, TypedEyebrow } from "@/components/marketing/motion";
+import {
+  MenuDetails,
+  Reveal,
+  TypedEyebrow,
+} from "@/components/marketing/motion";
 import { ProductShowcase } from "@/components/marketing/product-showcase";
 import { RecrutaLogo } from "@/components/shared/recruta-mark";
 import { cn } from "cn";
@@ -55,7 +59,7 @@ function Frame({
     >
       <div
         className={cn(
-          "relative mx-auto max-w-[1240px] border-x",
+          "relative mx-auto w-[calc(100%-24px)] max-w-[1240px] sm:w-[calc(100%-48px)] border-x",
           rule,
           className,
         )}
@@ -70,7 +74,10 @@ function HatchBand() {
   return (
     <div aria-hidden="true" className={cn("border-t", rule)}>
       <div
-        className={cn("mk-hatch mx-auto h-12 max-w-[1240px] border-x", rule)}
+        className={cn(
+          "mk-hatch mx-auto h-12 w-[calc(100%-24px)] max-w-[1240px] sm:w-[calc(100%-48px)] border-x",
+          rule,
+        )}
       />
     </div>
   );
@@ -193,7 +200,7 @@ export default function Home() {
       >
         <div
           className={cn(
-            "mx-auto flex h-16 max-w-[1240px] items-center justify-between gap-4 border-x px-5",
+            "mx-auto flex h-16 w-[calc(100%-24px)] max-w-[1240px] sm:w-[calc(100%-48px)] items-center justify-between gap-4 border-x px-5",
             rule,
           )}
         >
@@ -217,7 +224,7 @@ export default function Home() {
               ))}
             </ul>
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <Link
               href="/login"
               className="mk-press hidden h-9 items-center rounded-lg border border-[#E4E4E7] px-3.5 text-sm font-medium outline-none hover:bg-[#F8F8F8] focus-visible:ring-2 focus-visible:ring-[#5C5AED] sm:inline-flex"
@@ -226,10 +233,69 @@ export default function Home() {
             </Link>
             <Link
               href="/signup"
-              className="mk-press inline-flex h-9 items-center rounded-lg bg-[#5C5AED] px-3.5 text-sm font-medium text-white outline-none hover:bg-[#4E4CE0] focus-visible:ring-3 focus-visible:ring-[#5C5AED]/40"
+              className="mk-press inline-flex h-9 items-center rounded-lg bg-[#5C5AED] px-3 text-[13px] font-medium whitespace-nowrap text-white sm:px-3.5 sm:text-sm outline-none hover:bg-[#4E4CE0] focus-visible:ring-3 focus-visible:ring-[#5C5AED]/40"
             >
               Create workspace
             </Link>
+            <MenuDetails className="group/menu md:hidden">
+              <summary
+                aria-label="Open menu"
+                className="grid size-9 cursor-pointer list-none place-items-center rounded-lg outline-none hover:bg-[#F8F8F8] focus-visible:ring-2 focus-visible:ring-[#5C5AED] [&::-webkit-details-marker]:hidden"
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 20 20"
+                  className="size-5 group-open/menu:hidden"
+                >
+                  <path
+                    d="M3 6h14M3 10h14M3 14h14"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 20 20"
+                  className="hidden size-5 group-open/menu:block"
+                >
+                  <path
+                    d="M5 5l10 10M15 5L5 15"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </summary>
+              <div
+                className={cn(
+                  "absolute inset-x-0 top-full border-b bg-white px-5 pt-2 pb-5 shadow-[0_16px_32px_-20px_rgb(17_17_17_/_0.25)]",
+                  rule,
+                )}
+              >
+                <ul className="flex flex-col text-[15px]">
+                  {nav.map(([label, href]) => (
+                    <li key={href}>
+                      <a
+                        href={href}
+                        className={cn(
+                          "flex h-12 items-center border-b outline-none focus-visible:text-[#5C5AED]",
+                          rule,
+                        )}
+                      >
+                        {label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/login"
+                  className="mk-press mt-4 flex h-11 items-center justify-center rounded-lg border border-[#E4E4E7] text-sm font-medium outline-none hover:bg-[#F8F8F8] focus-visible:ring-2 focus-visible:ring-[#5C5AED]"
+                >
+                  Sign in
+                </Link>
+              </div>
+            </MenuDetails>
           </div>
         </div>
       </header>
@@ -238,7 +304,7 @@ export default function Home() {
         <section aria-labelledby="hero-heading">
           <div
             className={cn(
-              "relative mx-auto max-w-[1240px] overflow-hidden border-x",
+              "relative mx-auto w-[calc(100%-24px)] max-w-[1240px] sm:w-[calc(100%-48px)] overflow-hidden border-x",
               rule,
             )}
           >
@@ -250,7 +316,7 @@ export default function Home() {
               <Reveal>
                 <h1
                   id="hero-heading"
-                  className="mx-auto max-w-3xl text-[27px] leading-[1.1] font-semibold tracking-[-0.045em] min-[400px]:text-[34px] sm:text-[58px] sm:leading-[1.06]"
+                  className="mx-auto max-w-3xl text-[36px] leading-[1.08] font-semibold tracking-[-0.045em] text-balance min-[400px]:text-[40px] sm:text-[58px] sm:leading-[1.06]"
                 >
                   <span className="block">
                     Make more <Accent>placements</Accent>
@@ -267,11 +333,23 @@ export default function Home() {
                 </p>
               </Reveal>
               <Reveal delay={220}>
-                <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-                  <a href="#product" className={secondaryCta}>
+                <div className="mt-8 flex flex-col gap-3 sm:mt-9 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center">
+                  <a
+                    href="#product"
+                    className={cn(
+                      secondaryCta,
+                      "w-full justify-center sm:w-auto",
+                    )}
+                  >
                     See how it works
                   </a>
-                  <Link href="/signup" className={primaryCta}>
+                  <Link
+                    href="/signup"
+                    className={cn(
+                      primaryCta,
+                      "w-full justify-center sm:w-auto",
+                    )}
+                  >
                     Create your workspace
                     <ArrowRightIcon aria-hidden="true" size={16} />
                   </Link>
@@ -630,7 +708,7 @@ export default function Home() {
       <footer className={cn("border-t", rule)}>
         <div
           className={cn(
-            "mx-auto grid max-w-[1240px] gap-10 border-x px-8 py-12 sm:grid-cols-2 sm:px-12 lg:grid-cols-[1.4fr_1fr_1fr_1fr]",
+            "mx-auto grid w-[calc(100%-24px)] max-w-[1240px] sm:w-[calc(100%-48px)] gap-10 border-x px-8 py-12 sm:grid-cols-2 sm:px-12 lg:grid-cols-[1.4fr_1fr_1fr_1fr]",
             rule,
           )}
         >
@@ -671,7 +749,7 @@ export default function Home() {
         <div className={cn("border-t", rule)}>
           <div
             className={cn(
-              "mx-auto flex max-w-[1240px] items-center justify-between gap-4 border-x px-8 py-5 text-xs text-muted-foreground sm:px-12",
+              "mx-auto flex w-[calc(100%-24px)] max-w-[1240px] sm:w-[calc(100%-48px)] items-center justify-between gap-4 border-x px-8 py-5 text-xs text-muted-foreground sm:px-12",
               rule,
             )}
           >

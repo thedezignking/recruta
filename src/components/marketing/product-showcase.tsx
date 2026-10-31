@@ -55,7 +55,7 @@ export function ProductShowcase() {
       <div
         role="tablist"
         aria-label="Product tour"
-        className="grid grid-cols-2 gap-px border-b border-[#EBEBEB] bg-[#EBEBEB] sm:grid-cols-3 lg:grid-cols-5"
+        className="hidden gap-px border-b border-[#EBEBEB] bg-[#EBEBEB] sm:grid sm:grid-cols-3 lg:grid-cols-5"
         onKeyDown={(event) => {
           const delta =
             event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
@@ -118,7 +118,7 @@ export function ProductShowcase() {
         })}
       </div>
 
-      <div className="relative h-[460px] overflow-hidden sm:h-[540px]">
+      <div className="relative h-[400px] overflow-hidden sm:h-[540px]">
         <div
           aria-hidden="true"
           className="absolute inset-x-0 bottom-0 flex h-[96%] items-end gap-[2px] px-[2px] [mask-image:linear-gradient(to_bottom,transparent,#000_22%)]"
@@ -149,7 +149,7 @@ export function ProductShowcase() {
           id="tour-panel"
           role="tabpanel"
           aria-labelledby={`tour-${active}`}
-          className="absolute inset-x-4 top-10 bottom-0 sm:inset-x-12 lg:inset-x-28"
+          className="absolute inset-x-3 top-24 bottom-0 sm:inset-x-12 sm:top-10 lg:inset-x-28"
         >
           <AppWindow active={active} />
         </div>

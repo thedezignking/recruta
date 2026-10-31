@@ -106,3 +106,26 @@ export function useReducedMotion() {
     () => false,
   );
 }
+
+/** A <details> menu that closes after a link inside it is tapped. */
+export function MenuDetails({
+  className,
+  children,
+}: {
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDetailsElement>(null);
+  return (
+    <details
+      ref={ref}
+      className={className}
+      onClick={(event) => {
+        if ((event.target as HTMLElement).closest("a") && ref.current)
+          ref.current.open = false;
+      }}
+    >
+      {children}
+    </details>
+  );
+}
