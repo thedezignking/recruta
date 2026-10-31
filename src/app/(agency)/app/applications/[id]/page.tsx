@@ -21,12 +21,15 @@ import { OpenResumeButton } from "@/components/applications/open-resume-button";
 import { DetailHeader, Panel } from "@/components/shared/page-header";
 import { ToolbarBreadcrumb } from "@/components/layout/toolbar-title-context";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { MatchBadge } from "@/components/applications/match-badge";
+import { gapVerdictLabels, matchReason } from "@/lib/match-grade";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ApiError } from "@/lib/api";
 import { requireAgencyPageContext } from "@/server/auth/context";
 import {
   getApplication,
   getApplicationHistory,
+  getApplicationMatch,
   listApplications,
 } from "@/server/services/applications";
 import { listAgencyMembers } from "@/server/services/workspace";
@@ -73,6 +76,7 @@ export default async function ApplicationPage({
     messages,
     processing,
     intake,
+    match,
   ] = await Promise.all([
     getApplicationHistory(context.supabase, context.agencyId, id, {
       notes: before.notesBefore,
@@ -96,6 +100,7 @@ export default async function ApplicationPage({
       .eq("agency_id", context.agencyId)
       .eq("application_id", id)
       .maybeSingle(),
+    getApplicationMatch(context.supabase, context.agencyId, id),
   ]);
   if (agency.error) throw new Error("Agency timezone could not be loaded.");
   const date = (value: string) =>
@@ -179,7 +184,12 @@ export default async function ApplicationPage({
           </span>
         }
         title={candidateName}
-        status={<StatusBadge status={application.status} />}
+        status={
+          <span className="flex items-center gap-2">
+            <StatusBadge status={application.status} />
+            {match && <MatchBadge match={match} />}
+          </span>
+        }
         meta={[
           <Fragment key="job">
             Applied for{" "}
@@ -269,6 +279,55 @@ export default async function ApplicationPage({
 
       <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex min-w-0 flex-col gap-5">
+          {match && (
+            <Panel
+              title="Requirement match"
+              actions={
+                <span className="text-xs text-muted-foreground">
+                  Advisory · you decide
+                </span>
+              }
+            >
+              <div className="flex flex-wrap items-center gap-3">
+                <MatchBadge match={match} />
+                <span className="text-sm text-muted-foreground">
+                  {matchReason(match)}
+                </span>
+              </div>
+              {match.gaps.length > 0 ? (
+                <ul className="mt-4 flex flex-col gap-2.5">
+                  {match.gaps.map((gap) => (
+                    <li
+                      key={gap.requirementId}
+                      className="rounded-md bg-[#F8F8F8] px-3 py-2.5"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-sm font-medium">
+                          {gap.label}
+                          <span className="ml-2 text-xs font-normal text-muted-foreground">
+                            {gap.type === "required" ? "Required" : "Preferred"}
+                          </span>
+                        </span>
+                        <span className="text-xs font-medium text-[#8C5109]">
+                          {gapVerdictLabels[gap.verdict]}
+                        </span>
+                      </div>
+                      {gap.followUp && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Ask: {gap.followUp}
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Every requirement is supported by the CV or answers.
+                </p>
+              )}
+            </Panel>
+          )}
+
           <Panel title="Candidate">
             <dl className="grid gap-4 text-sm sm:grid-cols-2">
               <div className="min-w-0">

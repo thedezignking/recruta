@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { matchFilterValues, matchSummarySchema } from "@/lib/match-grade";
 import type { ApplicationStatus } from "@/types/domain";
 
 export const applicationStatuses = [
@@ -65,6 +66,7 @@ export const applicationFiltersSchema = z
     ),
     source: optionalValue(z.enum(["public_form", "manual", "imported"])),
     owner: optionalValue(z.enum(["mine", "unassigned"])),
+    match: optionalValue(z.enum(matchFilterValues)),
     cursor: optionalValue(
       z
         .string()
@@ -113,6 +115,7 @@ export const applicationListItemSchema = z.object({
   submitted_at: z.string(),
   owner_user_id: z.uuid().nullable(),
   owner_name: z.string().nullable(),
+  match: matchSummarySchema.nullable().optional(),
   candidates: z.object({
     id: z.uuid(),
     full_name: z.string(),

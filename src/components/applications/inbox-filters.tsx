@@ -32,6 +32,14 @@ const ownerOptions = [
   { value: "unassigned", label: "Unassigned" },
 ] as const;
 
+const matchOptions = [
+  { value: "", label: "Any match" },
+  { value: "strong", label: "Strong match" },
+  { value: "partial", label: "Partial match" },
+  { value: "weak", label: "Weak match" },
+  { value: "ungraded", label: "Not graded" },
+] as const;
+
 const dateInput =
   "h-8 w-full rounded-md border border-border bg-white px-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
@@ -48,6 +56,7 @@ export function InboxFilters({
   const [pending, startTransition] = useTransition();
   const [q, setQ] = useState(filters.q ?? "");
   const activeFilters =
+    Number(Boolean(filters.match)) +
     Number(Boolean(filters.owner)) +
     Number(Boolean(filters.submittedFrom || filters.submittedTo));
 
@@ -170,6 +179,7 @@ export function InboxFilters({
                       type="button"
                       onClick={() =>
                         navigate({
+                          match: "",
                           owner: "",
                           submittedFrom: "",
                           submittedTo: "",
@@ -182,6 +192,27 @@ export function InboxFilters({
                   )}
                 </div>
                 <p className="px-2 pt-2 pb-1 text-[10px] font-medium text-muted-foreground">
+                  Requirement match
+                </p>
+                {matchOptions.map((option) => {
+                  const selected = (filters.match ?? "") === option.value;
+                  return (
+                    <button
+                      key={option.label}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => navigate({ match: option.value })}
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-md px-2 py-2 text-left outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary",
+                        selected && "bg-primary/5 font-semibold text-primary",
+                      )}
+                    >
+                      {option.label}
+                      {selected && <CheckIcon size={14} aria-hidden="true" />}
+                    </button>
+                  );
+                })}
+                <p className="mt-1 px-2 pt-2 pb-1 text-[10px] font-medium text-muted-foreground">
                   Owner
                 </p>
                 {ownerOptions.map((option) => {

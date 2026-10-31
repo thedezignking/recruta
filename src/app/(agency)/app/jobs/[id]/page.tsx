@@ -16,6 +16,7 @@ import { ButtonLink } from "@/components/shared/button-link";
 import { DetailHeader, Panel } from "@/components/shared/page-header";
 import { CompanyLogo } from "@/components/organizations/company-picker";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { MatchBadge } from "@/components/applications/match-badge";
 import { getPublicEnv } from "@/lib/env";
 import { requireAgencyPageContext } from "@/server/auth/context";
 import {
@@ -552,6 +553,10 @@ export default async function JobPage({
                                 Applied {formatDate(application.submitted_at)}
                               </span>
                             </span>
+                            <MatchBadge
+                              match={application.match}
+                              className="hidden sm:inline-flex"
+                            />
                             <StatusBadge status={application.status} />
                             <AltArrowRightIcon
                               aria-hidden="true"

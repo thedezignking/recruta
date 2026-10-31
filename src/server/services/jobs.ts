@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { OVERVIEW_TREND_BUCKETS } from "@/server/services/overview";
 import { ApiError } from "@/lib/api";
 import { contentShape } from "@/lib/job-content";
 import { decodeTimeCursor, encodeTimeCursor } from "@/lib/cursor";
@@ -182,19 +183,22 @@ export async function getJobsActivity(
     if (first.data?.[0]?.created_at)
       start = Math.min(start, Date.parse(first.data[0].created_at));
   }
-  const periods = Array.from({ length: 8 }, (_, index) => ({
-    since: new Date(start + ((end - start) * index) / 8).toISOString(),
-    until: new Date(start + ((end - start) * (index + 1)) / 8).toISOString(),
+  const buckets = OVERVIEW_TREND_BUCKETS;
+  const periods = Array.from({ length: buckets }, (_, index) => ({
+    since: new Date(start + ((end - start) * index) / buckets).toISOString(),
+    until: new Date(
+      start + ((end - start) * (index + 1)) / buckets,
+    ).toISOString(),
   }));
   const previousStart = new Date(
     window ? start - (end - start) : end - 30 * 86400000,
   ).toISOString();
   const previousEnd = window?.since ?? now.toISOString();
   const series = {
-    open: Array<number>(8).fill(0),
-    positions: Array<number>(8).fill(0),
-    nearDeadline: Array<number>(8).fill(0),
-    filled: Array<number>(8).fill(0),
+    open: Array<number>(buckets).fill(0),
+    positions: Array<number>(buckets).fill(0),
+    nearDeadline: Array<number>(buckets).fill(0),
+    filled: Array<number>(buckets).fill(0),
   };
   const previous = { open: 0, positions: 0, nearDeadline: 0, filled: 0 };
   const deadlineEnd = now.getTime() + 7 * 86400000;
@@ -222,8 +226,8 @@ export async function getJobsActivity(
       const current = created >= start && created <= end;
       if (current) {
         const index = Math.min(
-          7,
-          Math.floor(((created - start) / (end - start)) * 8),
+          buckets - 1,
+          Math.floor(((created - start) / (end - start)) * buckets),
         );
         if (job.status === "open") {
           series.open[index] += 1;

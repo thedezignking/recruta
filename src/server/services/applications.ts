@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { z } from "zod";
+import { matchGapSchema, matchSummarySchema } from "@/lib/match-grade";
 import { ApiError } from "@/lib/api";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { decodeTimeCursor, encodeTimeCursor } from "@/lib/cursor";
@@ -269,4 +271,30 @@ export async function createCandidateDocumentUrl(
     );
   }
   return { url: signed.data.signedUrl, expiresIn: 60 };
+}
+
+/** The stored advisory match grade for one application, if it was screened. */
+export async function getApplicationMatch(
+  supabase: SupabaseClient,
+  agencyId: string,
+  applicationId: string,
+) {
+  const { data, error } = await supabase
+    .from("application_matches")
+    .select(
+      "band,required_met,required_total,preferred_met,preferred_total,gaps,updated_at",
+    )
+    .eq("agency_id", agencyId)
+    .eq("application_id", applicationId)
+    .maybeSingle();
+  // A missing grade is normal; a failed read must not block the review page.
+  if (error || !data) return null;
+  const summary = matchSummarySchema.safeParse(data);
+  if (!summary.success) return null;
+  const gaps = z.array(matchGapSchema).safeParse(data.gaps);
+  return {
+    ...summary.data,
+    gaps: gaps.success ? gaps.data : [],
+    updatedAt: data.updated_at as string,
+  };
 }

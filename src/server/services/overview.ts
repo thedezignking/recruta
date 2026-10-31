@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError } from "@/lib/api";
+import { matchSummarySchema } from "@/lib/match-grade";
 import { overviewRangeSchema, overviewWindow } from "@/lib/overview-range";
+
+export const OVERVIEW_TREND_BUCKETS = 12;
 
 export async function getOverviewSummary(
   supabase: SupabaseClient,
@@ -96,10 +99,17 @@ export async function getOverviewTrends(
       .filter(Number.isFinite);
     if (earliest.length) start = Math.min(...earliest, start);
   }
-  const periods = Array.from({ length: 8 }, (_, index) => ({
-    since: new Date(start + ((end - start) * index) / 8).toISOString(),
-    until: new Date(start + ((end - start) * (index + 1)) / 8).toISOString(),
-  }));
+  const periods = Array.from(
+    { length: OVERVIEW_TREND_BUCKETS },
+    (_, index) => ({
+      since: new Date(
+        start + ((end - start) * index) / OVERVIEW_TREND_BUCKETS,
+      ).toISOString(),
+      until: new Date(
+        start + ((end - start) * (index + 1)) / OVERVIEW_TREND_BUCKETS,
+      ).toISOString(),
+    }),
+  );
   const series = [
     { key: "openJobs", table: "jobs", date: "created_at", status: "open" },
     {
@@ -129,10 +139,11 @@ export async function getOverviewTrends(
           .select("id", { count: "exact", head: true })
           .eq("agency_id", agencyId)
           .gte(date, since);
+        const isLastBucket = index === OVERVIEW_TREND_BUCKETS - 1;
         query =
-          index === 7 && !window
+          isLastBucket && !window
             ? query
-            : index === 7
+            : isLastBucket
               ? query.lte(date, until)
               : query.lt(date, until);
         if (status) query = query.eq("status", status);
@@ -168,6 +179,13 @@ export async function getOverviewTrends(
       "OVERVIEW_LOAD_FAILED",
       "The workspace activity could not be loaded.",
     );
+  const bucket = (seriesIndex: number) =>
+    results
+      .slice(
+        seriesIndex * OVERVIEW_TREND_BUCKETS,
+        (seriesIndex + 1) * OVERVIEW_TREND_BUCKETS,
+      )
+      .map((result) => result.count ?? 0);
   return {
     periods,
     periodLabel: selectedRange === "all" ? "All time" : null,
@@ -183,12 +201,10 @@ export async function getOverviewTrends(
       inReview: previous[2].count ?? 0,
       shortlisted: previous[3].count ?? 0,
     },
-    openJobs: results.slice(0, 8).map((result) => result.count ?? 0),
-    applicationsReceived: results
-      .slice(8, 16)
-      .map((result) => result.count ?? 0),
-    inReview: results.slice(16, 24).map((result) => result.count ?? 0),
-    shortlisted: results.slice(24, 32).map((result) => result.count ?? 0),
+    openJobs: bucket(0),
+    applicationsReceived: bucket(1),
+    inReview: bucket(2),
+    shortlisted: bucket(3),
   };
 }
 
@@ -237,7 +253,7 @@ export async function getWorkspaceOverview(
     supabase
       .from("applications")
       .select(
-        "id,status,processing_status,submitted_at,candidates(full_name),jobs(id,title,clients(name))",
+        "id,status,processing_status,submitted_at,candidates(full_name),jobs(id,title,clients(name,company_profile))",
       )
       .eq("agency_id", agencyId)
       .in("status", ["received", "in_review"])
@@ -287,6 +303,23 @@ export async function getWorkspaceOverview(
       "OVERVIEW_LOAD_FAILED",
       "The workspace overview could not be loaded.",
     );
+  // Grades are advisory extras: a failed lookup leaves rows ungraded.
+  const matchIds = (recentApplications.data ?? []).map((item) => item.id);
+  const { data: matchRows } = matchIds.length
+    ? await supabase
+        .from("application_matches")
+        .select(
+          "application_id,band,required_met,required_total,preferred_met,preferred_total",
+        )
+        .eq("agency_id", agencyId)
+        .in("application_id", matchIds)
+    : { data: [] };
+  const matches = new Map(
+    (matchRows ?? []).flatMap((row) => {
+      const parsed = matchSummarySchema.safeParse(row);
+      return parsed.success ? [[row.application_id, parsed.data] as const] : [];
+    }),
+  );
   const applicationItems = (recentApplications.data ?? []).map(
     (application) => {
       const candidate = Array.isArray(application.candidates)
@@ -303,7 +336,12 @@ export async function getWorkspaceOverview(
               : rawJob.clients,
           }
         : null;
-      return { ...application, candidates: candidate, jobs: job };
+      return {
+        ...application,
+        candidates: candidate,
+        jobs: job,
+        match: matches.get(application.id) ?? null,
+      };
     },
   );
   const requestItems = (recentRequests.data ?? []).map((request) => ({

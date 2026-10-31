@@ -9,6 +9,7 @@ import { ClipboardTextIcon } from "@solar-icons/react/linear/clipboard-text";
 import { HamburgerMenuIcon } from "@solar-icons/react/linear/hamburger-menu";
 import { Home2Icon } from "@solar-icons/react/linear/home-2";
 import { InboxIcon } from "@solar-icons/react/linear/inbox";
+import { StarsMinimalisticIcon as StarsSolidIcon } from "@solar-icons/react/bold/stars-minimalistic";
 import { UsersGroupTwoRoundedIcon } from "@solar-icons/react/linear/users-group-two-rounded";
 import { SettingsMinimalisticIcon } from "@solar-icons/react/linear/settings-minimalistic";
 import { SidebarMinimalisticIcon } from "@solar-icons/react/linear/sidebar-minimalistic";
@@ -63,6 +64,13 @@ const items = [
     href: "/app/applications",
     icon: InboxIcon,
     activeIcon: InboxSolidIcon,
+  },
+  {
+    label: "Recruta bot",
+    href: "/app/bot",
+    icon: StarsSolidIcon,
+    activeIcon: StarsSolidIcon,
+    assistant: true,
   },
   {
     label: "Organizations",
@@ -276,6 +284,10 @@ export function AppShell({
                               "flex h-9 items-center gap-2.5 rounded-md px-2.5 text-xs hover:bg-sidebar-accent hover:text-foreground",
                               active &&
                                 "bg-card font-medium text-sidebar-accent-foreground shadow-[0_1px_3px_rgb(0_0_0_/_0.06)] hover:bg-card",
+                              "assistant" in item &&
+                                (active
+                                  ? "bg-[#EEEEFD] text-[#3F3DC9] shadow-none hover:bg-[#EEEEFD]"
+                                  : "text-[#4644D6] hover:bg-[#F1F1FD] hover:text-[#3F3DC9]"),
                               collapsed && "justify-center px-0",
                             )}
                           />
@@ -285,9 +297,20 @@ export function AppShell({
                           aria-hidden="true"
                           size={18}
                           strokeWidth={1.6}
-                          className={cn(active && "text-foreground")}
+                          className={cn(
+                            active && "text-foreground",
+                            "assistant" in item && "text-[#5C5AED]",
+                          )}
                         />
                         {!collapsed && item.label}
+                        {!collapsed && "assistant" in item && (
+                          <span
+                            aria-hidden="true"
+                            className="ml-auto rounded-[4px] bg-[#5C5AED] px-1 py-px font-mono text-[9px] leading-[13px] font-semibold tracking-wide text-white"
+                          >
+                            AI
+                          </span>
+                        )}
                       </TooltipTrigger>
                       {collapsed && (
                         <TooltipContent side="right">
@@ -399,6 +422,7 @@ export function AppShell({
                                 aria-hidden="true"
                                 className={cn(
                                   isActive(item.href) && "text-primary",
+                                  "assistant" in item && "text-[#5C5AED]",
                                 )}
                               />
                               {item.label}

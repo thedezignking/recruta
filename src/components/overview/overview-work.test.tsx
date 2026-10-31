@@ -120,8 +120,13 @@ it("shows the real outstanding count rather than the preview length", () => {
       status: "received",
       processing_status: "ready",
       submitted_at: "2026-10-25T10:00:00Z",
+      match: null,
       candidates: { full_name: "Synthetic Person" },
-      jobs: { id: "job", title: "Designer", clients: { name: "Studio" } },
+      jobs: {
+        id: "job",
+        title: "Designer",
+        clients: { name: "Studio", company_profile: null },
+      },
     },
   ];
   render(<OverviewWork {...props} />);

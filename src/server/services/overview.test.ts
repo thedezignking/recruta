@@ -5,6 +5,7 @@ import {
   getWorkspaceOverview,
   getOverviewJobs,
   getOverviewTrends,
+  OVERVIEW_TREND_BUCKETS,
 } from "./overview";
 
 const now = new Date("2026-10-25T12:00:00Z");
@@ -63,6 +64,7 @@ function database(error = false) {
       { ...row("converted", "approved"), jobs: [{ id: "converted-job" }] },
     ],
     clients: [],
+    application_matches: [],
   };
   return {
     from: vi.fn((table: string) => {
@@ -158,6 +160,9 @@ describe("overview summary", () => {
   });
   it("includes the full intake history in All-time charts", async () => {
     const trends = await getOverviewTrends(database(), "agency", "all", now);
+    expect(OVERVIEW_TREND_BUCKETS).toBe(12);
+    expect(trends.periods).toHaveLength(OVERVIEW_TREND_BUCKETS);
+    expect(trends.openJobs).toHaveLength(OVERVIEW_TREND_BUCKETS);
     expect(trends.periodLabel).toBe("All time");
     expect(trends.openJobs.reduce((sum, value) => sum + value, 0)).toBe(2);
     expect(

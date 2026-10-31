@@ -5,6 +5,7 @@ import { CaseMinimalisticIcon } from "@solar-icons/react/linear/case-minimalisti
 import { CaseRoundIcon } from "@solar-icons/react/bold/case-round";
 import { ButtonLink } from "@/components/shared/button-link";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { MatchBadge } from "@/components/applications/match-badge";
 import { SectionHeader } from "@/components/shared/page-header";
 import { CompanyLogo } from "@/components/organizations/company-picker";
 import { companyProfileSchema } from "@/lib/organization";
@@ -57,13 +58,6 @@ function initials(name: string) {
     .toUpperCase();
 }
 
-function waitingFor(value: string) {
-  const hours = Math.max(0, (Date.now() - new Date(value).getTime()) / 36e5);
-  if (hours < 1) return "Just now";
-  if (hours < 24) return `${Math.floor(hours)}h`;
-  const days = Math.floor(hours / 24);
-  return days < 30 ? `${days}d` : `${Math.floor(days / 30)}mo`;
-}
 
 function ViewAllLink({ href }: { href: string }) {
   return (
@@ -125,77 +119,106 @@ export function OverviewWork({
               <Card className="gap-0 py-0">
                 <CardContent className="px-0">
                   {overview.applications.length > 0 ? (
-                    <div>
-                      <div
-                        aria-hidden="true"
-                        className="hidden grid-cols-[minmax(0,1.4fr)_minmax(0,1.3fr)_120px_72px_20px] gap-4 border-b border-border bg-[#FBFBFB] px-4 py-2 text-[11px] font-medium text-muted-foreground md:grid"
-                      >
-                        <span>Candidate</span>
-                        <span>Applied for</span>
-                        <span>Stage</span>
-                        <span>Waiting</span>
-                        <span />
-                      </div>
-                      <ul>
-                        {overview.applications.map((application) => {
-                          const name =
-                            application.candidates?.full_name ?? "Candidate";
-                          return (
-                            <li
-                              key={application.id}
-                              className="border-b border-border last:border-b-0"
-                            >
-                              <Link
-                                href={`/app/applications/${application.id}`}
-                                className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 px-4 py-3 outline-none hover:bg-[#F8F9FC] focus-visible:bg-[#F8F9FC] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset md:grid-cols-[minmax(0,1.4fr)_minmax(0,1.3fr)_120px_72px_20px]"
+                    <>
+                      <Table className="min-w-[820px] [&_td]:px-4 [&_td]:py-2.5 [&_th]:px-4">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Candidate</TableHead>
+                            <TableHead>Applied for</TableHead>
+                            <TableHead>Organization</TableHead>
+                            <TableHead>Stage</TableHead>
+                            <TableHead>Match</TableHead>
+                            <TableHead>Received</TableHead>
+                            <TableHead>
+                              <span className="sr-only">Open application</span>
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {overview.applications.map((application) => {
+                            const name =
+                              application.candidates?.full_name ?? "Candidate";
+                            return (
+                              <TableRow
+                                key={application.id}
+                                className="group relative hover:bg-[#F8F9FC]"
                               >
-                                <span className="flex min-w-0 items-center gap-3">
-                                  <Avatar>
-                                    <AvatarFallback className="bg-[#EDECFD] text-xs font-semibold text-[#4846B8]">
-                                      {initials(name)}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <span className="min-w-0">
-                                    <span className="block truncate text-sm font-medium group-hover:text-primary">
+                                <TableCell>
+                                  <span className="flex items-center gap-3">
+                                    <Avatar>
+                                      <AvatarFallback className="bg-[#EDECFD] text-xs font-semibold text-[#4846B8]">
+                                        {initials(name)}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <Link
+                                      href={`/app/applications/${application.id}`}
+                                      className="font-medium outline-none after:absolute after:inset-0 group-hover:text-primary focus-visible:underline"
+                                    >
                                       {name}
-                                    </span>
-                                    <span className="block truncate text-xs text-muted-foreground md:hidden">
-                                      {application.jobs?.title}
-                                    </span>
+                                    </Link>
                                   </span>
-                                </span>
-                                <span className="hidden min-w-0 md:block">
-                                  <span className="block truncate text-xs font-medium">
+                                </TableCell>
+                                <TableCell className="text-xs font-medium">
+                                  <span className="block max-w-48 truncate">
                                     {application.jobs?.title}
                                   </span>
-                                  <span className="block truncate text-xs text-muted-foreground">
-                                    {application.jobs?.clients?.name}
+                                </TableCell>
+                                <TableCell>
+                                  <span className="flex items-center gap-2 text-xs font-medium">
+                                    <span className="grid size-7 shrink-0 place-items-center overflow-hidden rounded-md border border-border bg-white text-xs font-semibold text-primary">
+                                      {companyProfileSchema.safeParse(
+                                        application.jobs?.clients
+                                          ?.company_profile,
+                                      ).data?.logoUrl ? (
+                                        <CompanyLogo
+                                          src={
+                                            companyProfileSchema.parse(
+                                              application.jobs?.clients
+                                                ?.company_profile,
+                                            ).logoUrl!
+                                          }
+                                        />
+                                      ) : (
+                                        (application.jobs?.clients?.name
+                                          ?.slice(0, 1)
+                                          .toUpperCase() ?? "?")
+                                      )}
+                                    </span>
+                                    <span className="max-w-32 truncate">
+                                      {application.jobs?.clients?.name ?? "—"}
+                                    </span>
                                   </span>
-                                </span>
-                                <span>
+                                </TableCell>
+                                <TableCell>
                                   <StatusBadge status={application.status} />
-                                </span>
-                                <time
-                                  dateTime={application.submitted_at}
-                                  title={new Intl.DateTimeFormat("en", {
-                                    dateStyle: "medium",
-                                    timeStyle: "short",
-                                    timeZone: timezone,
-                                  }).format(new Date(application.submitted_at))}
-                                  className="hidden text-xs tabular-nums text-muted-foreground md:block"
-                                >
-                                  {waitingFor(application.submitted_at)}
-                                </time>
-                                <AltArrowRightIcon
-                                  aria-hidden="true"
-                                  size={16}
-                                  className="hidden text-muted-foreground group-hover:text-primary md:block"
-                                />
-                              </Link>
-                            </li>
-                          );
-                        })}
-                      </ul>
+                                </TableCell>
+                                <TableCell>
+                                  <MatchBadge match={application.match} />
+                                </TableCell>
+                                <TableCell className="text-xs">
+                                  <time dateTime={application.submitted_at}>
+                                    {new Intl.DateTimeFormat("en", {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                      timeZone: timezone,
+                                    }).format(
+                                      new Date(application.submitted_at),
+                                    )}
+                                  </time>
+                                </TableCell>
+                                <TableCell>
+                                  <AltArrowRightIcon
+                                    aria-hidden="true"
+                                    size={16}
+                                    className="text-muted-foreground group-hover:text-primary"
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
                       {overview.counts.applicationsToReview >
                         overview.applications.length && (
                         <div className="flex items-center justify-between gap-3 bg-[#FBFBFB] px-4 py-2.5 text-xs text-muted-foreground">
@@ -214,7 +237,7 @@ export function OverviewWork({
                           </Link>
                         </div>
                       )}
-                    </div>
+                    </>
                   ) : (
                     <div className="flex flex-col items-start gap-3 p-5">
                       <div>

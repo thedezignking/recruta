@@ -79,6 +79,28 @@ export function getScreeningEnv() {
     });
 }
 
+/**
+ * Ask Recruta (ADR 0007). Shares the screening data-use gates and needs its
+ * own switch plus an explicitly chosen model; there is no default model.
+ */
+export function getAssistantEnv() {
+  const env = z
+    .object({
+      enabled: z.boolean(),
+      apiKey: z.string().trim().min(1).optional(),
+      model: z.string().trim().min(1).max(100).optional(),
+    })
+    .parse({
+      enabled:
+        process.env.RECRUTA_AI_ENABLED === "true" &&
+        process.env.RECRUTA_AI_DATA_USE_APPROVED === "true" &&
+        process.env.RECRUTA_ASSISTANT_ENABLED === "true",
+      apiKey: process.env.OPENAI_API_KEY || undefined,
+      model: process.env.OPENAI_ASSISTANT_MODEL || undefined,
+    });
+  return { ...env, available: env.enabled && !!env.apiKey && !!env.model };
+}
+
 export function getDeliveryEnv() {
   return z
     .object({

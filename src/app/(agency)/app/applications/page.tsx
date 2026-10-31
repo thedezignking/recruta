@@ -6,6 +6,7 @@ import { InboxFilters } from "@/components/applications/inbox-filters";
 import { PageHeader, SectionHeader } from "@/components/shared/page-header";
 import { ButtonLink } from "@/components/shared/button-link";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { MatchBadge } from "@/components/applications/match-badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
@@ -98,6 +99,7 @@ export default async function ApplicationsPage({
                 <TableRow>
                   <TableHead className="pl-4">Candidate</TableHead>
                   <TableHead>Role / organization</TableHead>
+                  <TableHead>Match</TableHead>
                   <TableHead>Stage</TableHead>
                   <TableHead>Owner</TableHead>
                   <TableHead>Received</TableHead>
@@ -146,6 +148,9 @@ export default async function ApplicationsPage({
                       <p className="mt-0.5 text-muted-foreground">
                         {application.jobs.clients.name}
                       </p>
+                    </TableCell>
+                    <TableCell>
+                      <MatchBadge match={application.match} showReason />
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={application.status} />

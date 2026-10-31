@@ -314,6 +314,53 @@ export type Database = {
           },
         ];
       };
+      application_matches: {
+        Row: {
+          agency_id: string;
+          application_id: string;
+          band: string;
+          gaps: Json;
+          preferred_met: number;
+          preferred_total: number;
+          required_met: number;
+          required_total: number;
+          run_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          agency_id: string;
+          application_id: string;
+          band: string;
+          gaps?: Json;
+          preferred_met: number;
+          preferred_total: number;
+          required_met: number;
+          required_total: number;
+          run_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          agency_id?: string;
+          application_id?: string;
+          band?: string;
+          gaps?: Json;
+          preferred_met?: number;
+          preferred_total?: number;
+          required_met?: number;
+          required_total?: number;
+          run_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "application_matches_agency_id_application_id_fkey";
+            columns: ["agency_id", "application_id"];
+            isOneToOne: true;
+            referencedRelation: "applications";
+            referencedColumns: ["agency_id", "id"];
+          },
+        ];
+      };
       application_notes: {
         Row: {
           agency_id: string;
