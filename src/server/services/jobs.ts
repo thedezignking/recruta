@@ -313,12 +313,9 @@ export async function getJob(supabase: SupabaseClient, jobId: string) {
     .eq("agency_id", raw.agency_id)
     .eq("job_id", jobId)
     .maybeSingle();
-  if (internalResult.error)
-    throw new ApiError(
-      500,
-      "BRIEF_LOAD_FAILED",
-      "The internal hiring brief could not be loaded.",
-    );
+  // The internal brief is optional and is no longer edited in the create flow,
+  // so a failure to load it must not block the job itself from loading.
+  const internalBrief = internalResult.error ? null : internalResult.data;
   const draftResult =
     raw.status === "draft"
       ? await supabase
@@ -328,26 +325,22 @@ export async function getJob(supabase: SupabaseClient, jobId: string) {
           .eq("job_id", jobId)
           .maybeSingle()
       : { data: null, error: null };
-  if (draftResult.error)
-    throw new ApiError(
-      500,
-      "DRAFT_LOAD_FAILED",
-      "Your saved draft could not be loaded. Try again.",
-    );
-  const draftContent = draftResult.data
-    ? {
-        requirements: jobDraftSchema.shape.requirements.parse(
-          draftResult.data.requirements,
-        ),
-        questions: jobDraftSchema.shape.questions.parse(
-          draftResult.data.questions,
-        ),
-      }
-    : null;
+  // Draft content (optional criteria/questions) must not block loading either.
+  const draftContent =
+    draftResult.data && !draftResult.error
+      ? {
+          requirements: jobDraftSchema.shape.requirements.parse(
+            draftResult.data.requirements,
+          ),
+          questions: jobDraftSchema.shape.questions.parse(
+            draftResult.data.questions,
+          ),
+        }
+      : null;
   return {
     ...raw,
     draftContent,
-    internalBrief: internalResult.data,
+    internalBrief,
     clients: Array.isArray(raw.clients)
       ? (raw.clients[0] ?? null)
       : raw.clients,

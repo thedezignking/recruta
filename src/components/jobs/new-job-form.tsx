@@ -24,7 +24,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -195,18 +194,18 @@ export function NewJobForm({
     Boolean(initialDraft?.values.questions?.length),
   );
   const [openSection, setOpenSection] = useState<
-    "salary" | "experience" | "details" | null
+    "salary" | "experience" | "deadline" | null
   >(
     initialDraft?.values.salaryMin != null ||
       initialDraft?.values.salaryMax != null
       ? "salary"
       : initialDraft?.values.seniorityLevel
         ? "experience"
-        : initialDraft?.values.department || initialDraft?.values.deadlineAt
-          ? "details"
+        : initialDraft?.values.deadlineAt
+          ? "deadline"
           : null,
   );
-  function toggleSection(section: "salary" | "experience" | "details") {
+  function toggleSection(section: "salary" | "experience" | "deadline") {
     setOpenSection((current) => (current === section ? null : section));
   }
   const form = useForm<FormValues>({
@@ -973,98 +972,105 @@ export function NewJobForm({
                           />
                         </Field>
 
-                        {/* Core role details */}
+                        {/* Core role details — each conditional stays under its field */}
                         <div className="grid gap-5 sm:grid-cols-2">
-                          <Field>
-                            <FieldLabel htmlFor="employmentType">
-                              Employment type
-                            </FieldLabel>
-                            <JobSelect
-                              id="employmentType"
-                              value={uiEmploymentType}
-                              placeholder="Select employment type"
-                              onChange={(value) => {
-                                const mapped = employmentTypeToModel(value);
-                                form.setValue(
-                                  "employmentArrangement",
-                                  mapped.employmentArrangement as FormValues["employmentArrangement"],
-                                  { shouldDirty: true },
-                                );
-                                form.setValue(
-                                  "workingHours",
-                                  mapped.workingHours as FormValues["workingHours"],
-                                  { shouldDirty: true },
-                                );
-                              }}
-                              options={employmentTypeOptions.map(
-                                ([value, label]) => ({ value, label }),
-                              )}
-                            />
-                          </Field>
-                          <Field>
-                            <FieldLabel htmlFor="workArrangement">
-                              Workplace type
-                            </FieldLabel>
-                            <Controller
-                              control={form.control}
-                              name="workArrangement"
-                              render={({ field }) => (
-                                <JobSelect
-                                  id="workArrangement"
-                                  invalid={Boolean(errors.workArrangement)}
-                                  value={field.value}
-                                  onChange={field.onChange}
-                                  placeholder="Select workplace type"
-                                  options={[
-                                    { value: "on_site", label: "On-site" },
-                                    { value: "hybrid", label: "Hybrid" },
-                                    { value: "remote", label: "Remote" },
-                                  ]}
-                                />
-                              )}
-                            />
-                            <FieldError
-                              errors={
-                                errors.workArrangement
-                                  ? [{ message: "Choose a workplace type." }]
-                                  : undefined
-                              }
-                            />
-                          </Field>
-                          {["fixed_term", "temporary"].includes(
-                            employmentArrangement ?? "",
-                          ) && (
+                          <div className="space-y-5">
                             <Field>
-                              <FieldLabel htmlFor="contractDuration">
-                                Contract length
+                              <FieldLabel htmlFor="employmentType">
+                                Employment type
                               </FieldLabel>
-                              <Input
-                                id="contractDuration"
-                                {...form.register("contractDuration")}
-                                maxLength={160}
-                                placeholder="e.g. 6 months or until project completion"
+                              <JobSelect
+                                id="employmentType"
+                                value={uiEmploymentType}
+                                placeholder="Select employment type"
+                                onChange={(value) => {
+                                  const mapped = employmentTypeToModel(value);
+                                  form.setValue(
+                                    "employmentArrangement",
+                                    mapped.employmentArrangement as FormValues["employmentArrangement"],
+                                    { shouldDirty: true },
+                                  );
+                                  form.setValue(
+                                    "workingHours",
+                                    mapped.workingHours as FormValues["workingHours"],
+                                    { shouldDirty: true },
+                                  );
+                                }}
+                                options={employmentTypeOptions.map(
+                                  ([value, label]) => ({
+                                    value,
+                                    label,
+                                  }),
+                                )}
                               />
                             </Field>
-                          )}
-                          {(workArrangement === "on_site" ||
-                            workArrangement === "hybrid") && (
+                            {["fixed_term", "temporary"].includes(
+                              employmentArrangement ?? "",
+                            ) && (
+                              <Field>
+                                <FieldLabel htmlFor="contractDuration">
+                                  Contract length
+                                </FieldLabel>
+                                <Input
+                                  id="contractDuration"
+                                  {...form.register("contractDuration")}
+                                  maxLength={160}
+                                  placeholder="e.g. 6 months or until project completion"
+                                />
+                              </Field>
+                            )}
+                          </div>
+                          <div className="space-y-5">
                             <Field>
-                              <FieldLabel htmlFor="location">
-                                Job location
+                              <FieldLabel htmlFor="workArrangement">
+                                Workplace type
                               </FieldLabel>
-                              <Input
-                                id="location"
-                                {...form.register("location")}
-                                aria-invalid={Boolean(errors.location)}
-                                aria-describedby={
-                                  errors.location
-                                    ? "job-validation-summary"
+                              <Controller
+                                control={form.control}
+                                name="workArrangement"
+                                render={({ field }) => (
+                                  <JobSelect
+                                    id="workArrangement"
+                                    invalid={Boolean(errors.workArrangement)}
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    placeholder="Select workplace type"
+                                    options={[
+                                      { value: "on_site", label: "On-site" },
+                                      { value: "hybrid", label: "Hybrid" },
+                                      { value: "remote", label: "Remote" },
+                                    ]}
+                                  />
+                                )}
+                              />
+                              <FieldError
+                                errors={
+                                  errors.workArrangement
+                                    ? [{ message: "Choose a workplace type." }]
                                     : undefined
                                 }
-                                placeholder="City, region or address"
                               />
                             </Field>
-                          )}
+                            {(workArrangement === "on_site" ||
+                              workArrangement === "hybrid") && (
+                              <Field>
+                                <FieldLabel htmlFor="location">
+                                  Job location
+                                </FieldLabel>
+                                <Input
+                                  id="location"
+                                  {...form.register("location")}
+                                  aria-invalid={Boolean(errors.location)}
+                                  aria-describedby={
+                                    errors.location
+                                      ? "job-validation-summary"
+                                      : undefined
+                                  }
+                                  placeholder="City, region or address"
+                                />
+                              </Field>
+                            )}
+                          </div>
                         </div>
                         {workArrangement === "remote" && (
                           <div className="grid gap-5 sm:grid-cols-2">
@@ -1119,7 +1125,7 @@ export function NewJobForm({
                               type="button"
                               aria-expanded={openSection === "salary"}
                               onClick={() => toggleSection("salary")}
-                              className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-foreground transition-colors hover:bg-[#FAFAFA]"
+                              className="flex w-full items-center justify-between gap-3 bg-[#F8F8F8] px-4 py-3 text-left text-sm font-medium text-foreground transition-colors hover:bg-[#F2F2F2]"
                             >
                               <span className="flex items-center gap-2">
                                 Salary range
@@ -1257,7 +1263,7 @@ export function NewJobForm({
                               type="button"
                               aria-expanded={openSection === "experience"}
                               onClick={() => toggleSection("experience")}
-                              className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-foreground transition-colors hover:bg-[#FAFAFA]"
+                              className="flex w-full items-center justify-between gap-3 bg-[#F8F8F8] px-4 py-3 text-left text-sm font-medium text-foreground transition-colors hover:bg-[#F2F2F2]"
                             >
                               <span className="flex items-center gap-2">
                                 Experience level
@@ -1310,15 +1316,13 @@ export function NewJobForm({
                           <div className="border-t border-[#ECECEC]">
                             <button
                               type="button"
-                              aria-expanded={openSection === "details"}
-                              onClick={() => toggleSection("details")}
-                              className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium text-foreground transition-colors hover:bg-[#FAFAFA]"
+                              aria-expanded={openSection === "deadline"}
+                              onClick={() => toggleSection("deadline")}
+                              className="flex w-full items-center justify-between gap-3 bg-[#F8F8F8] px-4 py-3 text-left text-sm font-medium text-foreground transition-colors hover:bg-[#F2F2F2]"
                             >
                               <span className="flex items-center gap-2">
-                                Deadline &amp; department
-                                {Boolean(
-                                  preview.department || preview.deadlineAt,
-                                ) && (
+                                Application deadline
+                                {Boolean(preview.deadlineAt) && (
                                   <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-normal text-muted-foreground">
                                     Added
                                   </span>
@@ -1326,67 +1330,55 @@ export function NewJobForm({
                               </span>
                               <AltArrowDownIcon
                                 aria-hidden="true"
-                                className={`size-4 shrink-0 text-muted-foreground transition-transform duration-150 ${openSection === "details" ? "rotate-180" : ""}`}
+                                className={`size-4 shrink-0 text-muted-foreground transition-transform duration-150 ${openSection === "deadline" ? "rotate-180" : ""}`}
                               />
                             </button>
-                            {openSection === "details" && (
+                            {openSection === "deadline" && (
                               <div className="border-t border-[#ECECEC] px-4 pt-3 pb-4">
-                                <div className="grid gap-5 sm:grid-cols-2">
-                                  <Field>
-                                    <FieldLabel htmlFor="department">
-                                      Department or team
-                                    </FieldLabel>
-                                    <Input
-                                      id="department"
-                                      {...form.register("department")}
-                                      maxLength={120}
-                                      placeholder="e.g. Finance or Customer success"
-                                    />
-                                  </Field>
-                                  <Field
-                                    data-invalid={Boolean(errors.deadlineAt)}
-                                  >
-                                    <FieldLabel htmlFor="deadlineAt">
-                                      Application deadline
-                                    </FieldLabel>
-                                    <Controller
-                                      control={form.control}
-                                      name="deadlineAt"
-                                      render={({ field }) => (
-                                        <DatePicker
-                                          id="deadlineAt"
-                                          value={
-                                            typeof field.value === "string" ||
-                                            field.value instanceof Date
-                                              ? field.value
-                                              : null
-                                          }
-                                          onChange={field.onChange}
-                                          invalid={Boolean(errors.deadlineAt)}
-                                          describedBy={
-                                            errors.deadlineAt
-                                              ? "deadline-error"
-                                              : undefined
-                                          }
-                                          minDate={new Date()}
-                                        />
-                                      )}
-                                    />
-                                    <FieldError
-                                      id="deadline-error"
-                                      errors={
-                                        errors.deadlineAt
-                                          ? [
-                                              {
-                                                message:
-                                                  errors.deadlineAt.message,
-                                              },
-                                            ]
-                                          : undefined
-                                      }
-                                    />
-                                  </Field>
-                                </div>
+                                <Field
+                                  data-invalid={Boolean(errors.deadlineAt)}
+                                  className="sm:max-w-sm"
+                                >
+                                  <FieldLabel htmlFor="deadlineAt">
+                                    Application deadline
+                                  </FieldLabel>
+                                  <Controller
+                                    control={form.control}
+                                    name="deadlineAt"
+                                    render={({ field }) => (
+                                      <DatePicker
+                                        id="deadlineAt"
+                                        value={
+                                          typeof field.value === "string" ||
+                                          field.value instanceof Date
+                                            ? field.value
+                                            : null
+                                        }
+                                        onChange={field.onChange}
+                                        invalid={Boolean(errors.deadlineAt)}
+                                        describedBy={
+                                          errors.deadlineAt
+                                            ? "deadline-error"
+                                            : undefined
+                                        }
+                                        minDate={new Date()}
+                                      />
+                                    )}
+                                  />
+                                  <FieldError
+                                    id="deadline-error"
+                                    errors={
+                                      errors.deadlineAt
+                                        ? [
+                                            {
+                                              message:
+                                                errors.deadlineAt.message,
+                                            },
+                                          ]
+                                        : undefined
+                                    }
+                                  />
+                                </Field>
                               </div>
                             )}
                           </div>
@@ -1400,12 +1392,6 @@ export function NewJobForm({
 
             {step === 3 && (
               <>
-                <PublicationReadiness
-                  values={form.getValues()}
-                  workflowReady={workflowReady}
-                  ownerReady={ownerReady}
-                  onIssue={focusIssue}
-                />
                 <details
                   className="overflow-hidden rounded-[10px] border border-[#ECECEC] bg-white"
                   open={
@@ -1417,7 +1403,7 @@ export function NewJobForm({
                 >
                   <summary className="cursor-pointer bg-[#F8F8F8] px-4 py-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-ring">
                     Structured criteria{" "}
-                    <span className="ms-2 font-normal text-muted-foreground">
+                    <span className="ms-2 rounded bg-white px-1.5 py-0.5 text-[11px] font-normal text-muted-foreground ring-1 ring-border">
                       Optional
                     </span>
                   </summary>
@@ -1744,7 +1730,7 @@ export function NewJobForm({
                 className="gap-0 bg-white py-0 ring-[#ECECEC] shadow-none"
               >
                 <CardHeader className="border-b border-[#ECECEC] bg-[#F8F8F8] px-4 py-3">
-                  <CardTitle>Assignment</CardTitle>
+                  <CardTitle>Team &amp; workflow</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4">
                   <FieldGroup>
@@ -1819,29 +1805,6 @@ export function NewJobForm({
                         Choose a workflow with stages before publishing.
                       </p>
                     )}
-                    <Field>
-                      <FieldLabel htmlFor="priority">Priority</FieldLabel>
-                      <Controller
-                        control={form.control}
-                        name="priority"
-                        render={({ field }) => (
-                          <JobSelect
-                            id="priority"
-                            value={field.value}
-                            onChange={field.onChange}
-                            options={[
-                              { value: "low", label: "Low" },
-                              { value: "normal", label: "Normal" },
-                              { value: "high", label: "High" },
-                              { value: "urgent", label: "Urgent" },
-                            ]}
-                          />
-                        )}
-                      />
-                      <FieldDescription>
-                        {priorityDescriptions[preview.priority ?? "normal"]}
-                      </FieldDescription>
-                    </Field>
                   </FieldGroup>
                 </CardContent>
               </Card>
