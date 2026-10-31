@@ -564,7 +564,7 @@ export default function Home() {
             </div>
             <div className="divide-y divide-[#EBEBEB]">
               {faqs.map((item) => (
-                <details key={item.q} className="group">
+                <details key={item.q} name="faq" className="group">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-8 py-5 text-[15px] font-medium outline-none hover:bg-[#FAFAFB] focus-visible:bg-[#F7F7FE] sm:px-10 [&::-webkit-details-marker]:hidden">
                     {item.q}
                     <svg
