@@ -1,17 +1,21 @@
+import { Fragment } from "react";
 import Link from "next/link";
-import { CaseRoundIcon, UsersGroupRoundedIcon } from "@solar-icons/react/bold";
+import { CaseRoundIcon } from "@solar-icons/react/bold";
 import {
-  ArrowRightIcon,
-  LinkCircleIcon,
+  AltArrowRightIcon,
+  CalendarIcon,
+  CaseMinimalisticIcon,
+  MapPointIcon,
   PenIcon,
+  SquareTopDownIcon,
 } from "@solar-icons/react/linear";
 import { notFound, redirect } from "next/navigation";
 import { CopyApplicationLink } from "@/components/jobs/copy-application-link";
 import { JobLifecycleActions } from "@/components/jobs/job-lifecycle-actions";
 import { ButtonLink } from "@/components/shared/button-link";
-import { PageHeader } from "@/components/shared/page-header";
+import { DetailHeader, Panel } from "@/components/shared/page-header";
+import { CompanyLogo } from "@/components/organizations/company-picker";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getPublicEnv } from "@/lib/env";
 import { requireAgencyPageContext } from "@/server/auth/context";
 import {
@@ -35,6 +39,20 @@ import { getCompanyLookupEnv } from "@/lib/env";
 import { isAcceptingPublicApplications } from "@/lib/job-publication";
 import { contentShape } from "@/lib/job-content";
 import { z } from "zod";
+
+const stageLabels: Record<string, string> = {
+  received: "Received",
+  in_review: "In review",
+  shortlisted: "Shortlisted",
+  client_review: "Client review",
+  interview: "Interview",
+  offer: "Offer",
+  placed: "Placed",
+};
+
+function daysUntil(date: Date) {
+  return Math.ceil((date.getTime() - Date.now()) / 86_400_000);
+}
 
 export default async function JobPage({
   params,
@@ -217,128 +235,200 @@ export default async function JobPage({
       }
     : undefined;
 
+  const applicationCount = job.applications?.[0]?.count ?? 0;
+  const pipelineCount = (status: string) =>
+    pipeline.find((stage) => stage.status === status)?.count ?? 0;
+  const activePipeline = pipeline.filter(
+    (stage) => !["rejected", "withdrawn"].includes(stage.status),
+  );
+  const pipelineMax = Math.max(1, ...activePipeline.map((s) => s.count));
+  const closed = pipelineCount("rejected") + pipelineCount("withdrawn");
+  const logoUrl = companyProfileSchema.safeParse(job.clients?.company_profile)
+    .data?.logoUrl;
+  const deadline = job.deadline_at ? new Date(job.deadline_at) : null;
+  const daysLeft = deadline ? daysUntil(deadline) : null;
+  const formatDate = (value: string | Date) =>
+    new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(
+      new Date(value),
+    );
+  const stats = [
+    {
+      label: "Applicants",
+      value: applicationCount,
+      href: `/app/applications?jobId=${job.id}`,
+    },
+    {
+      label: "In review",
+      value: pipelineCount("in_review"),
+      href: `/app/applications?jobId=${job.id}&status=in_review`,
+    },
+    {
+      label: "Shortlisted",
+      value: pipelineCount("shortlisted"),
+      href: `/app/applications?jobId=${job.id}&status=shortlisted`,
+    },
+    {
+      label: "Openings",
+      value: job.positions_required,
+      hint: `${pipelineCount("placed")} placed`,
+    },
+  ];
+  const roleFacts = [
+    ["Department", job.department],
+    ["Location", job.location],
+    [
+      "Workplace",
+      job.work_arrangement
+        ? job.work_arrangement
+            .replace("_", "-")
+            .replace(/^./, (c: string) => c.toUpperCase())
+        : null,
+    ],
+    ["Employment", job.employment_type],
+    [
+      "Seniority",
+      job.seniority_level
+        ? job.seniority_level.replace(/^./, (c: string) => c.toUpperCase())
+        : null,
+    ],
+    [
+      "Experience",
+      job.experience_min_years != null
+        ? `${job.experience_min_years}+ years`
+        : null,
+    ],
+    ["Deadline", deadline ? formatDate(deadline) : "No deadline"],
+  ].filter(([, value]) => value) as [string, string][];
+
   return (
     <div className="pb-20 lg:pb-0">
       <JobToolbarTitle title={job.title} />
-      <PageHeader
+      <DetailHeader
+        media={
+          <span className="grid size-11 place-items-center overflow-hidden rounded-[10px] border border-border bg-white text-sm font-semibold text-primary">
+            {logoUrl ? (
+              <CompanyLogo src={logoUrl} />
+            ) : (
+              (job.clients?.name?.slice(0, 1).toUpperCase() ?? (
+                <CaseMinimalisticIcon aria-hidden="true" size={20} />
+              ))
+            )}
+          </span>
+        }
         title={job.title}
-        description={`${job.clients?.name ?? "Organization"} · ${job.positions_required} ${job.positions_required === 1 ? "position" : "positions"}`}
+        status={<StatusBadge status={job.status} />}
+        meta={[
+          job.clients?.name ? (
+            <Link
+              href={`/app/clients/${job.client_id}`}
+              className="font-medium text-foreground hover:text-primary"
+            >
+              {job.clients.name}
+            </Link>
+          ) : null,
+          job.location ? (
+            <Fragment key="location">
+              <MapPointIcon aria-hidden="true" size={14} />
+              {job.location}
+            </Fragment>
+          ) : null,
+          job.employment_type ? (
+            <Fragment key="type">
+              <CaseMinimalisticIcon aria-hidden="true" size={14} />
+              {job.employment_type}
+            </Fragment>
+          ) : null,
+          <Fragment key="deadline">
+            <CalendarIcon aria-hidden="true" size={14} />
+            {deadline
+              ? daysLeft !== null && daysLeft >= 0
+                ? `Closes ${formatDate(deadline)} · ${daysLeft === 0 ? "today" : `${daysLeft}d left`}`
+                : `Closed ${formatDate(deadline)}`
+              : "No deadline"}
+          </Fragment>,
+        ]}
         actions={
           <>
-            <StatusBadge status={job.status} className="h-7 px-3" />
-            {canEditDraft && (
-              <ButtonLink
-                href={`/app/jobs/${job.id}?edit=1`}
-                variant="outline"
-                size="sm"
-              >
-                <PenIcon data-icon="inline-start" aria-hidden="true" />
-                Edit draft
-              </ButtonLink>
-            )}
-            {job.status === "draft" && canEditDraft ? (
-              <ButtonLink
-                href={`/app/jobs/${job.id}?edit=1&review=1`}
-                size="sm"
-              >
-                Review &amp; publish
-              </ButtonLink>
-            ) : applicationUrl ? (
-              <CopyApplicationLink url={applicationUrl} />
-            ) : null}
             {canCollaborate && (
               <JobLifecycleActions
                 agencyId={context.agencyId}
                 jobId={job.id}
                 status={job.status}
                 source={job.source}
-                applicationCount={job.applications?.[0]?.count ?? 0}
+                applicationCount={applicationCount}
               />
             )}
+            {canEditDraft && (
+              <ButtonLink href={`/app/jobs/${job.id}?edit=1`} variant="outline">
+                <PenIcon data-icon="inline-start" aria-hidden="true" />
+                Edit draft
+              </ButtonLink>
+            )}
+            {job.status === "draft" && canEditDraft ? (
+              <ButtonLink href={`/app/jobs/${job.id}?edit=1&review=1`}>
+                Review &amp; publish
+              </ButtonLink>
+            ) : applicationCount > 0 ? (
+              <ButtonLink href={`/app/applications?jobId=${job.id}`}>
+                Review applicants
+              </ButtonLink>
+            ) : null}
           </>
         }
       />
 
       {job.status === "draft" ? (
-        <div className="mt-6 rounded-[10px] border border-border bg-[#F8F8F8] px-4 py-3">
-          <p className="text-sm font-semibold">This job is a draft</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Candidates cannot apply until you review and publish it.
-          </p>
-        </div>
-      ) : applicationUrl ? (
-        <Card className="mt-6 border-primary/20 bg-primary/[0.035] shadow-none">
-          <CardContent className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
-                <LinkCircleIcon aria-hidden="true" size={18} />
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-medium">Applications are open</p>
-                <p className="truncate font-mono text-xs text-muted-foreground">
-                  {applicationUrl}
-                </p>
-              </div>
-            </div>
-            <ButtonLink
-              href={applicationUrl}
-              target="_blank"
-              variant="outline"
-              size="sm"
-            >
-              Open public page
-              <ArrowRightIcon data-icon="inline-end" aria-hidden="true" />
-            </ButtonLink>
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {stages.length ? (
-        <section className="mt-7" aria-labelledby="workflow-heading">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 id="workflow-heading" className="text-sm font-semibold">
-              Hiring workflow
-            </h2>
-            <span className="text-xs text-muted-foreground">
-              {stages.length} stages
-            </span>
+        <div className="mt-5 flex items-center gap-3 rounded-[10px] border border-border bg-[#F8F8F8] px-4 py-3">
+          <span className="grid size-8 shrink-0 place-items-center rounded-md bg-white text-muted-foreground ring-1 ring-border">
+            <PenIcon aria-hidden="true" size={16} />
+          </span>
+          <div>
+            <p className="text-sm font-medium">This job is a draft</p>
+            <p className="text-xs text-muted-foreground">
+              Candidates cannot apply until you review and publish it.
+            </p>
           </div>
-          <ol
-            aria-label="Configured recruitment stages"
-            className="flex gap-0 overflow-x-auto rounded-[10px] border border-border bg-white p-3"
-          >
-            {stages.map((stage, index) => (
-              <li
-                key={stage.id}
-                className="flex min-w-[132px] flex-1 items-center last:flex-none"
+        </div>
+      ) : (
+        <section aria-label="Job summary" className="mt-5">
+          <dl className="grid grid-cols-2 overflow-hidden rounded-[10px] border border-border md:grid-cols-4">
+            {stats.map((stat, index) => (
+              <div
+                key={stat.label}
+                className={`min-w-0 p-4 ${index % 2 === 0 ? "border-r" : ""} ${index < 2 ? "border-b md:border-b-0" : ""} ${index === 1 ? "md:border-r" : ""} border-border`}
               >
-                <div className="flex min-w-0 items-center gap-2 rounded-md px-1 py-1.5">
-                  <span className="grid size-6 shrink-0 place-items-center rounded-full border border-primary/25 bg-primary/[0.07] text-[11px] font-semibold text-primary tabular-nums">
-                    {index + 1}
+                <dt className="text-xs font-medium text-muted-foreground">
+                  {stat.href ? (
+                    <Link
+                      href={stat.href}
+                      className="rounded-sm outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      {stat.label}
+                    </Link>
+                  ) : (
+                    stat.label
+                  )}
+                </dt>
+                <dd className="mt-1.5 flex items-baseline gap-2">
+                  <span className="text-[24px] leading-none font-semibold tracking-[-0.04em] tabular-nums">
+                    {stat.value}
                   </span>
-                  <span className="min-w-0 text-xs font-medium leading-4">
-                    {stage.name}
-                  </span>
-                </div>
-                {index < stages.length - 1 && (
-                  <span
-                    aria-hidden="true"
-                    className="mx-2 h-px min-w-3 flex-1 bg-border"
-                  />
-                )}
-              </li>
+                  {stat.hint && (
+                    <span className="text-xs text-muted-foreground">
+                      {stat.hint}
+                    </span>
+                  )}
+                </dd>
+              </div>
             ))}
-          </ol>
+          </dl>
         </section>
-      ) : null}
+      )}
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,.6fr)]">
-        {job.status === "draft" ? (
-          <Card className="h-fit shadow-none">
-            <CardHeader className="border-b border-border pb-4">
-              <CardTitle>Role preview</CardTitle>
-            </CardHeader>
-            <CardContent className="py-5">
+      <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="flex min-w-0 flex-col gap-5">
+          {job.status === "draft" ? (
+            <Panel title="Role preview">
               <JobRoleDetails
                 description={job.description}
                 department={job.department}
@@ -372,242 +462,280 @@ export default async function JobPage({
                   }),
                 )}
               />
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="shadow-none">
-            <CardHeader className="border-b pb-4">
-              <div>
-                <CardTitle>Latest applications</CardTitle>
-              </div>
-              <ButtonLink
-                href={`/app/applications?jobId=${job.id}`}
-                variant="ghost"
-                size="sm"
+            </Panel>
+          ) : (
+            <>
+              <Panel
+                title="Pipeline"
+                actions={
+                  closed > 0 ? (
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {closed} closed
+                    </span>
+                  ) : undefined
+                }
               >
-                View all
-                <ArrowRightIcon data-icon="inline-end" aria-hidden="true" />
-              </ButtonLink>
-            </CardHeader>
-            <CardContent className="p-0">
-              {applicationResult.items.length ? (
-                <div className="divide-y">
-                  {applicationResult.items.slice(0, 6).map((application) => (
-                    <Link
-                      key={application.id}
-                      href={`/app/applications/${application.id}`}
-                      className="flex items-center justify-between gap-4 px-5 py-4"
-                    >
-                      <div>
-                        <p className="font-medium">
-                          {application.candidates?.full_name ?? "Candidate"}
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Applied{" "}
-                          {new Intl.DateTimeFormat("en", {
-                            dateStyle: "medium",
-                          }).format(new Date(application.submitted_at))}
-                        </p>
-                      </div>
-                      <StatusBadge status={application.status} />
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <div className="px-6 py-14 text-center">
-                  <CaseRoundIcon
-                    aria-hidden="true"
-                    size={28}
-                    className="mx-auto text-muted-foreground"
-                  />
-                  <p className="mt-4 font-medium">No applications yet</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {job.status === "draft"
-                      ? "Publish this draft to start receiving applications."
-                      : "Share the application link to start receiving candidates."}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-        <div className="flex flex-col gap-5">
-          {job.status !== "draft" && (
-            <Card className="shadow-none">
-              <CardHeader>
-                <CardTitle>Pipeline</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-end justify-between">
-                  <div>
-                    <p className="text-3xl font-semibold tabular-nums">
-                      {job.applications?.[0]?.count ?? 0}
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Applications received
-                    </p>
-                  </div>
-                  <UsersGroupRoundedIcon
-                    aria-hidden="true"
-                    size={28}
-                    className="text-primary"
-                  />
-                </div>
-                <ul className="mt-5 flex flex-col gap-3">
-                  {pipeline.map((stage) => (
+                <ol className="grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
+                  {activePipeline.map((stage) => (
                     <li key={stage.status}>
                       <Link
                         href={`/app/applications?jobId=${job.id}&status=${stage.status}`}
-                        className="flex items-center justify-between gap-3 text-sm hover:text-primary"
+                        className="group grid grid-cols-[96px_minmax(0,1fr)_28px] items-center gap-3 rounded-md text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
-                        <span className="capitalize">
-                          {stage.status.replaceAll("_", " ")}
+                        <span className="truncate text-muted-foreground group-hover:text-foreground">
+                          {stageLabels[stage.status] ?? stage.status}
                         </span>
-                        <span className="font-mono text-xs tabular-nums">
+                        <span className="h-1.5 overflow-hidden rounded-full bg-[#EFEFEF]">
+                          <span
+                            className="block h-full rounded-full bg-primary/80 group-hover:bg-primary"
+                            style={{
+                              width: `${stage.count ? Math.max(4, (stage.count / pipelineMax) * 100) : 0}%`,
+                            }}
+                          />
+                        </span>
+                        <span className="text-right font-medium tabular-nums">
                           {stage.count}
                         </span>
                       </Link>
                     </li>
                   ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
-          {job.status === "draft" ? (
-            <Card className="shadow-none">
-              <CardHeader className="border-b border-border pb-4">
-                <CardTitle>Application form</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 py-4 text-sm">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted-foreground">
-                    Candidate details
-                  </span>
-                  <span className="font-medium">Standard fields</span>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted-foreground">
-                    Screening questions
-                  </span>
-                  <span className="font-medium tabular-nums">
-                    {job.job_application_questions.length}
-                  </span>
-                </div>
-                {job.job_application_questions.length > 0 && (
-                  <ul className="space-y-2 border-t border-border pt-3 text-xs text-muted-foreground">
-                    {job.job_application_questions.map(
-                      (question: { id: string; label: string }) => (
-                        <li key={question.id} className="line-clamp-2">
-                          {question.label}
+                </ol>
+              </Panel>
+              <Panel
+                title="Latest applications"
+                count={applicationCount || undefined}
+                bodyClassName="p-0"
+                actions={
+                  applicationCount > 0 ? (
+                    <ButtonLink
+                      href={`/app/applications?jobId=${job.id}`}
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      View all
+                      <AltArrowRightIcon
+                        data-icon="inline-end"
+                        aria-hidden="true"
+                      />
+                    </ButtonLink>
+                  ) : undefined
+                }
+              >
+                {applicationResult.items.length ? (
+                  <ul className="divide-y divide-border">
+                    {applicationResult.items.slice(0, 6).map((application) => {
+                      const name =
+                        application.candidates?.full_name ?? "Candidate";
+                      return (
+                        <li key={application.id}>
+                          <Link
+                            href={`/app/applications/${application.id}`}
+                            className="group flex items-center gap-3 px-4 py-3 outline-none hover:bg-[#F8F9FC] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                          >
+                            <span
+                              aria-hidden="true"
+                              className="grid size-8 shrink-0 place-items-center rounded-full bg-[#EDECFD] text-xs font-semibold text-[#4846B8]"
+                            >
+                              {name
+                                .split(/\s+/)
+                                .slice(0, 2)
+                                .map((part: string) => part[0])
+                                .join("")
+                                .toUpperCase()}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-sm font-medium group-hover:text-primary">
+                                {name}
+                              </span>
+                              <span className="block text-xs text-muted-foreground">
+                                Applied {formatDate(application.submitted_at)}
+                              </span>
+                            </span>
+                            <StatusBadge status={application.status} />
+                            <AltArrowRightIcon
+                              aria-hidden="true"
+                              size={16}
+                              className="hidden text-muted-foreground group-hover:text-primary sm:block"
+                            />
+                          </Link>
                         </li>
-                      ),
-                    )}
+                      );
+                    })}
                   </ul>
+                ) : (
+                  <div className="flex flex-col items-center px-6 py-12 text-center">
+                    <span className="grid size-10 place-items-center rounded-[10px] bg-[#F8F8F8] text-muted-foreground ring-1 ring-border">
+                      <CaseRoundIcon aria-hidden="true" size={20} />
+                    </span>
+                    <p className="mt-3 text-sm font-medium">
+                      No applications yet
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Share the application link to start receiving candidates.
+                    </p>
+                  </div>
                 )}
-                <ButtonLink
-                  href={`/preview/jobs/${job.id}`}
-                  target="_blank"
-                  size="sm"
-                  variant="outline"
-                  className="w-full"
-                >
-                  Preview application form
-                </ButtonLink>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="shadow-none">
-              <CardHeader>
-                <CardTitle>Role details</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <dl className="flex flex-col gap-4 text-sm">
-                  <div>
-                    <dt className="text-muted-foreground">Location</dt>
-                    <dd className="mt-1 font-medium">
-                      {job.location || "Not specified"}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">
-                      Working arrangement
-                    </dt>
-                    <dd className="mt-1 font-medium capitalize">
-                      {job.work_arrangement?.replace("_", "-") ||
-                        "Not specified"}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">Deadline</dt>
-                    <dd className="mt-1 font-mono text-xs">
-                      {job.deadline_at
-                        ? new Intl.DateTimeFormat("en", {
-                            dateStyle: "medium",
-                          }).format(new Date(job.deadline_at))
-                        : "No deadline"}
-                    </dd>
-                  </div>
-                </dl>
-              </CardContent>
-            </Card>
+              </Panel>
+            </>
+          )}
+          {collaborators && (
+            <JobCollaborators
+              agencyId={context.agencyId}
+              jobId={id}
+              clientId={job.client_id}
+              data={collaborators}
+            />
           )}
         </div>
-      </div>
-      {collaborators && (
-        <JobCollaborators
-          agencyId={context.agencyId}
-          jobId={id}
-          clientId={job.client_id}
-          data={collaborators}
-        />
-      )}
-      {job.internalBrief && (
-        <section
-          className="mt-5 rounded-[10px] border bg-white p-4"
-          aria-label="Internal hiring brief"
-        >
-          <h2 className="text-sm font-semibold">
-            Internal hiring brief · agency team only
-          </h2>
-          <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-            {job.internalBrief.hiring_reason && (
-              <div>
-                <dt className="text-muted-foreground">Hiring reason</dt>
-                <dd className="capitalize">
-                  {job.internalBrief.hiring_reason}
+
+        <aside className="flex flex-col gap-5" aria-label="Job details">
+          {applicationUrl && (
+            <Panel title="Application link">
+              <p className="truncate rounded-md border border-border bg-[#F8F8F8] px-2.5 py-2 font-mono text-[11px] text-muted-foreground">
+                {applicationUrl}
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <CopyApplicationLink url={applicationUrl} />
+                <ButtonLink
+                  href={applicationUrl}
+                  target="_blank"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Open public job page"
+                  title="Open public job page"
+                >
+                  <SquareTopDownIcon aria-hidden="true" />
+                </ButtonLink>
+              </div>
+            </Panel>
+          )}
+          {job.status !== "draft" && (
+            <Panel title="Role details">
+              <dl className="grid gap-3 text-sm">
+                {roleFacts.map(([label, value]) => (
+                  <div
+                    key={label}
+                    className="flex items-baseline justify-between gap-4"
+                  >
+                    <dt className="text-xs text-muted-foreground">{label}</dt>
+                    <dd className="text-right text-xs font-medium">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </Panel>
+          )}
+          {stages.length > 0 && (
+            <Panel
+              title="Hiring workflow"
+              actions={
+                <span className="text-xs text-muted-foreground">
+                  {stages.length} stages
+                </span>
+              }
+            >
+              <ol
+                aria-label="Configured recruitment stages"
+                className="relative flex flex-col gap-2.5"
+              >
+                <span
+                  aria-hidden="true"
+                  className="absolute top-2 bottom-2 left-[9px] w-px bg-border"
+                />
+                {stages.map((stage, index) => (
+                  <li
+                    key={stage.id}
+                    className="relative flex items-center gap-3 text-xs"
+                  >
+                    <span className="grid size-[19px] shrink-0 place-items-center rounded-full border border-border bg-white text-[10px] font-semibold tabular-nums text-muted-foreground">
+                      {index + 1}
+                    </span>
+                    <span className="font-medium">{stage.name}</span>
+                  </li>
+                ))}
+              </ol>
+            </Panel>
+          )}
+          <Panel title="Application form">
+            <dl className="grid gap-3 text-xs">
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted-foreground">Candidate details</dt>
+                <dd className="font-medium">Standard fields</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted-foreground">Screening questions</dt>
+                <dd className="font-medium tabular-nums">
+                  {job.job_application_questions.length}
                 </dd>
               </div>
+            </dl>
+            {job.job_application_questions.length > 0 && (
+              <ol className="mt-3 flex list-decimal flex-col gap-1.5 border-t border-border pt-3 pl-4 text-xs text-muted-foreground">
+                {job.job_application_questions.map(
+                  (question: { id: string; label: string }) => (
+                    <li key={question.id} className="line-clamp-2 pl-1">
+                      {question.label}
+                    </li>
+                  ),
+                )}
+              </ol>
             )}
-            {job.internalBrief.target_start_date && (
-              <div>
-                <dt className="text-muted-foreground">Target start date</dt>
-                <dd>{job.internalBrief.target_start_date}</dd>
-              </div>
-            )}
-            {job.salary_visibility !== "public" &&
-              (job.internalBrief.salary_min != null ||
-                job.internalBrief.salary_max != null) && (
-                <div>
-                  <dt className="text-muted-foreground">
-                    Internal salary budget
-                  </dt>
-                  <dd>
-                    {job.internalBrief.currency}{" "}
-                    {job.internalBrief.salary_min ?? "—"} –{" "}
-                    {job.internalBrief.salary_max ?? "—"}{" "}
-                    {job.internalBrief.salary_period} ·{" "}
-                    {job.salary_basis.replaceAll("_", " ")}
-                  </dd>
-                </div>
+            <ButtonLink
+              href={`/preview/jobs/${job.id}`}
+              target="_blank"
+              size="sm"
+              variant="outline"
+              className="mt-4 w-full"
+            >
+              Preview application form
+            </ButtonLink>
+          </Panel>
+          {job.internalBrief && (
+            <Panel title="Internal brief">
+              <p className="-mt-1 mb-3 text-[11px] text-muted-foreground">
+                Agency team only
+              </p>
+              <dl className="grid gap-3 text-xs">
+                {job.internalBrief.hiring_reason && (
+                  <div className="flex items-baseline justify-between gap-4">
+                    <dt className="text-muted-foreground">Hiring reason</dt>
+                    <dd className="text-right font-medium capitalize">
+                      {job.internalBrief.hiring_reason}
+                    </dd>
+                  </div>
+                )}
+                {job.internalBrief.target_start_date && (
+                  <div className="flex items-baseline justify-between gap-4">
+                    <dt className="text-muted-foreground">Target start</dt>
+                    <dd className="text-right font-medium">
+                      {job.internalBrief.target_start_date}
+                    </dd>
+                  </div>
+                )}
+                {job.salary_visibility !== "public" &&
+                  (job.internalBrief.salary_min != null ||
+                    job.internalBrief.salary_max != null) && (
+                    <div className="flex items-baseline justify-between gap-4">
+                      <dt className="text-muted-foreground">Salary budget</dt>
+                      <dd className="text-right font-medium">
+                        {job.internalBrief.currency}{" "}
+                        {job.internalBrief.salary_min ?? "—"} –{" "}
+                        {job.internalBrief.salary_max ?? "—"}{" "}
+                        {job.internalBrief.salary_period} ·{" "}
+                        {job.salary_basis.replaceAll("_", " ")}
+                      </dd>
+                    </div>
+                  )}
+              </dl>
+              {job.internalBrief.sourcing_brief && (
+                <p className="mt-3 whitespace-pre-wrap border-t border-border pt-3 text-xs leading-5">
+                  {job.internalBrief.sourcing_brief}
+                </p>
               )}
-          </dl>
-          {job.internalBrief.sourcing_brief && (
-            <p className="mt-3 whitespace-pre-wrap text-sm">
-              {job.internalBrief.sourcing_brief}
-            </p>
+            </Panel>
           )}
-        </section>
-      )}
+        </aside>
+      </div>
       {showEdit &&
         clientResult &&
         memberResult &&

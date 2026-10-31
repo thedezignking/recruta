@@ -78,10 +78,13 @@ export function JobCollaborators({
     }
   }
   return (
-    <section className="mt-7" aria-labelledby="hiring-managers-heading">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+    <section aria-labelledby="hiring-managers-heading">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 id="hiring-managers-heading" className="text-sm font-semibold">
+          <h2
+            id="hiring-managers-heading"
+            className="text-[13px] font-semibold tracking-[-0.01em]"
+          >
             Hiring managers
           </h2>
           <p className="mt-0.5 text-xs text-muted-foreground">

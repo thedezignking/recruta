@@ -222,9 +222,12 @@ describe("job organization selection", () => {
       screen.getByRole("combobox", { name: "Employment type" }),
       { key: "ArrowDown" },
     );
-    fireEvent.keyDown(await screen.findByRole("option", { name: "Full-time" }), {
-      key: "Enter",
-    });
+    fireEvent.keyDown(
+      await screen.findByRole("option", { name: "Full-time" }),
+      {
+        key: "Enter",
+      },
+    );
     fireEvent.keyDown(
       screen.getByRole("combobox", { name: "Remote eligibility" }),
       { key: "ArrowDown" },

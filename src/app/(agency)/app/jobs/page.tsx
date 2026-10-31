@@ -13,6 +13,7 @@ import {
 } from "@solar-icons/react/linear";
 import { redirect } from "next/navigation";
 import { ButtonLink } from "@/components/shared/button-link";
+import { PageHeader, SectionHeader } from "@/components/shared/page-header";
 import { NewJobDialog } from "@/components/jobs/new-job-dialog";
 import { JobSidePanel } from "@/components/jobs/job-side-panel";
 import { MetricStrip } from "@/components/overview/metric-strip";
@@ -203,19 +204,20 @@ export default async function JobsPage({
 
   return (
     <div className="pb-20 lg:pb-0">
-      <div className="mb-5 flex justify-end lg:hidden">
-        <ButtonLink href="/app/jobs?new=1">
-          <AddIcon data-icon="inline-start" aria-hidden="true" />
-          New job
-        </ButtonLink>
-      </div>
+      <PageHeader title="Jobs" />
       <section aria-label="Jobs at a glance" className="mb-6">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-[13px] font-semibold tracking-[-0.01em]">
-            Job activity
-          </h2>
-          <OverviewRangeFilter value={range} path="/app/jobs" />
-        </div>
+        <SectionHeader
+          title="Job activity"
+          actions={
+            <>
+              <OverviewRangeFilter value={range} path="/app/jobs" />
+              <ButtonLink href="/app/jobs?new=1">
+                <AddIcon data-icon="inline-start" aria-hidden="true" />
+                New job
+              </ButtonLink>
+            </>
+          }
+        />
         <MetricStrip
           idPrefix="jobs-summary"
           range={range}

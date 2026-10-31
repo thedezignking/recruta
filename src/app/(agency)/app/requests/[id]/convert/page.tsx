@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { ConvertRequestForm } from "@/components/requests/convert-request-form";
-import { PageHeader } from "@/components/shared/page-header";
+import { DetailHeader } from "@/components/shared/page-header";
+import { ToolbarBreadcrumb } from "@/components/layout/toolbar-title-context";
 import { requireAgencyPageContext } from "@/server/auth/context";
 import { getHiringRequest } from "@/server/services/hiring-requests";
 import {
@@ -26,11 +27,16 @@ export default async function ConvertRequestPage({
   if (request.status !== "approved") redirect(`/app/requests/${id}`);
 
   return (
-    <div className="max-w-3xl pb-20 lg:pb-0">
-      <PageHeader
-        eyebrow="Approved request"
+    <div className="mx-auto max-w-3xl pb-20 lg:pb-0">
+      <ToolbarBreadcrumb
+        parent="Hiring requests"
+        parentHref={`/app/requests/${request.id}`}
+        title="Create job"
+      />
+      <DetailHeader
         title={`Create job: ${request.title}`}
-        description={request.clients?.name}
+        meta={["Approved request", request.clients?.name]}
+        className="mb-6"
       />
       <ConvertRequestForm
         requestId={request.id}

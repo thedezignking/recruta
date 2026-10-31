@@ -87,7 +87,7 @@ export function ConvertRequestForm({
                 id="workflow"
                 value={workflowTemplateId}
                 onChange={(event) => setWorkflowTemplateId(event.target.value)}
-                className="h-10 rounded-lg border border-input bg-background px-3 text-sm"
+                className="h-9 rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 required
               >
                 {workflows.map((workflow) => (
@@ -114,7 +114,7 @@ export function ConvertRequestForm({
                   id="priority"
                   value={priority}
                   onChange={(event) => setPriority(event.target.value)}
-                  className="h-10 rounded-lg border border-input bg-background px-3 text-sm"
+                  className="h-9 rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 >
                   <option value="normal">Normal</option>
                   <option value="high">High</option>
@@ -129,7 +129,7 @@ export function ConvertRequestForm({
                 id="recruiter"
                 value={primaryRecruiterId}
                 onChange={(event) => setPrimaryRecruiterId(event.target.value)}
-                className="h-10 rounded-lg border border-input bg-background px-3 text-sm"
+                className="h-9 rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 required
               >
                 {recruiters.map((recruiter) => (

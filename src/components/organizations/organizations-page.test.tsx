@@ -15,7 +15,7 @@ import OrganizationsPage from "@/app/(agency)/app/clients/page";
 afterEach(cleanup);
 
 it("keeps the header action primary and the repeated empty-state action outline", async () => {
-  render(await OrganizationsPage());
+  render(await OrganizationsPage({ searchParams: Promise.resolve({}) }));
   const [headerAction, emptyAction] = screen.getAllByRole("link", {
     name: "Add organization",
   });

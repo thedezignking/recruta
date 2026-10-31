@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { CheckCircleIcon } from "@solar-icons/react/bold";
-import { ArrowLeftIcon } from "@solar-icons/react/linear";
+import { ClipboardTextIcon } from "@solar-icons/react/linear";
 import { notFound, redirect } from "next/navigation";
 import { RequestActions } from "@/components/requests/request-actions";
 import { ButtonLink } from "@/components/shared/button-link";
-import { PageHeader } from "@/components/shared/page-header";
+import { DetailHeader, Panel } from "@/components/shared/page-header";
+import { ToolbarBreadcrumb } from "@/components/layout/toolbar-title-context";
 import { StageRail } from "@/components/shared/stage-rail";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAgencyPageContext } from "@/server/auth/context";
 import {
   getHiringRequest,
@@ -73,211 +73,205 @@ export default async function RequestDetailPage({
 
   return (
     <div className="pb-20 lg:pb-0">
-      <Link
-        href="/app/requests"
-        className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeftIcon aria-hidden="true" size={16} />
-        Hiring requests
-      </Link>
-      <PageHeader
-        eyebrow={request.id.slice(0, 8).toUpperCase()}
+      <ToolbarBreadcrumb
+        parent="Hiring requests"
+        parentHref="/app/requests"
         title={request.title}
-        description={`${request.clients?.name ?? "Organization"} · ${request.department || "No department"} · ${request.submitted_at ? `Submitted ${new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(request.submitted_at))}` : "Draft"}`}
-        actions={<StatusBadge status={request.status} className="h-7 px-3" />}
       />
-      <Card className="mt-6 shadow-none">
-        <CardContent className="py-5">
-          <StageRail stages={stages} />
-        </CardContent>
-      </Card>
-      <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_380px]">
-        <div className="flex flex-col gap-5">
-          <Card className="shadow-none">
-            <CardHeader className="border-b pb-4">
-              <CardTitle>Role brief</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
-                <Detail
-                  label="Department"
-                  value={request.department || "Not provided"}
-                />
-                <Detail
-                  label="Location"
-                  value={
-                    [
-                      request.location,
-                      request.work_arrangement?.replace("_", "-"),
-                    ]
-                      .filter(Boolean)
-                      .join(" · ") || "Not provided"
-                  }
-                />
-                <Detail
-                  label="Positions"
-                  value={String(request.positions_required)}
-                />
-                <Detail
-                  label="Employment type"
-                  value={request.employment_type || "Not provided"}
-                />
-                <Detail
-                  label="Salary range"
-                  value={salary(
-                    request.salary_min,
-                    request.salary_max,
-                    request.currency,
-                  )}
-                />
-                <Detail
-                  label="Target hire date"
-                  value={
-                    request.target_hire_date
-                      ? new Intl.DateTimeFormat("en", {
-                          dateStyle: "long",
-                        }).format(new Date(request.target_hire_date))
-                      : "Not provided"
-                  }
-                />
-              </dl>
-              <div className="mt-6 border-t pt-5">
-                <h3 className="text-sm font-medium">Description</h3>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
-                  {request.description}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="shadow-none">
-            <CardHeader className="border-b pb-4">
-              <CardTitle>Requirements</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {request.hiring_request_requirements.length ? (
-                <ul className="flex flex-col gap-4">
-                  {request.hiring_request_requirements.map(
-                    (requirement: {
-                      id: string;
-                      label: string;
-                      description: string | null;
-                    }) => (
-                      <li
-                        key={requirement.id}
-                        className="grid grid-cols-[8px_minmax(0,1fr)] gap-3"
-                      >
-                        <span
-                          aria-hidden="true"
-                          className="mt-2.5 size-1.5 rounded-full bg-primary"
-                        />
-                        <div>
-                          <p className="text-sm font-medium">
-                            {requirement.label}
+      <DetailHeader
+        media={
+          <span className="grid size-11 place-items-center rounded-[10px] border border-border bg-white text-muted-foreground">
+            <ClipboardTextIcon aria-hidden="true" size={20} />
+          </span>
+        }
+        title={request.title}
+        status={<StatusBadge status={request.status} />}
+        meta={[
+          request.clients?.name ? (
+            <Link
+              href={`/app/clients/${request.client_id}`}
+              className="font-medium text-foreground hover:text-primary"
+            >
+              {request.clients.name}
+            </Link>
+          ) : null,
+          request.department,
+          <span key="ref" className="font-mono">
+            {request.id.slice(0, 8).toUpperCase()}
+          </span>,
+          request.submitted_at
+            ? `Submitted ${new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(request.submitted_at))}`
+            : "Draft",
+        ]}
+        actions={
+          request.status === "approved" && canApprove ? (
+            <ButtonLink href={`/app/requests/${request.id}/convert`}>
+              <CheckCircleIcon data-icon="inline-start" aria-hidden="true" />
+              Create job
+            </ButtonLink>
+          ) : undefined
+        }
+      />
+      <div className="mt-5 rounded-[10px] border border-border px-4 py-4">
+        <StageRail stages={stages} />
+      </div>
+      <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="flex min-w-0 flex-col gap-5">
+          <Panel title="Role brief">
+            <dl className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
+              <Detail
+                label="Department"
+                value={request.department || "Not provided"}
+              />
+              <Detail
+                label="Location"
+                value={
+                  [
+                    request.location,
+                    request.work_arrangement?.replace("_", "-"),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || "Not provided"
+                }
+              />
+              <Detail
+                label="Positions"
+                value={String(request.positions_required)}
+              />
+              <Detail
+                label="Employment type"
+                value={request.employment_type || "Not provided"}
+              />
+              <Detail
+                label="Salary range"
+                value={salary(
+                  request.salary_min,
+                  request.salary_max,
+                  request.currency,
+                )}
+              />
+              <Detail
+                label="Target hire date"
+                value={
+                  request.target_hire_date
+                    ? new Intl.DateTimeFormat("en", {
+                        dateStyle: "long",
+                      }).format(new Date(request.target_hire_date))
+                    : "Not provided"
+                }
+              />
+            </dl>
+            <div className="mt-6 border-t pt-5">
+              <h3 className="text-sm font-medium">Description</h3>
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
+                {request.description}
+              </p>
+            </div>
+          </Panel>
+          <Panel title="Requirements">
+            {request.hiring_request_requirements.length ? (
+              <ul className="flex flex-col gap-4">
+                {request.hiring_request_requirements.map(
+                  (requirement: {
+                    id: string;
+                    label: string;
+                    description: string | null;
+                  }) => (
+                    <li
+                      key={requirement.id}
+                      className="grid grid-cols-[8px_minmax(0,1fr)] gap-3"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="mt-2.5 size-1.5 rounded-full bg-primary"
+                      />
+                      <div>
+                        <p className="text-sm font-medium">
+                          {requirement.label}
+                        </p>
+                        {requirement.description ? (
+                          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                            {requirement.description}
                           </p>
-                          {requirement.description ? (
-                            <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                              {requirement.description}
-                            </p>
-                          ) : null}
-                        </div>
-                      </li>
-                    ),
-                  )}
-                </ul>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  No structured requirements were added.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+                        ) : null}
+                      </div>
+                    </li>
+                  ),
+                )}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No structured requirements were added.
+              </p>
+            )}
+          </Panel>
           {messages.items.length ? (
-            <Card className="shadow-none">
-              <CardHeader className="border-b pb-4">
-                <CardTitle>Clarification history</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ol className="flex flex-col gap-4">
-                  {messages.items.map((message) => (
-                    <li key={message.id} className="rounded-xl bg-muted/45 p-4">
-                      <p className="text-sm leading-6">{message.message}</p>
-                      <p className="mt-2 font-mono text-xs text-muted-foreground">
+            <Panel title="Clarification history">
+              <ol className="flex flex-col gap-4">
+                {messages.items.map((message) => (
+                  <li
+                    key={message.id}
+                    className="rounded-md bg-[#F8F8F8] px-3 py-2.5"
+                  >
+                    <p className="text-sm leading-6">{message.message}</p>
+                    <p className="mt-2 font-mono text-xs text-muted-foreground">
+                      {new Intl.DateTimeFormat("en", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      }).format(new Date(message.created_at))}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            </Panel>
+          ) : null}
+        </div>
+        <aside aria-label="Request actions" className="flex flex-col gap-5">
+          <Panel title="Next action">
+            {request.status === "approved" ? (
+              <p className="text-sm text-muted-foreground">
+                {canApprove
+                  ? "Approved. Create the job to start recruiting."
+                  : "Approved. A manager will create the job."}
+              </p>
+            ) : (
+              <RequestActions
+                requestId={request.id}
+                status={request.status}
+                canApprove={canApprove}
+              />
+            )}
+          </Panel>
+          <Panel title="Revision history">
+            {request.hiring_request_revisions.length ? (
+              <div className="flex flex-col gap-3">
+                {request.hiring_request_revisions.map(
+                  (revision: {
+                    id: string;
+                    revision_number: number;
+                    created_at: string;
+                  }) => (
+                    <div key={revision.id}>
+                      <p className="text-sm font-medium">
+                        Revision {revision.revision_number}
+                      </p>
+                      <p className="mt-1 font-mono text-xs text-muted-foreground">
                         {new Intl.DateTimeFormat("en", {
                           dateStyle: "medium",
                           timeStyle: "short",
-                        }).format(new Date(message.created_at))}
+                        }).format(new Date(revision.created_at))}
                       </p>
-                    </li>
-                  ))}
-                </ol>
-              </CardContent>
-            </Card>
-          ) : null}
-        </div>
-        <div className="flex flex-col gap-5">
-          <Card className="border-primary/20 shadow-none">
-            <CardHeader className="border-b bg-primary/[.035] pb-4">
-              <CardTitle>Next action</CardTitle>
+                    </div>
+                  ),
+                )}
+              </div>
+            ) : (
               <p className="text-sm text-muted-foreground">
-                The request state controls which actions are available.
+                No submitted revision yet.
               </p>
-            </CardHeader>
-            <CardContent>
-              {request.status === "approved" ? (
-                <ButtonLink
-                  className="w-full"
-                  href={`/app/requests/${request.id}/convert`}
-                >
-                  <CheckCircleIcon
-                    data-icon="inline-start"
-                    aria-hidden="true"
-                  />
-                  Create job
-                </ButtonLink>
-              ) : (
-                <RequestActions
-                  requestId={request.id}
-                  status={request.status}
-                  canApprove={canApprove}
-                />
-              )}
-            </CardContent>
-          </Card>
-          <Card className="shadow-none">
-            <CardHeader>
-              <CardTitle>Revision history</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {request.hiring_request_revisions.length ? (
-                <div className="flex flex-col gap-3">
-                  {request.hiring_request_revisions.map(
-                    (revision: {
-                      id: string;
-                      revision_number: number;
-                      created_at: string;
-                    }) => (
-                      <div key={revision.id}>
-                        <p className="text-sm font-medium">
-                          Revision {revision.revision_number}
-                        </p>
-                        <p className="mt-1 font-mono text-xs text-muted-foreground">
-                          {new Intl.DateTimeFormat("en", {
-                            dateStyle: "medium",
-                            timeStyle: "short",
-                          }).format(new Date(revision.created_at))}
-                        </p>
-                      </div>
-                    ),
-                  )}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  No submitted revision yet.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </Panel>
+        </aside>
       </div>
     </div>
   );
@@ -286,10 +280,8 @@ export default async function RequestDetailPage({
 function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
-        {label}
-      </dt>
-      <dd className="mt-1.5 text-sm font-medium">{value}</dd>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="mt-1 text-sm font-medium">{value}</dd>
     </div>
   );
 }

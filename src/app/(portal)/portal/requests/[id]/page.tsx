@@ -31,7 +31,11 @@ export default async function PortalRequest({
     ["draft", "clarification_requested"].includes(r.status);
   return (
     <div className="space-y-6">
-      <PageHeader title={r.title} actions={<StatusBadge status={r.status} />} />
+      <PageHeader
+        standalone
+        title={r.title}
+        actions={<StatusBadge status={r.status} />}
+      />
       <Card>
         <CardContent>
           {editable ? (

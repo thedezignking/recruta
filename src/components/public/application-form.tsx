@@ -4,7 +4,6 @@ import { useMemo, useRef, useState } from "react";
 import { CheckCircleIcon } from "@solar-icons/react/bold";
 import { UploadIcon } from "@solar-icons/react/linear";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Field,
   FieldDescription,
@@ -119,262 +118,258 @@ export function ApplicationForm({
 
   if (submitted) {
     return (
-      <Card className="border-primary/20 bg-primary/[0.035] shadow-none">
-        <CardContent className="flex flex-col items-center px-6 py-10 text-center">
-          <span className="grid size-12 place-items-center rounded-xl bg-primary text-primary-foreground">
-            <CheckCircleIcon aria-hidden="true" size={24} />
-          </span>
-          <h2 className="mt-5 text-xl font-semibold tracking-[-0.025em]">
-            Application received
-          </h2>
-          <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-            {agencyName} now has your application for {jobTitle}.{" "}
-            {confirmationSent
-              ? "We sent a confirmation to your email address."
-              : "Your application has been received. The agency will contact you if they need anything else."}
-          </p>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col items-center py-12 text-center">
+        <span className="grid size-12 place-items-center rounded-full bg-success/10 text-success">
+          <CheckCircleIcon aria-hidden="true" size={24} />
+        </span>
+        <h2 className="mt-5 text-xl font-semibold tracking-[-0.025em]">
+          Application received
+        </h2>
+        <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+          {agencyName} now has your application for {jobTitle}.{" "}
+          {confirmationSent
+            ? "We sent a confirmation to your email address."
+            : "They will contact you if they need anything else."}
+        </p>
+      </div>
     );
   }
 
   return (
-    <Card className="shadow-[0_18px_55px_rgb(23_24_43_/_0.08)]">
-      <CardHeader className="border-b pb-5">
-        <CardTitle className="text-xl">Your details</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} noValidate>
-          <FieldGroup>
-            {preview && (
-              <div className="rounded-lg border border-primary/20 bg-primary/[0.04] px-4 py-3 text-sm text-foreground">
-                Preview only. Candidates can apply after this job is published.
-              </div>
-            )}
-            {error ? (
-              <div
-                role="alert"
-                className="rounded-lg bg-destructive/8 px-4 py-3 text-sm text-destructive"
-              >
-                {error}
-              </div>
-            ) : null}
-            <input
-              aria-hidden="true"
-              className="absolute -left-[10000px] size-px"
-              tabIndex={-1}
-              autoComplete="off"
-              name="website"
+    <form onSubmit={handleSubmit} noValidate>
+      <FieldGroup className="gap-6">
+        {preview && (
+          <div className="rounded-lg border border-primary/20 bg-primary/[0.04] px-4 py-3 text-sm text-foreground">
+            Preview only. Candidates can apply after this job is published.
+          </div>
+        )}
+        {error ? (
+          <div
+            role="alert"
+            className="rounded-lg bg-destructive/8 px-4 py-3 text-sm text-destructive"
+          >
+            {error}
+          </div>
+        ) : null}
+        <input
+          aria-hidden="true"
+          className="absolute -left-[10000px] size-px"
+          tabIndex={-1}
+          autoComplete="off"
+          name="website"
+        />
+        <Field data-invalid={Boolean(fieldErrors.fullName)}>
+          <FieldLabel htmlFor="fullName">Full name</FieldLabel>
+          <Input
+            id="fullName"
+            name="fullName"
+            autoComplete="name"
+            required
+            aria-invalid={Boolean(fieldErrors.fullName)}
+          />
+          <FieldError
+            errors={fieldErrors.fullName?.map((message) => ({ message }))}
+          />
+        </Field>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field data-invalid={Boolean(fieldErrors.email)}>
+            <FieldLabel htmlFor="email">Email address</FieldLabel>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              required
+              aria-invalid={Boolean(fieldErrors.email)}
             />
-            <Field data-invalid={Boolean(fieldErrors.fullName)}>
-              <FieldLabel htmlFor="fullName">Full name</FieldLabel>
+            <FieldError
+              errors={fieldErrors.email?.map((message) => ({ message }))}
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="phone">
+              Phone{" "}
+              <span className="font-normal text-muted-foreground">
+                (optional)
+              </span>
+            </FieldLabel>
+            <Input
+              id="phone"
+              name="phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+            />
+          </Field>
+        </div>
+        <Field>
+          <FieldLabel htmlFor="linkedinUrl">
+            LinkedIn{" "}
+            <span className="font-normal text-muted-foreground">
+              (optional)
+            </span>
+          </FieldLabel>
+          <Input
+            id="linkedinUrl"
+            name="linkedinUrl"
+            type="url"
+            inputMode="url"
+            placeholder="https://linkedin.com/in/…"
+          />
+        </Field>
+        <Field data-invalid={Boolean(fieldErrors.resume)}>
+          <FieldLabel htmlFor="resume">Resume</FieldLabel>
+          <div className="rounded-xl border border-dashed border-input bg-muted/35 p-4 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/20">
+            <div className="flex items-center gap-3">
+              <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-card text-primary shadow-sm ring-1 ring-border">
+                <UploadIcon aria-hidden="true" size={18} />
+              </span>
               <Input
-                id="fullName"
-                name="fullName"
-                autoComplete="name"
+                id="resume"
+                name="resume"
+                type="file"
+                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 required
-                aria-invalid={Boolean(fieldErrors.fullName)}
+                aria-invalid={Boolean(fieldErrors.resume)}
+                className="border-0 bg-transparent px-0 shadow-none file:mr-3"
               />
-              <FieldError
-                errors={fieldErrors.fullName?.map((message) => ({ message }))}
-              />
-            </Field>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Field data-invalid={Boolean(fieldErrors.email)}>
-                <FieldLabel htmlFor="email">Email address</FieldLabel>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  required
-                  aria-invalid={Boolean(fieldErrors.email)}
-                />
-                <FieldError
-                  errors={fieldErrors.email?.map((message) => ({ message }))}
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="phone">Phone number</FieldLabel>
-                <Input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                />
-              </Field>
             </div>
-            <Field>
-              <FieldLabel htmlFor="linkedinUrl">LinkedIn profile</FieldLabel>
-              <Input
-                id="linkedinUrl"
-                name="linkedinUrl"
-                type="url"
-                inputMode="url"
-                placeholder="https://linkedin.com/in/…"
-              />
-            </Field>
-            <Field data-invalid={Boolean(fieldErrors.resume)}>
-              <FieldLabel htmlFor="resume">Resume</FieldLabel>
-              <div className="rounded-xl border border-dashed border-input bg-muted/35 p-4 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/20">
-                <div className="flex items-center gap-3">
-                  <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-card text-primary shadow-sm ring-1 ring-border">
-                    <UploadIcon aria-hidden="true" size={18} />
-                  </span>
-                  <Input
-                    id="resume"
-                    name="resume"
-                    type="file"
-                    accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    required
-                    aria-invalid={Boolean(fieldErrors.resume)}
-                    className="border-0 bg-transparent px-0 shadow-none file:mr-3"
-                  />
-                </div>
-              </div>
-              <FieldDescription>PDF or DOCX, up to 10 MiB.</FieldDescription>
-              <FieldError
-                errors={fieldErrors.resume?.map((message) => ({ message }))}
-              />
-            </Field>
-            {questions.length ? (
-              <FieldSet>
-                <FieldLegend>Screening questions</FieldLegend>
-                {questions.map((question) => {
-                  const options = Array.isArray(question.options)
-                    ? question.options.filter(
-                        (option): option is string =>
-                          typeof option === "string",
-                      )
-                    : [];
-                  return (
-                    <Field key={question.id}>
-                      <FieldLabel htmlFor={`question-${question.id}`}>
-                        {question.label}
-                        {question.is_required ? (
-                          <span aria-hidden="true"> *</span>
-                        ) : null}
-                      </FieldLabel>
-                      {question.question_type === "long_text" ? (
-                        <Textarea
-                          id={`question-${question.id}`}
-                          value={answers[question.id] ?? ""}
-                          onChange={(event) =>
-                            setAnswers((current) => ({
-                              ...current,
-                              [question.id]: event.target.value,
-                            }))
-                          }
-                          required={question.is_required}
-                          rows={4}
-                        />
-                      ) : question.question_type === "yes_no" ? (
-                        <select
-                          id={`question-${question.id}`}
-                          value={answers[question.id] ?? ""}
-                          onChange={(event) =>
-                            setAnswers((current) => ({
-                              ...current,
-                              [question.id]: event.target.value,
-                            }))
-                          }
-                          required={question.is_required}
-                          className="h-10 rounded-lg border border-input bg-background px-3 text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/25"
-                        >
-                          <option value="">Select an answer</option>
-                          <option value="true">Yes</option>
-                          <option value="false">No</option>
-                        </select>
-                      ) : question.question_type === "single_select" ? (
-                        <select
-                          id={`question-${question.id}`}
-                          value={answers[question.id] ?? ""}
-                          onChange={(event) =>
-                            setAnswers((current) => ({
-                              ...current,
-                              [question.id]: event.target.value,
-                            }))
-                          }
-                          required={question.is_required}
-                          className="h-10 rounded-lg border border-input bg-background px-3 text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/25"
-                        >
-                          <option value="">Select an answer</option>
-                          {options.map((option) => (
-                            <option key={option} value={option}>
-                              {option}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <Input
-                          id={`question-${question.id}`}
-                          value={answers[question.id] ?? ""}
-                          onChange={(event) =>
-                            setAnswers((current) => ({
-                              ...current,
-                              [question.id]: event.target.value,
-                            }))
-                          }
-                          required={question.is_required}
-                        />
-                      )}
-                      {question.help_text ? (
-                        <FieldDescription>
-                          {question.help_text}
-                        </FieldDescription>
-                      ) : null}
-                    </Field>
-                  );
-                })}
-              </FieldSet>
-            ) : null}
-            <Field>
-              <FieldLabel htmlFor="coverNote">A short note</FieldLabel>
-              <Textarea
-                id="coverNote"
-                name="coverNote"
-                rows={4}
-                placeholder="What should the recruiter know about your fit or availability?"
-              />
-            </Field>
-            <Field orientation="horizontal">
-              <input
-                id="consent"
-                name="consent"
-                value="true"
-                type="checkbox"
-                required
-                className="mt-0.5 size-4 accent-primary"
-              />
-              <FieldLabel
-                htmlFor="consent"
-                className="max-w-md text-sm font-normal leading-6"
-              >
-                I agree that {agencyName} may process my application details for
-                this recruitment process.
-              </FieldLabel>
-            </Field>
-            <Button
-              type="submit"
-              size="lg"
-              disabled={pending || preview}
-              className="w-full"
-            >
-              {preview
-                ? "Publish job to accept applications"
-                : pending
-                  ? "Submitting application…"
-                  : "Submit application"}
-            </Button>
-            <p className="text-center text-xs leading-5 text-muted-foreground">
-              Do not include sensitive identity or financial documents in your
-              resume.
-            </p>
-          </FieldGroup>
-        </form>
-      </CardContent>
-    </Card>
+          </div>
+          <FieldDescription>
+            PDF or DOCX, up to 10 MB. Leave out ID or financial documents.
+          </FieldDescription>
+          <FieldError
+            errors={fieldErrors.resume?.map((message) => ({ message }))}
+          />
+        </Field>
+        {questions.length ? (
+          <FieldSet>
+            <FieldLegend className="sr-only">Screening questions</FieldLegend>
+            {questions.map((question) => {
+              const options = Array.isArray(question.options)
+                ? question.options.filter(
+                    (option): option is string => typeof option === "string",
+                  )
+                : [];
+              return (
+                <Field key={question.id}>
+                  <FieldLabel htmlFor={`question-${question.id}`}>
+                    {question.label}
+                    {question.is_required ? (
+                      <span aria-hidden="true"> *</span>
+                    ) : null}
+                  </FieldLabel>
+                  {question.question_type === "long_text" ? (
+                    <Textarea
+                      id={`question-${question.id}`}
+                      value={answers[question.id] ?? ""}
+                      onChange={(event) =>
+                        setAnswers((current) => ({
+                          ...current,
+                          [question.id]: event.target.value,
+                        }))
+                      }
+                      required={question.is_required}
+                      rows={4}
+                    />
+                  ) : question.question_type === "yes_no" ? (
+                    <select
+                      id={`question-${question.id}`}
+                      value={answers[question.id] ?? ""}
+                      onChange={(event) =>
+                        setAnswers((current) => ({
+                          ...current,
+                          [question.id]: event.target.value,
+                        }))
+                      }
+                      required={question.is_required}
+                      className="h-9 rounded-lg border border-input bg-background px-2.5 text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/25"
+                    >
+                      <option value="">Select an answer</option>
+                      <option value="true">Yes</option>
+                      <option value="false">No</option>
+                    </select>
+                  ) : question.question_type === "single_select" ? (
+                    <select
+                      id={`question-${question.id}`}
+                      value={answers[question.id] ?? ""}
+                      onChange={(event) =>
+                        setAnswers((current) => ({
+                          ...current,
+                          [question.id]: event.target.value,
+                        }))
+                      }
+                      required={question.is_required}
+                      className="h-9 rounded-lg border border-input bg-background px-2.5 text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/25"
+                    >
+                      <option value="">Select an answer</option>
+                      {options.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <Input
+                      id={`question-${question.id}`}
+                      value={answers[question.id] ?? ""}
+                      onChange={(event) =>
+                        setAnswers((current) => ({
+                          ...current,
+                          [question.id]: event.target.value,
+                        }))
+                      }
+                      required={question.is_required}
+                    />
+                  )}
+                  {question.help_text ? (
+                    <FieldDescription>{question.help_text}</FieldDescription>
+                  ) : null}
+                </Field>
+              );
+            })}
+          </FieldSet>
+        ) : null}
+        <Field>
+          <FieldLabel htmlFor="coverNote">
+            Note{" "}
+            <span className="font-normal text-muted-foreground">
+              (optional)
+            </span>
+          </FieldLabel>
+          <Textarea id="coverNote" name="coverNote" rows={3} />
+        </Field>
+        <Field orientation="horizontal">
+          <input
+            id="consent"
+            name="consent"
+            value="true"
+            type="checkbox"
+            required
+            className="mt-0.5 size-4 accent-primary"
+          />
+          <FieldLabel
+            htmlFor="consent"
+            className="text-sm font-normal leading-6 text-muted-foreground"
+          >
+            I agree that {agencyName} may process my details for this
+            application.
+          </FieldLabel>
+        </Field>
+        <Button
+          type="submit"
+          size="lg"
+          disabled={pending || preview}
+          className="h-11 w-full"
+        >
+          {preview
+            ? "Publish job to accept applications"
+            : pending
+              ? "Submitting application…"
+              : "Submit application"}
+        </Button>
+      </FieldGroup>
+    </form>
   );
 }

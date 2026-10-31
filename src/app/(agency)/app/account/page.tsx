@@ -1,40 +1,42 @@
 import { AccountForm } from "@/components/auth/account-form";
+import { ProfilePhoto } from "@/components/auth/profile-photo";
 import { UpdatePasswordForm } from "@/components/auth/update-password-form";
-import { PageHeader } from "@/components/shared/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel } from "@/components/shared/page-header";
+import { SettingsLayout } from "@/components/shared/settings-layout";
 import { requireAgencyPageContext } from "@/server/auth/context";
+import { avatarUrl } from "@/server/services/user-avatar";
 
 export default async function AccountPage() {
   const { supabase, user } = await requireAgencyPageContext();
   const { data } = await supabase
     .from("user_profiles")
-    .select("full_name")
+    .select("full_name,avatar_path")
     .eq("id", user.id)
     .single();
+  const name = data?.full_name ?? "";
   return (
-    <div className="mx-auto max-w-2xl pb-20 lg:pb-0">
-      <PageHeader title="My account" />
-      <div className="mt-6 flex flex-col gap-6">
-        <Card id="profile">
-          <CardHeader>
-            <CardTitle>Personal details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AccountForm
-              name={data?.full_name ?? ""}
-              email={user.email ?? ""}
-            />
-          </CardContent>
-        </Card>
-        <Card id="security" className="scroll-mt-24">
-          <CardHeader>
-            <CardTitle>Password</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <UpdatePasswordForm inAccount />
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <SettingsLayout
+      title="My account"
+      sections={[
+        { id: "profile", label: "Profile" },
+        { id: "security", label: "Password" },
+      ]}
+    >
+      <Panel title="Profile" anchorId="profile">
+        <ProfilePhoto
+          name={name || user.email || ""}
+          initialPath={data?.avatar_path ?? null}
+          initialUrl={avatarUrl(supabase, data?.avatar_path ?? null)}
+        />
+        <div className="mt-5 max-w-xl border-t border-border pt-5">
+          <AccountForm name={name} email={user.email ?? ""} />
+        </div>
+      </Panel>
+      <Panel title="Password" anchorId="security">
+        <div className="max-w-xl">
+          <UpdatePasswordForm inAccount />
+        </div>
+      </Panel>
+    </SettingsLayout>
   );
 }

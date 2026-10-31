@@ -1,5 +1,7 @@
 "use client";
 
+import { workspaceLogoSrc } from "@/lib/workspace-logo";
+
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { AddIcon } from "@solar-icons/react/linear/add";
@@ -29,11 +31,7 @@ function initial(name: string) {
   return name.trim()[0]?.toUpperCase() || "W";
 }
 
-export function workspaceLogoSrc(logoUrl?: string | null, agencySlug?: string) {
-  return (
-    logoUrl || (agencySlug === "evenkore" ? "/brand/evenkore-symbol.svg" : null)
-  );
-}
+export { workspaceLogoSrc };
 
 export function WorkspaceSwitcher({
   currentId,

@@ -9,6 +9,7 @@ export default async function PortalHome() {
   return (
     <div className="space-y-6">
       <PageHeader
+        standalone
         title={c.clientName}
         actions={
           c.role !== "reviewer" ? (

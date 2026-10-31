@@ -3,7 +3,7 @@ import { InboxIcon } from "@solar-icons/react/bold";
 import { ArrowRightIcon } from "@solar-icons/react/linear";
 import { redirect } from "next/navigation";
 import { InboxFilters } from "@/components/applications/inbox-filters";
-import { PageHeader } from "@/components/shared/page-header";
+import { PageHeader, SectionHeader } from "@/components/shared/page-header";
 import { ButtonLink } from "@/components/shared/button-link";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -40,7 +40,7 @@ export default async function ApplicationsPage({
     return (
       <div>
         <PageHeader title="Applications" />
-        <Alert className="mt-6">
+        <Alert>
           <AlertDescription>
             These filters are invalid.{" "}
             <Link href="/app/applications">Clear filters</Link> to continue.
@@ -77,13 +77,12 @@ export default async function ApplicationsPage({
   if (result.nextCursor) next.set("cursor", result.nextCursor);
   return (
     <div className="flex flex-col gap-6 pb-20 lg:pb-0">
-      <PageHeader
-        title="Applications"
-        actions={
-          <span className="text-sm text-muted-foreground tabular-nums">
-            {result.total} {result.total === 1 ? "application" : "applications"}
-          </span>
-        }
+      <PageHeader title="Applications" className="mb-0" />
+      <SectionHeader
+        title="Application inbox"
+        count={result.total}
+        countLabel={`${result.total} ${result.total === 1 ? "application" : "applications"}`}
+        className="-mb-3"
       />
       <InboxFilters
         key={JSON.stringify(filters)}
@@ -91,13 +90,13 @@ export default async function ApplicationsPage({
         agencyId={context.agencyId}
         jobs={jobs.data ?? []}
       />
-      <Card>
+      <Card className="gap-0 py-0 shadow-none">
         <CardContent className="p-0">
           {result.items.length ? (
-            <Table>
+            <Table className="min-w-[860px] [&_td]:px-3 [&_td]:py-3 [&_th]:px-3">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Candidate</TableHead>
+                  <TableHead className="pl-4">Candidate</TableHead>
                   <TableHead>Role / organization</TableHead>
                   <TableHead>Stage</TableHead>
                   <TableHead>Owner</TableHead>
@@ -109,11 +108,14 @@ export default async function ApplicationsPage({
               </TableHeader>
               <TableBody>
                 {result.items.map((application) => (
-                  <TableRow key={application.id}>
-                    <TableCell>
+                  <TableRow
+                    key={application.id}
+                    className="group hover:bg-[#F8F9FC]"
+                  >
+                    <TableCell className="pl-4">
                       <div className="flex items-center gap-3">
                         <Avatar>
-                          <AvatarFallback>
+                          <AvatarFallback className="bg-[#EDECFD] text-xs font-semibold text-[#4846B8]">
                             {application.candidates.full_name
                               .split(/\s+/)
                               .slice(0, 2)
@@ -128,27 +130,27 @@ export default async function ApplicationsPage({
                           >
                             {application.candidates.full_name}
                           </Link>
-                          <p className="mt-1 text-xs text-muted-foreground">
+                          <p className="mt-0.5 text-xs text-muted-foreground">
                             {application.candidates.email}
                           </p>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-xs">
                       <Link
                         href={`/app/jobs/${application.jobs.id}`}
-                        className="hover:underline"
+                        className="font-medium hover:text-primary"
                       >
                         {application.jobs.title}
                       </Link>
-                      <p className="mt-1 text-xs text-muted-foreground">
+                      <p className="mt-0.5 text-muted-foreground">
                         {application.jobs.clients.name}
                       </p>
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={application.status} />
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="text-xs text-muted-foreground">
                       {application.owner_name ??
                         (application.owner_user_id
                           ? "Former teammate"
@@ -157,7 +159,7 @@ export default async function ApplicationsPage({
                     <TableCell>
                       <time
                         dateTime={application.submitted_at}
-                        className="whitespace-nowrap font-mono text-xs text-muted-foreground"
+                        className="whitespace-nowrap text-xs text-muted-foreground"
                       >
                         {new Intl.DateTimeFormat("en", {
                           dateStyle: "medium",
@@ -168,7 +170,7 @@ export default async function ApplicationsPage({
                     <TableCell>
                       <ButtonLink
                         href={`/app/applications/${application.id}`}
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         aria-label={`Review ${application.candidates.full_name}`}
                       >

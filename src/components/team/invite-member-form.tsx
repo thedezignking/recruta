@@ -54,11 +54,14 @@ export function InviteMemberForm({ agencyId }: { agencyId: string }) {
   }
 
   return (
-    <form onSubmit={submit} className="rounded-xl border bg-muted/25 p-4">
+    <form
+      onSubmit={submit}
+      className="rounded-[10px] border border-border bg-card p-4"
+    >
       <FieldGroup>
         <div>
-          <h2 className="font-medium">Invite a team member</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h2 className="text-[13px] font-semibold">Invite a team member</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
             They will receive a secure, expiring invitation by email.
           </p>
         </div>
@@ -94,7 +97,7 @@ export function InviteMemberForm({ agencyId }: { agencyId: string }) {
               id="invite-role"
               value={role}
               onChange={(event) => setRole(event.target.value)}
-              className="h-10 rounded-lg border border-input bg-background px-3 text-sm"
+              className="h-9 rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               <option value="recruiter">Recruiter</option>
               <option value="recruitment_manager">Recruitment manager</option>

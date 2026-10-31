@@ -4,7 +4,7 @@ import { ClipboardCheckIcon } from "@solar-icons/react/linear/clipboard-check";
 import { InboxIcon } from "@solar-icons/react/linear/inbox";
 import { DocumentTextIcon } from "@solar-icons/react/linear/document-text";
 import { ButtonLink } from "@/components/shared/button-link";
-import { PageHeader } from "@/components/shared/page-header";
+import { PageHeader, SectionHeader } from "@/components/shared/page-header";
 import type {
   getWorkspaceOverview,
   getOverviewJobs,
@@ -94,23 +94,21 @@ export function WorkspaceOverview({
 
   return (
     <div className="pb-20 lg:pb-2">
-      <div className="lg:hidden">
-        <PageHeader title="Overview" />
-      </div>
+      <PageHeader title="Overview" />
 
-      <section aria-label="Recruitment summary" className="mt-9 lg:mt-0">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-[13px] font-semibold tracking-[-0.01em]">
-            Hiring activity
-          </h2>
-          <div className="flex items-center gap-2">
-            <OverviewRangeFilter value={range} />
-            <ButtonLink href="/app?new=1">
-              <AddIcon data-icon="inline-start" aria-hidden="true" />
-              New job
-            </ButtonLink>
-          </div>
-        </div>
+      <section aria-label="Recruitment summary">
+        <SectionHeader
+          title="Hiring activity"
+          actions={
+            <>
+              <OverviewRangeFilter value={range} />
+              <ButtonLink href="/app?new=1">
+                <AddIcon data-icon="inline-start" aria-hidden="true" />
+                New job
+              </ButtonLink>
+            </>
+          }
+        />
         {trends === null && (
           <p role="status" className="mt-2 text-xs text-muted-foreground">
             Activity charts are unavailable.

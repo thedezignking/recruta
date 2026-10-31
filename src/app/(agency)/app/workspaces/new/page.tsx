@@ -1,5 +1,6 @@
 import { OnboardingForm } from "@/components/auth/onboarding-form";
-import { PageHeader } from "@/components/shared/page-header";
+import { DetailHeader } from "@/components/shared/page-header";
+import { ToolbarBreadcrumb } from "@/components/layout/toolbar-title-context";
 import { ButtonLink } from "@/components/shared/button-link";
 import { requireAgencyPageContext } from "@/server/auth/context";
 
@@ -12,7 +13,12 @@ export default async function NewWorkspacePage() {
     .single();
   return (
     <div className="mx-auto max-w-lg pb-20">
-      <PageHeader
+      <ToolbarBreadcrumb
+        parent="Overview"
+        parentHref="/app"
+        title="Create workspace"
+      />
+      <DetailHeader
         title="Create workspace"
         actions={
           <ButtonLink href="/app" variant="outline">
@@ -20,7 +26,7 @@ export default async function NewWorkspacePage() {
           </ButtonLink>
         }
       />
-      <div className="mt-7">
+      <div className="mt-6">
         <OnboardingForm fullName={data?.full_name} email={user.email} />
       </div>
     </div>

@@ -1,8 +1,10 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { z } from "zod";
 import { notFound, redirect } from "next/navigation";
 import {
-  ArrowLeftIcon,
+  CalendarIcon,
+  DocumentTextIcon,
   LetterIcon,
   PhoneIcon,
 } from "@solar-icons/react/linear";
@@ -16,9 +18,9 @@ import {
   processingAvailability,
 } from "@/server/services/processing-settings";
 import { OpenResumeButton } from "@/components/applications/open-resume-button";
-import { PageHeader } from "@/components/shared/page-header";
+import { DetailHeader, Panel } from "@/components/shared/page-header";
+import { ToolbarBreadcrumb } from "@/components/layout/toolbar-title-context";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ApiError } from "@/lib/api";
 import { requireAgencyPageContext } from "@/server/auth/context";
@@ -31,6 +33,16 @@ import { listAgencyMembers } from "@/server/services/workspace";
 import { getSubmissions } from "@/server/services/collaboration";
 import { SubmissionPanel } from "@/components/collaboration/submission-panel";
 import { ButtonLink } from "@/components/shared/button-link";
+
+const progressStages = [
+  { status: "received", label: "Received" },
+  { status: "in_review", label: "In review" },
+  { status: "shortlisted", label: "Shortlisted" },
+  { status: "client_review", label: "Client review" },
+  { status: "interview", label: "Interview" },
+  { status: "offer", label: "Offer" },
+  { status: "placed", label: "Placed" },
+] as const;
 
 export default async function ApplicationPage({
   params,
@@ -121,162 +133,272 @@ export default async function ApplicationPage({
       a.job_application_questions.sort_order -
       b.job_application_questions.sort_order,
   );
+  const candidateName = application.candidates.full_name;
+  const progressIndex = progressStages.findIndex(
+    (stage) => stage.status === application.status,
+  );
+  const closedOut = ["rejected", "withdrawn"].includes(application.status);
+  const eventLabel = (event: (typeof history.events)[number]) => {
+    const metadata = event.metadata as Record<string, unknown>;
+    return event.event_type === "application.status_changed"
+      ? `Moved from ${String(metadata.from).replaceAll("_", " ")} to ${String(metadata.to).replaceAll("_", " ")}`
+      : event.event_type === "application.owner_changed"
+        ? `Owner set to ${metadata.toOwner ? (names.get(String(metadata.toOwner)) ?? "former teammate") : "unassigned"}`
+        : event.event_type === "application.note_added"
+          ? "Internal note added"
+          : event.event_type.startsWith("application.processing")
+            ? "Screening processing updated"
+            : event.event_type === "application.screening_corrected"
+              ? "Recruiter corrected screening evidence"
+              : event.event_type.startsWith("communication.")
+                ? event.event_type
+                    .replaceAll("communication.", "Email ")
+                    .replaceAll("_", " ")
+                : event.event_type.replaceAll("_", " ");
+  };
   return (
-    <div className="flex flex-col gap-6 pb-20 lg:pb-0">
-      <Link
-        href="/app/applications"
-        className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeftIcon size={16} aria-hidden="true" />
-        Applications
-      </Link>
-      <PageHeader
-        title={application.candidates.full_name}
-        description={`${application.jobs.title} · ${application.jobs.clients.name}`}
-        actions={<StatusBadge status={application.status} />}
+    <div className="pb-20 lg:pb-0">
+      <ToolbarBreadcrumb
+        parent="Applications"
+        parentHref="/app/applications"
+        title={candidateName}
       />
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        {application.submitted_profile?.fullName &&
-          application.submitted_profile.fullName.trim().toLowerCase() !==
-            application.candidates.full_name.trim().toLowerCase() && (
-            <Alert className="xl:col-span-2">
-              <AlertTitle>Check candidate identity</AlertTitle>
-              <AlertDescription>
-                This application was submitted as{" "}
-                {application.submitted_profile.fullName}, using an email already
-                linked to {application.candidates.full_name}. The existing name
-                was preserved. Confirm the identity before sharing or making a
-                decision.
-              </AlertDescription>
-            </Alert>
-          )}
-        <div className="flex min-w-0 flex-col gap-5">
-          <Card>
-            <CardHeader>
-              <CardTitle>Application</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-5">
-              <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm">
-                <a
-                  href={`mailto:${application.candidates.email}`}
-                  className="inline-flex items-center gap-2 break-all hover:text-primary"
+      <DetailHeader
+        media={
+          <span
+            aria-hidden="true"
+            className="grid size-11 place-items-center rounded-full bg-[#EDECFD] text-sm font-semibold text-[#4846B8]"
+          >
+            {candidateName
+              .split(/\s+/)
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((part) => part[0])
+              .join("")
+              .toUpperCase()}
+          </span>
+        }
+        title={candidateName}
+        status={<StatusBadge status={application.status} />}
+        meta={[
+          <Fragment key="job">
+            Applied for{" "}
+            <Link
+              href={`/app/jobs/${application.job_id}`}
+              className="font-medium text-foreground hover:text-primary"
+            >
+              {application.jobs.title}
+            </Link>
+            <span aria-hidden="true">·</span>
+            {application.jobs.clients.name}
+          </Fragment>,
+          <Fragment key="received">
+            <CalendarIcon aria-hidden="true" size={14} />
+            <time dateTime={application.submitted_at}>
+              {date(application.submitted_at)}
+            </time>
+          </Fragment>,
+          <span key="source" className="capitalize">
+            via {application.source.replaceAll("_", " ")}
+          </span>,
+        ]}
+        actions={
+          <>
+            {application.candidate_documents[0] && (
+              <OpenResumeButton
+                applicationId={id}
+                documentId={application.candidate_documents[0].id}
+                agencyId={context.agencyId}
+                prominent
+              />
+            )}
+            <ButtonLink
+              href={`mailto:${application.candidates.email}`}
+              variant="outline"
+            >
+              <LetterIcon data-icon="inline-start" aria-hidden="true" />
+              Email
+            </ButtonLink>
+          </>
+        }
+      />
+
+      {!closedOut && progressIndex >= 0 && (
+        <ol
+          aria-label="Application progress"
+          className="mt-4 flex items-center gap-1 overflow-x-auto"
+        >
+          {progressStages.map((stage, index) => {
+            const done = index < progressIndex;
+            const current = index === progressIndex;
+            return (
+              <li
+                key={stage.status}
+                aria-current={current ? "step" : undefined}
+                className="flex min-w-[104px] flex-1 flex-col gap-1.5"
+              >
+                <span
+                  aria-hidden="true"
+                  className={`h-1 rounded-full ${done || current ? "bg-primary" : "bg-[#EBEBEB]"}`}
+                />
+                <span
+                  className={`text-[11px] ${current ? "font-semibold text-foreground" : done ? "text-foreground" : "text-muted-foreground"}`}
                 >
-                  <LetterIcon size={16} aria-hidden="true" />
-                  {application.candidates.email}
-                </a>
-                {application.candidates.phone && (
+                  {stage.label}
+                  {done && <span className="sr-only"> (complete)</span>}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+
+      {application.submitted_profile?.fullName &&
+        application.submitted_profile.fullName.trim().toLowerCase() !==
+          candidateName.trim().toLowerCase() && (
+          <Alert className="mt-5">
+            <AlertTitle>Check candidate identity</AlertTitle>
+            <AlertDescription>
+              This application was submitted as{" "}
+              {application.submitted_profile.fullName}, using an email already
+              linked to {candidateName}. The existing name was preserved.
+              Confirm the identity before sharing or making a decision.
+            </AlertDescription>
+          </Alert>
+        )}
+
+      <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="flex min-w-0 flex-col gap-5">
+          <Panel title="Candidate">
+            <dl className="grid gap-4 text-sm sm:grid-cols-2">
+              <div className="min-w-0">
+                <dt className="text-xs text-muted-foreground">Email</dt>
+                <dd className="mt-1">
                   <a
-                    href={`tel:${application.candidates.phone}`}
-                    className="inline-flex items-center gap-2 hover:text-primary"
+                    href={`mailto:${application.candidates.email}`}
+                    className="inline-flex max-w-full items-center gap-2 break-all hover:text-primary"
                   >
-                    <PhoneIcon size={16} aria-hidden="true" />
-                    {application.candidates.phone}
-                  </a>
-                )}
-              </div>
-              <dl className="grid gap-4 text-sm sm:grid-cols-3">
-                <div>
-                  <dt className="text-muted-foreground">Received</dt>
-                  <dd className="mt-1">
-                    <time dateTime={application.submitted_at}>
-                      {date(application.submitted_at)}
-                    </time>
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Source</dt>
-                  <dd className="mt-1 capitalize">
-                    {application.source.replaceAll("_", " ")}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Job</dt>
-                  <dd className="mt-1">
-                    <Link
-                      href={`/app/jobs/${application.job_id}`}
-                      className="text-primary hover:underline"
-                    >
-                      {application.jobs.title}
-                    </Link>
-                  </dd>
-                </div>
-              </dl>
-              {application.cover_note && (
-                <div>
-                  <h3 className="text-sm font-medium">Candidate message</h3>
-                  <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">
-                    {application.cover_note}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Documents</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              {application.candidate_documents.length ? (
-                application.candidate_documents.map((document) => (
-                  <div
-                    key={document.id}
-                    className="flex items-center justify-between gap-4"
-                  >
-                    <div className="min-w-0">
-                      <p className="break-words text-sm font-medium">
-                        {document.file_name}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {(document.size_bytes / 1024).toFixed(0)} KB · Private
-                        document
-                      </p>
-                    </div>
-                    <OpenResumeButton
-                      applicationId={id}
-                      documentId={document.id}
-                      agencyId={context.agencyId}
+                    <LetterIcon
+                      size={15}
+                      aria-hidden="true"
+                      className="shrink-0 text-muted-foreground"
                     />
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  No documents attached.
+                    {application.candidates.email}
+                  </a>
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Phone</dt>
+                <dd className="mt-1">
+                  {application.candidates.phone ? (
+                    <a
+                      href={`tel:${application.candidates.phone}`}
+                      className="inline-flex items-center gap-2 hover:text-primary"
+                    >
+                      <PhoneIcon
+                        size={15}
+                        aria-hidden="true"
+                        className="text-muted-foreground"
+                      />
+                      {application.candidates.phone}
+                    </a>
+                  ) : (
+                    <span className="text-muted-foreground">Not provided</span>
+                  )}
+                </dd>
+              </div>
+            </dl>
+            {application.cover_note && (
+              <div className="mt-4 border-t border-border pt-4">
+                <h3 className="text-xs text-muted-foreground">
+                  Candidate message
+                </h3>
+                <p className="mt-1.5 whitespace-pre-wrap break-words text-sm leading-6">
+                  {application.cover_note}
                 </p>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Application answers</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {answers.length ? (
-                <dl className="flex flex-col gap-6">
-                  {answers.map((answer) => (
-                    <div key={answer.id}>
-                      <dt className="text-sm font-medium">
+              </div>
+            )}
+          </Panel>
+
+          <Panel title="Screening answers" count={answers.length || undefined}>
+            {answers.length ? (
+              <dl className="flex flex-col divide-y divide-border">
+                {answers.map((answer, index) => (
+                  <div
+                    key={answer.id}
+                    className="grid gap-1.5 py-3 first:pt-0 last:pb-0 sm:grid-cols-[24px_minmax(0,1fr)]"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="hidden text-xs tabular-nums text-muted-foreground sm:block"
+                    >
+                      {index + 1}.
+                    </span>
+                    <div className="min-w-0">
+                      <dt className="text-xs font-medium text-muted-foreground">
                         {answer.job_application_questions.label}
                       </dt>
-                      <dd className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">
+                      <dd className="mt-1 whitespace-pre-wrap break-words text-sm leading-6">
                         {typeof answer.answer === "boolean"
                           ? answer.answer
                             ? "Yes"
                             : "No"
                           : typeof answer.answer === "string" ||
                               typeof answer.answer === "number"
-                            ? String(answer.answer)
+                            ? String(answer.answer) || "—"
                             : JSON.stringify(answer.answer)}
                       </dd>
                     </div>
-                  ))}
-                </dl>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  This application has no screening answers.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                This application has no screening answers.
+              </p>
+            )}
+          </Panel>
+
+          <Panel
+            title="Documents"
+            count={application.candidate_documents.length || undefined}
+            bodyClassName="p-0"
+          >
+            {application.candidate_documents.length ? (
+              <ul className="divide-y divide-border">
+                {application.candidate_documents.map((document) => (
+                  <li
+                    key={document.id}
+                    className="flex items-center justify-between gap-4 px-4 py-3"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="grid size-9 shrink-0 place-items-center rounded-md border border-border bg-[#F8F8F8] text-muted-foreground">
+                        <DocumentTextIcon aria-hidden="true" size={18} />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">
+                          {document.file_name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {(document.size_bytes / 1024).toFixed(0)} KB · Private
+                        </p>
+                      </div>
+                    </div>
+                    <OpenResumeButton
+                      applicationId={id}
+                      documentId={document.id}
+                      agencyId={context.agencyId}
+                    />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="p-4 text-sm text-muted-foreground">
+                No documents attached.
+              </p>
+            )}
+          </Panel>
+
           <ScreeningPanel
             agencyId={context.agencyId}
             applicationId={id}
@@ -299,140 +421,143 @@ export default async function ApplicationPage({
             status={application.status}
             timezone={agency.data.timezone}
           />
-          {otherApplications.length > 0 && (
-            <Alert role="status">
-              <AlertTitle>Also applied to other roles</AlertTitle>
-              <AlertDescription>
-                <p>
-                  This is the same candidate record, not a duplicate person.
-                </p>
-                <ul className="mt-2 flex list-inside list-disc flex-col gap-1">
-                  {otherApplications.slice(0, 5).map((item) => (
-                    <li key={item.id}>
-                      <Link href={`/app/applications/${item.id}`}>
-                        {item.jobs.title}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </AlertDescription>
-            </Alert>
-          )}
-          <Card>
-            <CardHeader>
-              <CardTitle>Internal notes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {history.notes.length ? (
-                <ol className="flex flex-col gap-5">
-                  {history.notes.map((note) => (
-                    <li key={note.id}>
-                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-                        <span className="font-medium text-foreground">
-                          {names.get(note.author_user_id) ?? "Former teammate"}
-                        </span>
-                        <time dateTime={note.created_at}>
-                          {date(note.created_at)}
-                        </time>
-                      </div>
-                      <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6">
-                        {note.body}
-                      </p>
-                    </li>
-                  ))}
-                </ol>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  No internal notes yet.
-                </p>
-              )}
-              {history.notesNext && (
-                <ButtonLink
-                  variant="outline"
-                  className="mt-4"
-                  href={`/app/applications/${id}?notesBefore=${history.notesNext}${before.eventsBefore ? `&eventsBefore=${encodeURIComponent(before.eventsBefore)}` : ""}`}
-                >
-                  Older notes
-                </ButtonLink>
-              )}
-              {before.notesBefore && (
-                <ButtonLink
-                  variant="ghost"
-                  className="mt-4"
-                  href={`/app/applications/${id}`}
-                >
-                  Latest history
-                </ButtonLink>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
+
+          <Panel
+            title="Internal notes"
+            count={history.notes.length || undefined}
+          >
+            {history.notes.length ? (
               <ol className="flex flex-col gap-4">
-                {history.events.map((event) => {
-                  const metadata = event.metadata as Record<string, unknown>;
-                  const label =
-                    event.event_type === "application.status_changed"
-                      ? `Stage: ${String(metadata.from).replaceAll("_", " ")} → ${String(metadata.to).replaceAll("_", " ")}`
-                      : event.event_type === "application.owner_changed"
-                        ? `Owner: ${metadata.toOwner ? (names.get(String(metadata.toOwner)) ?? "Former teammate") : "Unassigned"}`
-                        : event.event_type === "application.note_added"
-                          ? "Internal note added"
-                          : event.event_type.startsWith(
-                                "application.processing",
-                              )
-                            ? "Screening processing updated"
-                            : event.event_type ===
-                                "application.screening_corrected"
-                              ? "Recruiter corrected screening evidence"
-                              : event.event_type.startsWith("communication.")
-                                ? event.event_type
-                                    .replaceAll("communication.", "Email ")
-                                    .replaceAll("_", " ")
-                                : event.event_type.replaceAll("_", " ");
+                {history.notes.map((note) => {
+                  const author =
+                    names.get(note.author_user_id) ?? "Former teammate";
                   return (
-                    <li key={event.id} className="text-sm">
-                      <p>{label}</p>
-                      {typeof metadata.reason === "string" && (
-                        <p className="mt-1 whitespace-pre-wrap break-words text-muted-foreground">
-                          {metadata.reason}
+                    <li key={note.id} className="flex gap-3">
+                      <span
+                        aria-hidden="true"
+                        className="grid size-7 shrink-0 place-items-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground"
+                      >
+                        {author.slice(0, 1).toUpperCase()}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
+                          <span className="font-medium">{author}</span>
+                          <time
+                            dateTime={note.created_at}
+                            className="text-muted-foreground"
+                          >
+                            {date(note.created_at)}
+                          </time>
+                        </div>
+                        <p className="mt-1 whitespace-pre-wrap break-words rounded-md bg-[#F8F8F8] px-3 py-2 text-sm leading-6">
+                          {note.body}
                         </p>
-                      )}
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {names.get(event.actor_user_id) ?? "System"} ·{" "}
-                        <time dateTime={event.created_at}>
-                          {date(event.created_at)}
-                        </time>
-                      </p>
+                      </div>
                     </li>
                   );
                 })}
-                <li className="text-sm">
-                  <p>Application received</p>
-                  <time
-                    className="mt-1 block text-xs text-muted-foreground"
-                    dateTime={application.submitted_at}
-                  >
-                    {date(application.submitted_at)}
-                  </time>
-                </li>
               </ol>
-              {history.eventsNext && (
-                <ButtonLink
-                  variant="outline"
-                  className="mt-4"
-                  href={`/app/applications/${id}?eventsBefore=${history.eventsNext}${before.notesBefore ? `&notesBefore=${encodeURIComponent(before.notesBefore)}` : ""}`}
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No internal notes yet.
+              </p>
+            )}
+            {(history.notesNext || before.notesBefore) && (
+              <div className="mt-4 flex gap-2">
+                {history.notesNext && (
+                  <ButtonLink
+                    variant="outline"
+                    size="sm"
+                    href={`/app/applications/${id}?notesBefore=${history.notesNext}${before.eventsBefore ? `&eventsBefore=${encodeURIComponent(before.eventsBefore)}` : ""}`}
+                  >
+                    Older notes
+                  </ButtonLink>
+                )}
+                {before.notesBefore && (
+                  <ButtonLink
+                    variant="ghost"
+                    size="sm"
+                    href={`/app/applications/${id}`}
+                  >
+                    Latest history
+                  </ButtonLink>
+                )}
+              </div>
+            )}
+          </Panel>
+
+          <Panel title="Activity">
+            <ol className="relative flex flex-col gap-4">
+              <span
+                aria-hidden="true"
+                className="absolute top-1.5 bottom-1.5 left-[3px] w-px bg-border"
+              />
+              {history.events.map((event) => {
+                const metadata = event.metadata as Record<string, unknown>;
+                return (
+                  <li key={event.id} className="relative pl-5 text-sm">
+                    <span
+                      aria-hidden="true"
+                      className="absolute top-1.5 left-0 size-[7px] rounded-full bg-[#C9C9D3] ring-2 ring-white"
+                    />
+                    <p className="first-letter:uppercase">
+                      {eventLabel(event)}
+                    </p>
+                    {typeof metadata.reason === "string" && (
+                      <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">
+                        “{metadata.reason}”
+                      </p>
+                    )}
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {names.get(event.actor_user_id) ?? "System"} ·{" "}
+                      <time dateTime={event.created_at}>
+                        {date(event.created_at)}
+                      </time>
+                    </p>
+                  </li>
+                );
+              })}
+              <li className="relative pl-5 text-sm">
+                <span
+                  aria-hidden="true"
+                  className="absolute top-1.5 left-0 size-[7px] rounded-full bg-primary ring-2 ring-white"
+                />
+                <p>Application received</p>
+                <time
+                  className="mt-0.5 block text-xs text-muted-foreground"
+                  dateTime={application.submitted_at}
                 >
-                  Older activity
-                </ButtonLink>
-              )}
-            </CardContent>
-          </Card>
+                  {date(application.submitted_at)}
+                </time>
+              </li>
+            </ol>
+            {history.eventsNext && (
+              <ButtonLink
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                href={`/app/applications/${id}?eventsBefore=${history.eventsNext}${before.notesBefore ? `&notesBefore=${encodeURIComponent(before.notesBefore)}` : ""}`}
+              >
+                Older activity
+              </ButtonLink>
+            )}
+          </Panel>
         </div>
-        <div className="flex flex-col gap-6">
+
+        <aside
+          aria-label="Review actions"
+          className="flex flex-col gap-5 xl:sticky xl:top-20"
+        >
+          <ApplicationReview
+            applicationId={id}
+            agencyId={context.agencyId}
+            status={application.status}
+            updatedAt={application.updated_at}
+            ownerId={application.owner_user_id}
+            userId={context.user.id}
+            role={context.role}
+            members={members}
+          />
           <SubmissionPanel
             agencyId={context.agencyId}
             applicationId={id}
@@ -445,17 +570,27 @@ export default async function ApplicationPage({
             submissions={submissions}
             document={application.candidate_documents[0]}
           />
-          <ApplicationReview
-            applicationId={id}
-            agencyId={context.agencyId}
-            status={application.status}
-            updatedAt={application.updated_at}
-            ownerId={application.owner_user_id}
-            userId={context.user.id}
-            role={context.role}
-            members={members}
-          />
-        </div>
+          {otherApplications.length > 0 && (
+            <Panel title="Other applications" bodyClassName="p-0">
+              <p className="px-4 pt-3 text-xs text-muted-foreground">
+                Same candidate record, not a duplicate person.
+              </p>
+              <ul className="mt-2 divide-y divide-border border-t border-border">
+                {otherApplications.slice(0, 5).map((item) => (
+                  <li key={item.id}>
+                    <Link
+                      href={`/app/applications/${item.id}`}
+                      className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm outline-none hover:bg-[#F8F9FC] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                    >
+                      <span className="truncate">{item.jobs.title}</span>
+                      <StatusBadge status={item.status} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          )}
+        </aside>
       </div>
     </div>
   );
