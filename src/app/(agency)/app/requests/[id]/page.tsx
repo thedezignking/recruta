@@ -161,7 +161,7 @@ export default async function RequestDetailPage({
                 }
               />
             </dl>
-            <div className="mt-6 border-t pt-5">
+            <div className="mt-6">
               <h3 className="text-sm font-medium">Description</h3>
               <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
                 {request.description}

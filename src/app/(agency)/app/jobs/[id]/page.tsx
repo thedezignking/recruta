@@ -523,7 +523,7 @@ export default async function JobPage({
                 }
               >
                 {applicationResult.items.length ? (
-                  <ul className="divide-y divide-border">
+                  <ul className="pb-2">
                     {applicationResult.items.slice(0, 6).map((application) => {
                       const name =
                         application.candidates?.full_name ?? "Candidate";
@@ -670,7 +670,7 @@ export default async function JobPage({
               </div>
             </dl>
             {job.job_application_questions.length > 0 && (
-              <ol className="mt-3 flex list-decimal flex-col gap-1.5 border-t border-border pt-3 pl-4 text-xs text-muted-foreground">
+              <ol className="mt-3 flex list-decimal flex-col gap-1.5 pl-4 text-xs text-muted-foreground">
                 {job.job_application_questions.map(
                   (question: { id: string; label: string }) => (
                     <li key={question.id} className="line-clamp-2 pl-1">
@@ -728,7 +728,7 @@ export default async function JobPage({
                   )}
               </dl>
               {job.internalBrief.sourcing_brief && (
-                <p className="mt-3 whitespace-pre-wrap border-t border-border pt-3 text-xs leading-5">
+                <p className="mt-3 whitespace-pre-wrap text-xs leading-5">
                   {job.internalBrief.sourcing_brief}
                 </p>
               )}

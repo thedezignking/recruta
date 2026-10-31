@@ -146,7 +146,7 @@ export function NotificationsMenu({
           className="z-50 max-w-[calc(100vw-1.5rem)]"
         >
           <Popover.Popup className="w-[320px] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-lg border bg-popover shadow-lg outline-none">
-            <div className="flex items-center justify-between gap-3 border-b px-3 py-2">
+            <div className="flex items-center justify-between gap-3 px-3 py-2">
               <Popover.Title className="text-sm font-semibold">
                 Notifications
               </Popover.Title>
@@ -229,7 +229,7 @@ export function NotificationsMenu({
                         setOpen(false);
                       }}
                       className={cn(
-                        "flex items-start gap-2.5 border-b px-3 py-2.5 last:border-b-0 hover:bg-muted/50",
+                        "flex items-start gap-2.5 rounded-md px-3 py-2.5 hover:bg-muted/50",
                         !read && "bg-accent/35",
                       )}
                     >

@@ -28,7 +28,7 @@ export default async function AccountPage() {
           initialPath={data?.avatar_path ?? null}
           initialUrl={avatarUrl(supabase, data?.avatar_path ?? null)}
         />
-        <div className="mt-5 max-w-xl border-t border-border pt-5">
+        <div className="mt-8 max-w-xl">
           <AccountForm name={name} email={user.email ?? ""} />
         </div>
       </Panel>

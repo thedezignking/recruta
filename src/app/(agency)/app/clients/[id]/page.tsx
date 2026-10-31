@@ -129,7 +129,7 @@ export default async function OrganizationDetailPage({
             bodyClassName="p-0"
           >
             {organization.jobs.length ? (
-              <ul className="divide-y divide-border">
+              <ul className="py-1">
                 {organization.jobs.slice(0, 20).map((job) => (
                   <li key={job.id}>
                     <Link
@@ -183,7 +183,7 @@ export default async function OrganizationDetailPage({
             bodyClassName="p-0"
           >
             {organization.hiring_requests.length ? (
-              <ul className="divide-y divide-border">
+              <ul className="py-1">
                 {organization.hiring_requests.slice(0, 6).map((request) => (
                   <li key={request.id}>
                     <Link

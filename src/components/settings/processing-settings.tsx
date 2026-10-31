@@ -69,7 +69,7 @@ export function ProcessingSettings({
       size="sm"
       className="scroll-mt-20 gap-0 py-0 shadow-none"
     >
-      <CardHeader className="border-b border-border px-4 pt-3">
+      <CardHeader className="px-4 pt-4">
         <CardTitle>Applicant processing</CardTitle>
         <CardDescription>
           Choose what happens after an application arrives.

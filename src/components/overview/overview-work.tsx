@@ -198,7 +198,7 @@ export function OverviewWork({
                       </ul>
                       {overview.counts.applicationsToReview >
                         overview.applications.length && (
-                        <div className="flex items-center justify-between gap-3 border-t border-border bg-[#FBFBFB] px-4 py-2.5 text-xs text-muted-foreground">
+                        <div className="flex items-center justify-between gap-3 bg-[#FBFBFB] px-4 py-2.5 text-xs text-muted-foreground">
                           <span>
                             Oldest {overview.applications.length} of{" "}
                             <span className="font-medium tabular-nums text-foreground">
@@ -416,7 +416,7 @@ export function OverviewWork({
                   </div>
                 )}
                 {work.draft && (
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3 bg-[#FBFBFB] px-5 py-3">
                     <div className="min-w-0">
                       <p className="text-xs text-muted-foreground">Draft</p>
                       <p className="mt-1 text-sm font-medium">
@@ -452,7 +452,7 @@ export function OverviewWork({
                 </div>
               </CardHeader>
               <CardContent className="px-0">
-                <div className="divide-y divide-border">
+                <div className="py-1">
                   {requests.slice(0, 3).map((request) => (
                     <Link
                       key={request.id}

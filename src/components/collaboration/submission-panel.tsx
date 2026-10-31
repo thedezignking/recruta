@@ -61,7 +61,7 @@ export function SubmissionPanel({
   }
   return (
     <Card size="sm" className="gap-0 py-0">
-      <CardHeader className="border-b border-border px-4 pt-3">
+      <CardHeader className="px-4 pt-4">
         <CardTitle>Hiring manager review</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 p-4">

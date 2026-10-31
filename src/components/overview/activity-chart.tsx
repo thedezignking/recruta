@@ -55,42 +55,33 @@ export function ActivityChart({
 
   return (
     <div className="relative" onPointerLeave={() => setHovered(null)}>
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 240 48"
-        preserveAspectRatio="none"
-        className="h-12 w-full"
-      >
-        {active !== null && (
-          <rect
-            x={active * 30}
-            y={0}
-            width={30}
-            height={48}
-            rx={3}
-            className="fill-current opacity-[0.07]"
-          />
-        )}
-        {Array.from({ length: values.length * 3 }, (_, column) => {
-          const value = values[Math.floor(column / 3)] ?? 0;
-          return Array.from({ length: 6 }, (_, row) => {
-            const filled =
-              value > 0 && 6 - row <= Math.ceil((value / peak) * 6);
-            return (
-              <circle
-                key={`${column}-${row}`}
-                cx={5 + column * 10}
-                cy={5 + row * 7.5}
-                r="1.75"
-                className={
-                  filled ? "fill-current" : "fill-current opacity-[0.14]"
-                }
-              />
-            );
-          });
+      <div aria-hidden="true" className="flex h-10 items-end gap-1">
+        {values.map((value, index) => {
+          const ratio = peak > 0 ? value / peak : 0;
+          const ramp = 0.35 + (index / Math.max(values.length - 1, 1)) * 0.65;
+          return (
+            <span
+              key={index}
+              className="flex-1 rounded-[2px] bg-current transition-opacity duration-150"
+              style={{
+                height: value > 0 ? `${Math.max(14, ratio * 100)}%` : "8%",
+                opacity:
+                  value > 0
+                    ? active === null || active === index
+                      ? ramp
+                      : ramp * 0.45
+                    : 0.14,
+              }}
+            />
+          );
         })}
-      </svg>
-      <div className="absolute inset-0 grid grid-cols-8">
+      </div>
+      <div
+        className="absolute inset-0 grid"
+        style={{
+          gridTemplateColumns: `repeat(${values.length}, minmax(0, 1fr))`,
+        }}
+      >
         {values.map((count, index) => (
           <button
             key={index}

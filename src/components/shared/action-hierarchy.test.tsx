@@ -139,9 +139,6 @@ describe("action hierarchy", () => {
     expect(screen.queryByText(/Current workload/)).toBeNull();
     expect(screen.queryByText(/Good (morning|afternoon|evening)/)).toBeNull();
     expect(
-      cards[2].querySelector(".solar-document-text-linear"),
-    ).not.toBeNull();
-    expect(
       screen.getByRole("heading", { name: "Hiring activity" }),
     ).toBeTruthy();
     expect(

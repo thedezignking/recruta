@@ -172,7 +172,7 @@ export function QuestionLibrary({
 
   const editor = editing && (
     <form
-      className="border-b border-border bg-[#FBFBFB] p-4"
+      className="mx-4 mb-3 rounded-[10px] bg-[#FBFBFB] p-4"
       onSubmit={(e) => {
         e.preventDefault();
         void save(editing);
@@ -313,7 +313,7 @@ export function QuestionLibrary({
       aria-labelledby="question-bank-heading"
       className="scroll-mt-20 overflow-hidden rounded-[10px] border border-border bg-card"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-4 pb-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <h2
@@ -342,7 +342,7 @@ export function QuestionLibrary({
         </Button>
       </div>
 
-      <div className="flex items-start gap-2.5 border-b border-border bg-[#FBFBFB] px-4 py-2.5 text-xs text-muted-foreground">
+      <div className="mx-4 flex items-start gap-2.5 rounded-md bg-[#FBFBFB] px-3 py-2.5 text-xs text-muted-foreground">
         <ShieldCheckIcon
           aria-hidden="true"
           size={15}
@@ -358,7 +358,7 @@ export function QuestionLibrary({
       {editing && !editing.version && editor}
 
       {items.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2.5">
+        <div className="flex flex-wrap items-center gap-2 px-4 pt-4 pb-2">
           <div className="relative w-full sm:w-56">
             <label className="sr-only" htmlFor="manage-library-search">
               Search question bank
@@ -445,7 +445,7 @@ export function QuestionLibrary({
           </ul>
         </div>
       ) : (
-        <ul className="divide-y divide-border">
+        <ul className="pb-2">
           {items.length > 0 && visible.length === 0 && (
             <li className="px-4 py-6 text-center text-sm text-muted-foreground">
               No matching questions.
@@ -517,7 +517,7 @@ export function QuestionLibrary({
       {error && (
         <div
           role="alert"
-          className="flex flex-wrap items-center justify-between gap-2 border-t border-border bg-destructive/5 px-4 py-2.5 text-sm text-destructive"
+          className="flex flex-wrap items-center justify-between gap-2 bg-destructive/5 px-4 py-2.5 text-sm text-destructive"
         >
           {error}
           <Button
@@ -532,10 +532,7 @@ export function QuestionLibrary({
       )}
       <p
         role="status"
-        className={cn(
-          "px-4 text-xs text-success",
-          status && "border-t border-border py-2.5",
-        )}
+        className={cn("px-4 text-xs text-success", status && "pb-3")}
       >
         {status}
       </p>

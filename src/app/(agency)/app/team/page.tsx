@@ -141,7 +141,7 @@ export default async function TeamPage() {
             className="mt-6 mb-3"
           />
           <Card className="gap-0 py-0 shadow-none">
-            <CardContent className="divide-y divide-border p-0">
+            <CardContent className="p-0 py-1">
               {pendingInvitations.map((invitation) => (
                 <div
                   key={invitation.id}

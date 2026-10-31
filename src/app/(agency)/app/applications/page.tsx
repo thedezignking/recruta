@@ -82,16 +82,16 @@ export default async function ApplicationsPage({
         title="Application inbox"
         count={result.total}
         countLabel={`${result.total} ${result.total === 1 ? "application" : "applications"}`}
-        className="-mb-3"
       />
-      <InboxFilters
-        key={JSON.stringify(filters)}
-        filters={filters}
-        agencyId={context.agencyId}
-        jobs={jobs.data ?? []}
-      />
-      <Card className="gap-0 py-0 shadow-none">
+
+      <Card className="-mt-3 gap-0 overflow-visible py-0 shadow-none">
         <CardContent className="p-0">
+          <InboxFilters
+            key={JSON.stringify(filters)}
+            filters={filters}
+            agencyId={context.agencyId}
+            jobs={jobs.data ?? []}
+          />
           {result.items.length ? (
             <Table className="min-w-[860px] [&_td]:px-3 [&_td]:py-3 [&_th]:px-3">
               <TableHeader>

@@ -75,7 +75,7 @@ export function JobSidePanel({
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-[#111111]/30" />
         <Dialog.Popup className="fixed inset-y-0 right-0 z-50 flex w-[min(100vw,490px)] flex-col border-l border-border bg-white shadow-2xl outline-none">
-          <div className="flex items-start gap-3 border-b border-border px-5 py-5">
+          <div className="flex items-start gap-3 px-5 pt-5 pb-3">
             <span className="grid size-10 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
               <CaseMinimalisticIcon size={20} aria-hidden="true" />
             </span>
@@ -176,7 +176,7 @@ export function JobSidePanel({
                   {count} {count === 1 ? "application" : "applications"} for
                   this job
                 </p>
-                <div className="mt-4 divide-y divide-border rounded-[10px] border border-border">
+                <div className="mt-4 flex flex-col gap-1">
                   {pipeline
                     .filter((item) => item.count > 0)
                     .map((item) => (

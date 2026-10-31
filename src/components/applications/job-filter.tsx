@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Popover } from "@base-ui/react/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AltArrowDownIcon } from "@solar-icons/react/linear";
 type Job = { id: string; title: string };
 export function JobFilter({
   agencyId,
@@ -75,16 +76,17 @@ export function JobFilter({
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger
-        render={
-          <Button
-            type="button"
-            variant="outline"
-            aria-label="Job"
-            className="max-w-64 justify-start truncate"
-          />
-        }
+        aria-label={value ? `Job: ${label ?? "selected job"}` : "Job: all jobs"}
+        className={`flex h-8 max-w-56 shrink-0 items-center gap-1.5 rounded-md border px-3 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-primary ${value ? "border-primary/40 bg-primary/5 text-primary" : "border-border bg-white text-foreground hover:bg-muted"}`}
       >
-        {value ? (label ?? "Selected job") : "All jobs"}
+        <span className="truncate">
+          {value ? (label ?? "Selected job") : "All jobs"}
+        </span>
+        <AltArrowDownIcon
+          size={14}
+          aria-hidden="true"
+          className="shrink-0 opacity-60"
+        />
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner
@@ -92,7 +94,7 @@ export function JobFilter({
           align="start"
           className="z-50 max-w-[calc(100vw-2rem)]"
         >
-          <Popover.Popup className="w-80 rounded-xl border bg-popover p-3 shadow-lg">
+          <Popover.Popup className="w-80 rounded-[10px] border border-border bg-white p-2 shadow-[0_12px_32px_rgb(17_17_17_/_0.12)] outline-none">
             <Popover.Title className="sr-only">Filter by job</Popover.Title>
             <label htmlFor="job-filter-query" className="sr-only">
               Find a job
@@ -107,7 +109,8 @@ export function JobFilter({
             <div className="mt-2 flex max-h-64 flex-col overflow-y-auto">
               <Button
                 variant="ghost"
-                className="justify-start"
+                size="sm"
+                className="justify-start text-xs"
                 onClick={() => {
                   onChange("all");
                   setOpen(false);
@@ -119,7 +122,8 @@ export function JobFilter({
                 <Button
                   key={j.id}
                   variant="ghost"
-                  className="h-auto justify-start whitespace-normal py-2 text-left"
+                  size="sm"
+                  className="h-auto justify-start py-2 text-left text-xs whitespace-normal"
                   onClick={() => {
                     onChange(j.id);
                     setOpen(false);

@@ -309,7 +309,7 @@ export default async function ApplicationPage({
               </div>
             </dl>
             {application.cover_note && (
-              <div className="mt-4 border-t border-border pt-4">
+              <div className="mt-5">
                 <h3 className="text-xs text-muted-foreground">
                   Candidate message
                 </h3>
@@ -322,11 +322,11 @@ export default async function ApplicationPage({
 
           <Panel title="Screening answers" count={answers.length || undefined}>
             {answers.length ? (
-              <dl className="flex flex-col divide-y divide-border">
+              <dl className="flex flex-col gap-5">
                 {answers.map((answer, index) => (
                   <div
                     key={answer.id}
-                    className="grid gap-1.5 py-3 first:pt-0 last:pb-0 sm:grid-cols-[24px_minmax(0,1fr)]"
+                    className="grid gap-1.5 sm:grid-cols-[24px_minmax(0,1fr)]"
                   >
                     <span
                       aria-hidden="true"
@@ -365,7 +365,7 @@ export default async function ApplicationPage({
             bodyClassName="p-0"
           >
             {application.candidate_documents.length ? (
-              <ul className="divide-y divide-border">
+              <ul className="py-1">
                 {application.candidate_documents.map((document) => (
                   <li
                     key={document.id}
@@ -575,7 +575,7 @@ export default async function ApplicationPage({
               <p className="px-4 pt-3 text-xs text-muted-foreground">
                 Same candidate record, not a duplicate person.
               </p>
-              <ul className="mt-2 divide-y divide-border border-t border-border">
+              <ul className="mt-1 pb-2">
                 {otherApplications.slice(0, 5).map((item) => (
                   <li key={item.id}>
                     <Link

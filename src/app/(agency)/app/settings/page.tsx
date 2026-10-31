@@ -75,11 +75,11 @@ export default async function SettingsPage() {
         count={workflows.items.length}
         bodyClassName="p-0"
       >
-        <p className="border-b border-border px-4 py-2.5 text-xs text-muted-foreground">
+        <p className="px-4 pb-2 text-xs text-muted-foreground">
           Choose one when opening a job. Active jobs keep their own stage
           snapshot.
         </p>
-        <ul className="divide-y divide-border">
+        <ul className="pb-2">
           {workflows.items.map((workflow) => (
             <li key={workflow.id} className="px-4 py-3">
               <div className="flex items-center justify-between gap-3">

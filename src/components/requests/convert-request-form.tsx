@@ -70,7 +70,7 @@ export function ConvertRequestForm({
 
   return (
     <Card className="mt-6 shadow-none">
-      <CardHeader className="border-b pb-5">
+      <CardHeader>
         <CardTitle>Job setup</CardTitle>
       </CardHeader>
       <CardContent>

@@ -203,7 +203,9 @@ export function JobRoleDetails({
           {facts.map(([label, value]) => (
             <div key={label} className="bg-card px-3.5 py-3">
               <dt className="text-xs text-muted-foreground">{label}</dt>
-              <dd className="mt-0.5 font-medium first-letter:uppercase">{value}</dd>
+              <dd className="mt-0.5 font-medium first-letter:uppercase">
+                {value}
+              </dd>
             </div>
           ))}
         </dl>
@@ -221,11 +223,11 @@ export function JobRoleDetails({
           <h2 className="text-base font-semibold tracking-[-0.01em]">
             Requirements
           </h2>
-          <ul className="mt-3 divide-y divide-border rounded-[10px] border border-border">
+          <ul className="mt-3 flex flex-col gap-3">
             {p.requirements.map((r, i) => (
               <li
                 key={i}
-                className="grid grid-cols-[16px_minmax(0,1fr)] gap-3 px-3.5 py-3 text-sm"
+                className="grid grid-cols-[16px_minmax(0,1fr)] gap-3 text-sm"
               >
                 <span
                   aria-hidden="true"

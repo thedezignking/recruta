@@ -142,7 +142,7 @@ export function ScreeningPanel({
   }
   return (
     <Card id="screening" size="sm" className="gap-0 py-0">
-      <CardHeader className="border-b border-border px-4 pt-3">
+      <CardHeader className="px-4 pt-4">
         <CardTitle className="flex items-center gap-2">
           <DocumentTextIcon size={16} aria-hidden="true" />
           AI screening

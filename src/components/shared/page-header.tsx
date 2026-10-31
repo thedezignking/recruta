@@ -44,6 +44,7 @@ export function DetailHeader({
   meta,
   status,
   actions,
+  divided = false,
   className,
 }: {
   media?: React.ReactNode;
@@ -51,13 +52,16 @@ export function DetailHeader({
   meta?: React.ReactNode[];
   status?: React.ReactNode;
   actions?: React.ReactNode;
+  /** Draw a rule under the header. */
+  divided?: boolean;
   className?: string;
 }) {
   const metaItems = meta?.filter(Boolean) ?? [];
   return (
     <header
       className={cn(
-        "flex flex-col gap-4 border-b border-border pb-5 md:flex-row md:items-center md:justify-between",
+        "flex flex-col gap-4 md:flex-row md:items-center md:justify-between",
+        divided && "border-b border-border pb-5",
         className,
       )}
     >
@@ -147,6 +151,7 @@ export function Panel({
   count,
   actions,
   children,
+  divided = false,
   className,
   bodyClassName,
 }: {
@@ -157,6 +162,8 @@ export function Panel({
   count?: number;
   actions?: React.ReactNode;
   children: React.ReactNode;
+  /** Draw a rule between the title row and the body. */
+  divided?: boolean;
   className?: string;
   bodyClassName?: string;
 }) {
@@ -171,7 +178,12 @@ export function Panel({
         className,
       )}
     >
-      <div className="flex min-h-12 items-center justify-between gap-3 border-b border-border px-4 py-2">
+      <div
+        className={cn(
+          "flex items-center justify-between gap-3 px-4",
+          divided ? "min-h-12 border-b border-border py-2" : "min-h-11 pt-3",
+        )}
+      >
         <div className="flex min-w-0 items-center gap-2">
           <h2 id={headingId} className="text-[13px] font-semibold">
             {title}
@@ -186,7 +198,9 @@ export function Panel({
           <div className="flex shrink-0 items-center gap-1">{actions}</div>
         )}
       </div>
-      <div className={cn("p-4", bodyClassName)}>{children}</div>
+      <div className={cn(divided ? "p-4" : "px-4 pt-2 pb-4", bodyClassName)}>
+        {children}
+      </div>
     </section>
   );
 }

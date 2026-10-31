@@ -175,7 +175,7 @@ export function CandidateMessages({
   }
   return (
     <Card id="messages" size="sm" className="gap-0 py-0">
-      <CardHeader className="border-b border-border px-4 pt-3">
+      <CardHeader className="px-4 pt-4">
         <CardTitle className="flex items-center gap-2">
           <LetterIcon size={16} aria-hidden="true" />
           Candidate email

@@ -106,7 +106,7 @@ export function AttentionQueue({
             {items.length}
           </span>
         </div>
-        <div className="divide-y divide-border/70">
+        <div className="py-1">
           {items.slice(0, limit).map((item) => (
             <AttentionRow key={item.id} item={item} compact />
           ))}
