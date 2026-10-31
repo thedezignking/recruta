@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { InviteMemberForm } from "@/components/team/invite-member-form";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -11,7 +11,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PageHeader } from "@/components/shared/page-header";
+import { PageHeader, SectionHeader } from "@/components/shared/page-header";
+import { avatarUrl } from "@/server/services/user-avatar";
 import { agencyCan } from "@/server/authorization/permissions";
 import { requireAgencyPageContext } from "@/server/auth/context";
 import { listInvitations } from "@/server/services/invitations";
@@ -50,19 +51,21 @@ export default async function TeamPage() {
     <div className="pb-20 lg:pb-0">
       <PageHeader title="Team" />
       {canManage ? (
-        <div className="mt-6">
+        <div className="mb-6">
           <InviteMemberForm agencyId={context.agencyId} />
         </div>
       ) : null}
-      <Card className="mt-6 shadow-none">
-        <CardHeader className="border-b pb-4">
-          <CardTitle>Active members</CardTitle>
-        </CardHeader>
+      <SectionHeader
+        title="Members"
+        count={members.items.length}
+        className="mb-3"
+      />
+      <Card className="gap-0 py-0 shadow-none">
         <CardContent className="p-0">
-          <Table>
+          <Table className="min-w-[640px] [&_td]:px-3 [&_td]:py-3 [&_th]:px-3">
             <TableHeader>
               <TableRow>
-                <TableHead>Member</TableHead>
+                <TableHead className="pl-4">Member</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Joined</TableHead>
@@ -73,15 +76,37 @@ export default async function TeamPage() {
                 const name = member.profile?.full_name ?? "Team member";
                 return (
                   <TableRow key={member.id}>
-                    <TableCell>
+                    <TableCell className="pl-4">
                       <div className="flex items-center gap-3">
-                        <Avatar size="sm">
-                          <AvatarFallback>{initials(name)}</AvatarFallback>
+                        <Avatar>
+                          {member.profile?.avatar_path && (
+                            <AvatarImage
+                              src={
+                                avatarUrl(
+                                  context.supabase,
+                                  member.profile.avatar_path,
+                                ) ?? undefined
+                              }
+                              alt=""
+                            />
+                          )}
+                          <AvatarFallback className="bg-[#EDECFD] text-xs font-semibold text-[#4846B8]">
+                            {initials(name)}
+                          </AvatarFallback>
                         </Avatar>
-                        <p className="font-medium">{name}</p>
+                        <p className="font-medium">
+                          {name}
+                          {member.user_id === context.user.id && (
+                            <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                              (you)
+                            </span>
+                          )}
+                        </p>
                       </div>
                     </TableCell>
-                    <TableCell>{label(member.role)}</TableCell>
+                    <TableCell className="text-xs">
+                      {label(member.role)}
+                    </TableCell>
                     <TableCell>
                       <Badge
                         variant="secondary"
@@ -94,7 +119,7 @@ export default async function TeamPage() {
                         {label(member.status)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="text-xs text-muted-foreground">
                       {member.joined_at
                         ? new Intl.DateTimeFormat("en", {
                             dateStyle: "medium",
@@ -109,30 +134,34 @@ export default async function TeamPage() {
         </CardContent>
       </Card>
       {canManage && pendingInvitations.length ? (
-        <Card className="mt-5 shadow-none">
-          <CardHeader className="border-b pb-4">
-            <CardTitle>Pending invitations</CardTitle>
-          </CardHeader>
-          <CardContent className="divide-y p-0">
-            {pendingInvitations.map((invitation) => (
-              <div
-                key={invitation.id}
-                className="flex flex-wrap items-center justify-between gap-3 px-5 py-4"
-              >
-                <div>
-                  <p className="text-sm font-medium">{invitation.email}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {label(invitation.role)} · Expires{" "}
-                    {new Intl.DateTimeFormat("en", {
-                      dateStyle: "medium",
-                    }).format(new Date(invitation.expires_at))}
-                  </p>
+        <>
+          <SectionHeader
+            title="Pending invitations"
+            count={pendingInvitations.length}
+            className="mt-6 mb-3"
+          />
+          <Card className="gap-0 py-0 shadow-none">
+            <CardContent className="p-0 py-1">
+              {pendingInvitations.map((invitation) => (
+                <div
+                  key={invitation.id}
+                  className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+                >
+                  <div>
+                    <p className="text-sm font-medium">{invitation.email}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {label(invitation.role)} · Expires{" "}
+                      {new Intl.DateTimeFormat("en", {
+                        dateStyle: "medium",
+                      }).format(new Date(invitation.expires_at))}
+                    </p>
+                  </div>
+                  <Badge variant="secondary">Invited</Badge>
                 </div>
-                <Badge variant="secondary">Invited</Badge>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+              ))}
+            </CardContent>
+          </Card>
+        </>
       ) : null}
     </div>
   );

@@ -19,13 +19,11 @@ import { Home2Icon as HomeSolidIcon } from "@solar-icons/react/bold/home-2";
 import { InboxIcon as InboxSolidIcon } from "@solar-icons/react/bold/inbox";
 import { UsersGroupTwoRoundedIcon as UsersSolidIcon } from "@solar-icons/react/bold/users-group-two-rounded";
 import { SettingsMinimalisticIcon as SettingsSolidIcon } from "@solar-icons/react/bold/settings-minimalistic";
-import { AddIcon } from "@solar-icons/react/linear/add";
 import { WorkspaceSwitcher, type WorkspaceOption } from "./workspace-switcher";
 import { AccountMenu } from "./account-menu";
 import { NotificationsMenu } from "./notifications-menu";
 import { WorkspaceSearch } from "./workspace-search";
 import { Button } from "@/components/ui/button";
-import { ButtonLink } from "@/components/shared/button-link";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,7 +39,10 @@ import {
 } from "@/components/ui/tooltip";
 import type { AgencyRole } from "@/types/domain";
 import { cn } from "cn";
-import { ToolbarTitleProvider } from "./toolbar-title-context";
+import {
+  ToolbarTitleProvider,
+  type ToolbarCrumb,
+} from "./toolbar-title-context";
 import { AltArrowRightIcon } from "@solar-icons/react/linear/alt-arrow-right";
 
 const items = [
@@ -105,6 +106,7 @@ export function AppShell({
   workspaceName,
   workspaceLogoUrl,
   userName,
+  userAvatarUrl,
   userId,
   userRole,
   userEmail,
@@ -116,6 +118,7 @@ export function AppShell({
   workspaceName: string;
   workspaceLogoUrl?: string | null;
   userName: string;
+  userAvatarUrl?: string | null;
   userId?: string;
   userRole: AgencyRole;
   userEmail?: string;
@@ -133,7 +136,7 @@ export function AppShell({
     },
   ];
   const [collapsed, setCollapsed] = useState(false);
-  const [detailTitle, setDetailTitle] = useState<string | null>(null);
+  const [crumb, setCrumb] = useState<ToolbarCrumb | null>(null);
   const [openMenu, setOpenMenu] = useState<ShellMenu | null>(null);
   const handleMenuOpenChange = (menu: ShellMenu) => (open: boolean) =>
     setOpenMenu((current) => (open ? menu : current === menu ? null : current));
@@ -159,12 +162,21 @@ export function AppShell({
       ? "Team"
       : pathname.startsWith("/app/settings")
         ? "Settings"
-        : "Workspace");
+        : pathname.startsWith("/app/account")
+          ? "My account"
+          : pathname.startsWith("/app/attention")
+            ? "Needs attention"
+            : "Workspace");
+  const isDetail = /^\/app\/[^/]+\/.+/.test(pathname);
+  const crumbParent = crumb?.parent ?? {
+    label: activeItem?.label ?? currentLabel,
+    href: activeItem?.href ?? "/app",
+  };
   const isActive = (href: string) =>
     href === "/app" ? pathname === href : pathname.startsWith(href);
 
   return (
-    <ToolbarTitleProvider setTitle={setDetailTitle}>
+    <ToolbarTitleProvider setCrumb={setCrumb}>
       <div className="min-h-dvh bg-card">
         <div
           className={cn(
@@ -341,6 +353,7 @@ export function AppShell({
                 <AccountMenu
                   name={userName}
                   email={userEmail}
+                  avatarUrl={userAvatarUrl}
                   role={userRole}
                   compact={collapsed}
                   agencySlug={agencySlug}
@@ -408,34 +421,37 @@ export function AppShell({
                   {currentLabel}
                 </span>
               </div>
-              {pathname.startsWith("/app/jobs/") && detailTitle ? (
+              {isDetail ? (
                 <nav
                   aria-label="Breadcrumb"
                   className="hidden min-w-0 items-center gap-2 text-sm lg:flex"
                 >
                   <Link
-                    href="/app/jobs"
-                    className="shrink-0 text-muted-foreground hover:text-foreground"
+                    href={crumbParent.href}
+                    className="shrink-0 rounded-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    Jobs
+                    {crumbParent.label}
                   </Link>
-                  <AltArrowRightIcon
-                    aria-hidden="true"
-                    size={14}
-                    className="shrink-0 text-muted-foreground"
-                  />
-                  <span className="truncate font-semibold" aria-current="page">
-                    {detailTitle}
-                  </span>
+                  {crumb && (
+                    <>
+                      <AltArrowRightIcon
+                        aria-hidden="true"
+                        size={14}
+                        className="shrink-0 text-muted-foreground"
+                      />
+                      <span
+                        className="truncate font-semibold"
+                        aria-current="page"
+                      >
+                        {crumb.title}
+                      </span>
+                    </>
+                  )}
                 </nav>
-              ) : pathname === "/app" ? (
-                <h1 className="hidden text-base font-semibold lg:block">
-                  Overview
-                </h1>
               ) : (
-                <span className="hidden text-sm font-semibold lg:block">
-                  {currentLabel}
-                </span>
+                <h1 className="hidden text-base font-semibold lg:block">
+                  {pathname === "/app" ? "Overview" : currentLabel}
+                </h1>
               )}
               <div className="ml-auto flex min-w-0 items-center gap-2">
                 <NotificationsMenu
@@ -447,20 +463,11 @@ export function AppShell({
                 <div className="hidden w-[260px] lg:block">
                   <WorkspaceSearch agencyId={agencyId} />
                 </div>
-                {pathname === "/app/jobs" && (
-                  <ButtonLink
-                    href="/app/jobs?new=1"
-                    size="sm"
-                    className="hidden h-8 px-3 lg:inline-flex"
-                  >
-                    <AddIcon aria-hidden="true" data-icon="inline-start" />
-                    New job
-                  </ButtonLink>
-                )}
                 <div className="lg:hidden">
                   <AccountMenu
                     name={userName}
                     email={userEmail}
+                    avatarUrl={userAvatarUrl}
                     role={userRole}
                     compact
                     header

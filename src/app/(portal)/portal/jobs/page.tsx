@@ -17,7 +17,7 @@ export default async function PortalJobs({
   );
   return (
     <div className="space-y-6">
-      <PageHeader title="Jobs" />
+      <PageHeader standalone title="Jobs" />
       {result.items.length ? (
         result.items.map((j) => (
           <Card key={j.id}>

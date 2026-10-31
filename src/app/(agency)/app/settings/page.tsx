@@ -9,8 +9,8 @@ import {
   getProcessingSettings,
   processingAvailability,
 } from "@/server/services/processing-settings";
-import { PageHeader } from "@/components/shared/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel } from "@/components/shared/page-header";
+import { SettingsLayout } from "@/components/shared/settings-layout";
 import { agencyCan } from "@/server/authorization/permissions";
 import { requireAgencyPageContext } from "@/server/auth/context";
 import {
@@ -23,8 +23,10 @@ export default async function SettingsPage() {
   if (!context) redirect("/login");
   if (context.role === "recruitment_manager")
     return (
-      <div className="max-w-4xl pb-20">
-        <PageHeader title="Agency settings" />
+      <SettingsLayout
+        title="Settings"
+        sections={[{ id: "question-bank", label: "Question bank" }]}
+      >
         <QuestionLibrary
           agencyId={context.agencyId}
           initial={await listLibraryQuestions(
@@ -33,75 +35,85 @@ export default async function SettingsPage() {
             true,
           )}
         />
-      </div>
+      </SettingsLayout>
     );
   if (!agencyCan(context.role, "manage_agency")) redirect("/app");
-  const [agency, workflows, processing] = await Promise.all([
+  const [agency, workflows, processing, library] = await Promise.all([
     getAgencyProfile(context.supabase, context.agencyId),
     listWorkflowTemplates(context.supabase, context.agencyId),
     getProcessingSettings(context.supabase, context.agencyId),
+    listLibraryQuestions(context.supabase, context.agencyId, true),
   ]);
 
   return (
-    <div className="max-w-4xl pb-20 lg:pb-0">
-      <PageHeader title="Agency settings" />
-      <Card className="mt-6 shadow-none">
-        <CardHeader className="border-b pb-4">
-          <CardTitle>Agency profile</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <AgencyLogo
-            agencyId={agency.id}
-            initialPath={agency.logo_path}
-            initialUrl={agencyLogoUrl(context.supabase, agency.logo_path)}
-          />
-          <AgencySettingsForm agency={agency} />
-        </CardContent>
-      </Card>
+    <SettingsLayout
+      title="Settings"
+      sections={[
+        { id: "agency-profile", label: "Agency profile" },
+        { id: "processing", label: "Applicant processing" },
+        { id: "question-bank", label: "Question bank" },
+        { id: "workflows", label: "Workflow templates" },
+      ]}
+    >
+      <Panel title="Agency profile" anchorId="agency-profile">
+        <AgencyLogo
+          agencyId={agency.id}
+          initialPath={agency.logo_path}
+          initialUrl={agencyLogoUrl(context.supabase, agency.logo_path)}
+        />
+        <AgencySettingsForm agency={agency} />
+      </Panel>
       <ProcessingSettings
         agencyId={context.agencyId}
         initial={processing}
         available={processingAvailability()}
       />
-      <QuestionLibrary
-        agencyId={context.agencyId}
-        initial={await listLibraryQuestions(
-          context.supabase,
-          context.agencyId,
-          true,
-        )}
-      />
-      <Card className="mt-5 shadow-none">
-        <CardHeader className="border-b pb-4">
-          <CardTitle>Workflow templates</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Choose one when opening a job. Active jobs keep their own stage
-            snapshot.
-          </p>
-        </CardHeader>
-        <CardContent className="grid gap-3">
+      <QuestionLibrary agencyId={context.agencyId} initial={library} />
+      <Panel
+        title="Workflow templates"
+        anchorId="workflows"
+        count={workflows.items.length}
+        bodyClassName="p-0"
+      >
+        <p className="px-4 pb-2 text-xs text-muted-foreground">
+          Choose one when opening a job. Active jobs keep their own stage
+          snapshot.
+        </p>
+        <ul className="pb-2">
           {workflows.items.map((workflow) => (
-            <div key={workflow.id} className="rounded-lg border p-4">
+            <li key={workflow.id} className="px-4 py-3">
               <div className="flex items-center justify-between gap-3">
-                <p className="font-medium">{workflow.name}</p>
-                <span className="text-xs text-muted-foreground">
+                <p className="text-sm font-medium">{workflow.name}</p>
+                <span className="text-xs text-muted-foreground tabular-nums">
                   {workflow.workflow_stages.length} stages
                 </span>
               </div>
               {workflow.description ? (
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-0.5 text-xs text-muted-foreground">
                   {workflow.description}
                 </p>
               ) : null}
-              <p className="mt-3 text-xs text-muted-foreground">
-                {workflow.workflow_stages
-                  .map((stage) => stage.name)
-                  .join(" → ")}
-              </p>
-            </div>
+              <ol className="mt-2 flex flex-wrap items-center gap-1 text-[11px]">
+                {workflow.workflow_stages.map((stage, index) => (
+                  <li
+                    key={`${index}-${stage.name}`}
+                    className="flex items-center gap-1"
+                  >
+                    {index > 0 && (
+                      <span aria-hidden="true" className="text-border">
+                        —
+                      </span>
+                    )}
+                    <span className="rounded-md bg-muted px-1.5 py-0.5 text-muted-foreground">
+                      {stage.name}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </li>
           ))}
-        </CardContent>
-      </Card>
-    </div>
+        </ul>
+      </Panel>
+    </SettingsLayout>
   );
 }

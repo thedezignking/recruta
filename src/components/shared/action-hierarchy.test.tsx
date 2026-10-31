@@ -55,6 +55,7 @@ vi.mock("next/navigation", () => ({
   redirect: vi.fn(),
   notFound: vi.fn(),
   useRouter: () => ({ replace: vi.fn() }),
+  usePathname: () => "/careers/synthetic/jobs/designer",
   useSearchParams: () => new URLSearchParams(),
 }));
 import JobsPage from "@/app/(agency)/app/jobs/page";
@@ -138,9 +139,6 @@ describe("action hierarchy", () => {
     expect(screen.queryByText(/Current workload/)).toBeNull();
     expect(screen.queryByText(/Good (morning|afternoon|evening)/)).toBeNull();
     expect(
-      cards[2].querySelector(".solar-document-text-linear"),
-    ).not.toBeNull();
-    expect(
       screen.getByRole("heading", { name: "Hiring activity" }),
     ).toBeTruthy();
     expect(
@@ -163,7 +161,7 @@ describe("action hierarchy", () => {
       screen.getByRole("button", { name: "Submit request" }).className,
     ).toContain("bg-primary");
   });
-  it("keeps the public hero Apply primary and repeated sidebar Apply outline", async () => {
+  it("shows a single primary Apply action that opens the application modal", async () => {
     render(
       await PublicJobPage({
         params: Promise.resolve({
@@ -172,10 +170,9 @@ describe("action hierarchy", () => {
         }),
       }),
     );
-    const main = screen.getByRole("link", { name: "Apply now" });
-    const repeated = screen.getByRole("link", { name: "Apply for this role" });
-    expect(main.className).toContain("bg-primary");
-    expectOutline(repeated);
-    expect(repeated.getAttribute("href")).toBe(main.getAttribute("href"));
+    expect(screen.queryAllByRole("link", { name: /apply/i })).toHaveLength(0);
+    const apply = screen.getAllByRole("button", { name: /apply/i });
+    expect(apply).toHaveLength(1);
+    expect(apply[0].className).toContain("bg-primary");
   });
 });

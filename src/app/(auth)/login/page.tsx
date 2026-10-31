@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { AuthCard } from "@/components/auth/auth-card";
 import { LoginForm } from "@/components/auth/login-form";
 
@@ -11,17 +10,12 @@ export default async function LoginPage({
   return (
     <AuthCard
       title="Welcome back"
-      footer={
-        <>
-          New to Recruta?{" "}
-          <Link
-            href="/signup"
-            className="font-medium text-primary hover:underline"
-          >
-            Create an account
-          </Link>
-        </>
-      }
+      description="Sign in to your agency workspace."
+      switchLink={{
+        prompt: "New to Recruta?",
+        label: "Create account",
+        href: "/signup",
+      }}
     >
       <LoginForm next={next} />
     </AuthCard>

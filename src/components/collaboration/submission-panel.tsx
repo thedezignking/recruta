@@ -60,11 +60,11 @@ export function SubmissionPanel({
     }
   }
   return (
-    <Card>
-      <CardHeader>
+    <Card size="sm" className="gap-0 py-0">
+      <CardHeader className="px-4 pt-4">
         <CardTitle>Hiring manager review</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 p-4">
         {active ? (
           <>
             <p className="whitespace-pre-wrap text-sm">{active.summary}</p>

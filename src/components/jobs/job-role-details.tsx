@@ -91,7 +91,8 @@ export function JobDescription({ description }: { description: string }) {
   );
 }
 
-export function JobRoleDetails(p: JobRoleDetailsProps) {
+/** Label/value facts for the role summary, omitting empty values. */
+export function jobRoleFacts(p: JobRoleDetailsProps) {
   const salaryAmount =
     p.salaryVisibility === "hidden" || p.salaryVisibility === "negotiable"
       ? null
@@ -108,115 +109,143 @@ export function JobRoleDetails(p: JobRoleDetailsProps) {
   const salary = salaryAmount
     ? `${salaryAmount}${salaryUnit ? ` / ${salaryUnit}` : ""}`
     : null;
+  const facts: [string, unknown][] = [
+    ["Openings", p.positions],
+    ["Department", p.department],
+    ["Location", p.workArrangement === "remote" ? null : p.location],
+    [
+      "Employment arrangement",
+      p.employmentArrangement
+        ? arrangementLabels[p.employmentArrangement]
+        : null,
+    ],
+    [
+      "Working hours",
+      p.workingHours && p.workingHours !== "not_specified"
+        ? p.workingHours.replaceAll("_", "-")
+        : null,
+    ],
+    [
+      "Legacy employment detail",
+      !p.employmentArrangement &&
+      !["full-time", "part-time"].includes(
+        p.employmentType?.toLowerCase() ?? "",
+      )
+        ? p.employmentType
+        : null,
+    ],
+    [
+      "Contract duration",
+      ["fixed_term", "temporary"].includes(p.employmentArrangement ?? "")
+        ? p.contractDuration
+        : null,
+    ],
+    [
+      "Remote eligibility",
+      p.workArrangement === "remote"
+        ? p.remoteEligibility === "anywhere"
+          ? "Work from anywhere"
+          : p.remoteDetails
+        : null,
+    ],
+    [
+      "Remote working details",
+      p.workArrangement === "remote" && p.remoteEligibility === "anywhere"
+        ? p.remoteDetails
+        : null,
+    ],
+    ["Workplace type", p.workArrangement?.replaceAll("_", "-")],
+    [
+      "Experience",
+      p.experienceMinYears == null
+        ? null
+        : `${p.experienceMinYears}+ ${p.experienceMinYears === 1 ? "year" : "years"}`,
+    ],
+    [
+      "Seniority",
+      p.seniorityLevel
+        ? p.seniorityLevel.charAt(0).toUpperCase() + p.seniorityLevel.slice(1)
+        : null,
+    ],
+    [
+      "Salary",
+      p.salaryVisibility === "negotiable"
+        ? "Salary negotiable"
+        : salary
+          ? `${salary}${p.salaryBasis && p.salaryBasis !== "not_specified" ? ` · ${p.salaryBasis}` : ""}`
+          : null,
+    ],
+    [
+      "Apply by",
+      p.deadline
+        ? new Intl.DateTimeFormat("en", {
+            dateStyle: "medium",
+            timeZone: "UTC",
+          }).format(new Date(p.deadline))
+        : null,
+    ],
+  ];
+  return facts.filter(([, value]) => value != null && value !== "") as [
+    string,
+    string | number,
+  ][];
+}
+
+export function JobRoleDetails({
+  hideFacts = false,
+  ...p
+}: JobRoleDetailsProps & { hideFacts?: boolean }) {
+  const facts = jobRoleFacts(p);
   return (
-    <div className="space-y-6">
-      <dl className="grid gap-3 text-sm sm:grid-cols-2">
-        {[
-          ["Openings", p.positions],
-          ["Department", p.department],
-          ["Location", p.workArrangement === "remote" ? null : p.location],
-          [
-            "Employment arrangement",
-            p.employmentArrangement
-              ? arrangementLabels[p.employmentArrangement]
-              : null,
-          ],
-          [
-            "Working hours",
-            p.workingHours && p.workingHours !== "not_specified"
-              ? p.workingHours.replaceAll("_", "-")
-              : null,
-          ],
-          [
-            "Legacy employment detail",
-            !p.employmentArrangement &&
-            !["full-time", "part-time"].includes(
-              p.employmentType?.toLowerCase() ?? "",
-            )
-              ? p.employmentType
-              : null,
-          ],
-          [
-            "Contract duration",
-            ["fixed_term", "temporary"].includes(p.employmentArrangement ?? "")
-              ? p.contractDuration
-              : null,
-          ],
-          [
-            "Remote eligibility",
-            p.workArrangement === "remote"
-              ? p.remoteEligibility === "anywhere"
-                ? "Work from anywhere"
-                : p.remoteDetails
-              : null,
-          ],
-          [
-            "Remote working details",
-            p.workArrangement === "remote" && p.remoteEligibility === "anywhere"
-              ? p.remoteDetails
-              : null,
-          ],
-          ["Workplace type", p.workArrangement?.replaceAll("_", "-")],
-          [
-            "Experience",
-            p.experienceMinYears == null
-              ? null
-              : `${p.experienceMinYears}+ ${p.experienceMinYears === 1 ? "year" : "years"}`,
-          ],
-          [
-            "Seniority",
-            p.seniorityLevel
-              ? p.seniorityLevel.charAt(0).toUpperCase() +
-                p.seniorityLevel.slice(1)
-              : null,
-          ],
-          [
-            "Salary",
-            p.salaryVisibility === "negotiable"
-              ? "Salary negotiable"
-              : salary
-                ? `${salary}${p.salaryBasis && p.salaryBasis !== "not_specified" ? ` · ${p.salaryBasis}` : ""}`
-                : null,
-          ],
-          [
-            "Apply by",
-            p.deadline
-              ? new Intl.DateTimeFormat("en", {
-                  dateStyle: "medium",
-                  timeZone: "UTC",
-                }).format(new Date(p.deadline))
-              : null,
-          ],
-        ]
-          .filter(([, value]) => value != null && value !== "")
-          .map(([label, value]) => (
-            <div key={String(label)}>
-              <dt className="text-muted-foreground">{label}</dt>
-              <dd className="mt-1 capitalize">{value}</dd>
+    <div className="space-y-8">
+      {!hideFacts && (
+        <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-border bg-border text-sm">
+          {facts.map(([label, value]) => (
+            <div key={label} className="bg-card px-3.5 py-3">
+              <dt className="text-xs text-muted-foreground">{label}</dt>
+              <dd className="mt-0.5 font-medium first-letter:uppercase">
+                {value}
+              </dd>
             </div>
           ))}
-      </dl>
+        </dl>
+      )}
       <section>
-        <h2 className="text-base font-semibold">About the role</h2>
+        <h2 className="text-base font-semibold tracking-[-0.01em]">
+          About the role
+        </h2>
         <div className="mt-3">
           <JobDescription description={p.description} />
         </div>
       </section>
       {p.requirements.length > 0 && (
         <section>
-          <h2 className="text-base font-semibold">Requirements</h2>
-          <ul className="mt-3 space-y-3">
+          <h2 className="text-base font-semibold tracking-[-0.01em]">
+            Requirements
+          </h2>
+          <ul className="mt-3 flex flex-col gap-3">
             {p.requirements.map((r, i) => (
-              <li key={i} className="text-sm">
-                <p>
-                  {r.label}
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    {r.type === "preferred" ? "Preferred" : "Required"}
-                  </span>
-                </p>
-                {r.description && (
-                  <p className="mt-1 text-muted-foreground">{r.description}</p>
-                )}
+              <li
+                key={i}
+                className="grid grid-cols-[16px_minmax(0,1fr)] gap-3 text-sm"
+              >
+                <span
+                  aria-hidden="true"
+                  className={`mt-[7px] size-2 rounded-full ${r.type === "preferred" ? "border border-muted-foreground/50" : "bg-primary"}`}
+                />
+                <div className="min-w-0">
+                  <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <span className="font-medium">{r.label}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {r.type === "preferred" ? "Preferred" : "Required"}
+                    </span>
+                  </p>
+                  {r.description && (
+                    <p className="mt-1 text-muted-foreground">
+                      {r.description}
+                    </p>
+                  )}
+                </div>
               </li>
             ))}
           </ul>

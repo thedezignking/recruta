@@ -2,29 +2,49 @@
 
 import { createContext, useContext, useEffect, type ReactNode } from "react";
 
-const ToolbarTitleContext = createContext<(title: string | null) => void>(
+export type ToolbarCrumb = {
+  parent: { label: string; href: string };
+  title: string;
+};
+
+const ToolbarTitleContext = createContext<(crumb: ToolbarCrumb | null) => void>(
   () => {},
 );
 
 export function ToolbarTitleProvider({
   children,
-  setTitle,
+  setCrumb,
 }: {
   children: ReactNode;
-  setTitle: (title: string | null) => void;
+  setCrumb: (crumb: ToolbarCrumb | null) => void;
 }) {
   return (
-    <ToolbarTitleContext.Provider value={setTitle}>
+    <ToolbarTitleContext.Provider value={setCrumb}>
       {children}
     </ToolbarTitleContext.Provider>
   );
 }
 
-export function JobToolbarTitle({ title }: { title: string }) {
-  const setTitle = useContext(ToolbarTitleContext);
+/** Shows "Parent › Title" in the desktop toolbar while a detail page is mounted. */
+export function ToolbarBreadcrumb({
+  parent,
+  parentHref,
+  title,
+}: {
+  parent: string;
+  parentHref: string;
+  title: string;
+}) {
+  const setCrumb = useContext(ToolbarTitleContext);
   useEffect(() => {
-    setTitle(title);
-    return () => setTitle(null);
-  }, [setTitle, title]);
+    setCrumb({ parent: { label: parent, href: parentHref }, title });
+    return () => setCrumb(null);
+  }, [setCrumb, parent, parentHref, title]);
   return null;
+}
+
+export function JobToolbarTitle({ title }: { title: string }) {
+  return (
+    <ToolbarBreadcrumb parent="Jobs" parentHref="/app/jobs" title={title} />
+  );
 }

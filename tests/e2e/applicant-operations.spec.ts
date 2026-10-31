@@ -196,12 +196,16 @@ test.describe("applicant operations with isolated synthetic data", () => {
       await page
         .getByLabel("Search applications", { exact: true })
         .fill("Not a matching person");
-      await page.getByRole("button", { name: "Search", exact: true }).click();
+      await page
+        .getByLabel("Search applications", { exact: true })
+        .press("Enter");
       await expect(page.getByText("No matching applications")).toBeVisible();
       await page
         .getByLabel("Search applications", { exact: true })
         .fill("Ada Fixture");
-      await page.getByRole("button", { name: "Search", exact: true }).click();
+      await page
+        .getByLabel("Search applications", { exact: true })
+        .press("Enter");
       await page
         .getByRole("link", { name: "Review Ada Fixture", exact: true })
         .click();

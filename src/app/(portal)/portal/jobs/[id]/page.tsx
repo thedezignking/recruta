@@ -41,6 +41,7 @@ export default async function PortalJob({
         Back to jobs
       </ButtonLink>
       <PageHeader
+        standalone
         title={job.title}
         actions={<StatusBadge status={job.status} />}
       />

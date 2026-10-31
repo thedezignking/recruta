@@ -64,14 +64,18 @@ export function ProcessingSettings({
     }
   }
   return (
-    <Card className="mt-5">
-      <CardHeader>
+    <Card
+      id="processing"
+      size="sm"
+      className="scroll-mt-20 gap-0 py-0 shadow-none"
+    >
+      <CardHeader className="px-4 pt-4">
         <CardTitle>Applicant processing</CardTitle>
         <CardDescription>
           Choose what happens after an application arrives.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-4">
         <form onSubmit={save}>
           <FieldGroup>
             {!available.screening && (

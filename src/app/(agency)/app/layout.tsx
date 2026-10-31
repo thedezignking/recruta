@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requireAgencyPageContext } from "@/server/auth/context";
 import { listUserWorkspaces } from "@/server/services/workspace";
 import { agencyLogoUrl } from "@/server/services/agency-logo";
+import { avatarUrl } from "@/server/services/user-avatar";
 
 export default async function AgencyLayout({
   children,
@@ -19,7 +20,7 @@ export default async function AgencyLayout({
       .single(),
     context.supabase
       .from("user_profiles")
-      .select("full_name")
+      .select("full_name,avatar_path")
       .eq("id", context.user.id)
       .single(),
     listUserWorkspaces(context.supabase, context.user.id),
@@ -34,6 +35,10 @@ export default async function AgencyLayout({
       userName={
         profileResult.data?.full_name ?? context.user.email ?? "Team member"
       }
+      userAvatarUrl={avatarUrl(
+        context.supabase,
+        profileResult.data?.avatar_path ?? null,
+      )}
       userId={context.user.id}
       userRole={context.role}
       userEmail={context.user.email}

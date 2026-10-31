@@ -8,7 +8,7 @@ import { Logout2Icon } from "@solar-icons/react/linear/logout-2";
 import { LockPasswordIcon } from "@solar-icons/react/linear/lock-password";
 import { ArrowRightUpIcon } from "@solar-icons/react/linear/arrow-right-up";
 import { UserRoundedIcon } from "@solar-icons/react/linear/user-rounded";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -25,6 +25,7 @@ import { cn } from "cn";
 export function AccountMenu({
   name,
   email,
+  avatarUrl,
   role,
   compact = false,
   mobile = false,
@@ -35,6 +36,7 @@ export function AccountMenu({
 }: {
   name: string;
   email?: string;
+  avatarUrl?: string | null;
   role: AgencyRole;
   compact?: boolean;
   mobile?: boolean;
@@ -98,6 +100,7 @@ export function AccountMenu({
           }
         >
           <Avatar className={cn("size-6", !header && !compact && "size-8")}>
+            {avatarUrl && <AvatarImage src={avatarUrl} alt="" />}
             <AvatarFallback className="bg-primary/10 text-xs font-semibold text-foreground">
               {initials}
             </AvatarFallback>
@@ -129,6 +132,7 @@ export function AccountMenu({
           <DropdownMenuGroup className="rounded-md border border-border bg-muted/30 p-0.5">
             <DropdownMenuLabel className="flex items-center gap-1.5 px-1.5 py-1.5">
               <Avatar className="size-5">
+                {avatarUrl && <AvatarImage src={avatarUrl} alt="" />}
                 <AvatarFallback className="bg-primary/10 text-[10px] text-foreground">
                   {initials}
                 </AvatarFallback>

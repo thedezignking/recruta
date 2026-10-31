@@ -8,7 +8,7 @@ export default async function NewPortalRequest() {
   if (c.role === "reviewer") redirect("/portal/requests");
   return (
     <div className="space-y-6">
-      <PageHeader title="New hiring request" />
+      <PageHeader standalone title="New hiring request" />
       <Card>
         <CardContent>
           <PortalRequestForm clientId={c.clientId} />

@@ -2659,6 +2659,13 @@ export type Database = {
         };
         Returns: undefined;
       };
+      update_user_avatar: {
+        Args: {
+          p_avatar_path: string;
+          p_expected_avatar_path: string;
+        };
+        Returns: undefined;
+      };
       update_draft_job: {
         Args: {
           p_agency_id: string;

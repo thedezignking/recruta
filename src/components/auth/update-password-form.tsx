@@ -77,7 +77,12 @@ export function UpdatePasswordForm({
             Password updated.
           </p>
         )}
-        <Button type="submit" size="lg" disabled={pending}>
+        <Button
+          type="submit"
+          size={inAccount ? "default" : "lg"}
+          className={inAccount ? "self-start" : undefined}
+          disabled={pending}
+        >
           {pending ? "Updating…" : "Update password"}
         </Button>
       </FieldGroup>

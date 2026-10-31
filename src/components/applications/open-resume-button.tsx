@@ -8,10 +8,13 @@ export function OpenResumeButton({
   applicationId,
   documentId,
   agencyId,
+  prominent = false,
 }: {
   applicationId: string;
   documentId: string;
   agencyId?: string;
+  /** Header placement: an outline button at the standard size. */
+  prominent?: boolean;
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,13 +53,13 @@ export function OpenResumeButton({
     <div>
       <Button
         type="button"
-        variant="ghost"
-        size="sm"
+        variant={prominent ? "outline" : "ghost"}
+        size={prominent ? "default" : "sm"}
         onClick={openResume}
         disabled={pending}
       >
         <DocumentTextIcon data-icon="inline-start" aria-hidden="true" />
-        {pending ? "Opening…" : "Resume"}
+        {pending ? "Opening…" : prominent ? "Open résumé" : "Resume"}
       </Button>
       {error && (
         <p role="alert" className="mt-2 max-w-56 text-xs text-destructive">

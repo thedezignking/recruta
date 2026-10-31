@@ -133,7 +133,6 @@ export function JobLifecycleActions({
           render={
             <Button
               type="button"
-              size="sm"
               variant="outline"
               disabled={pendingAction !== null}
             />
@@ -190,7 +189,6 @@ export function JobLifecycleActions({
             <div className="mt-5 flex justify-end gap-2">
               <Button
                 type="button"
-                size="sm"
                 variant="outline"
                 onClick={() => setConfirmDelete(false)}
                 disabled={pendingAction !== null}
@@ -199,7 +197,6 @@ export function JobLifecycleActions({
               </Button>
               <Button
                 type="button"
-                size="sm"
                 variant="destructive"
                 disabled={pendingAction !== null}
                 onClick={() => void request("delete", { method: "DELETE" })}

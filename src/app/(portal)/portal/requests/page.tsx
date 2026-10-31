@@ -18,6 +18,7 @@ export default async function PortalRequests({
   return (
     <div className="space-y-6">
       <PageHeader
+        standalone
         title="Hiring requests"
         actions={
           c.role !== "reviewer" ? (

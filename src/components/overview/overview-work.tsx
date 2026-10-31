@@ -5,6 +5,7 @@ import { CaseMinimalisticIcon } from "@solar-icons/react/linear/case-minimalisti
 import { CaseRoundIcon } from "@solar-icons/react/bold/case-round";
 import { ButtonLink } from "@/components/shared/button-link";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { SectionHeader } from "@/components/shared/page-header";
 import { CompanyLogo } from "@/components/organizations/company-picker";
 import { companyProfileSchema } from "@/lib/organization";
 import { CopyApplicationLink } from "@/components/jobs/copy-application-link";
@@ -56,6 +57,28 @@ function initials(name: string) {
     .toUpperCase();
 }
 
+function waitingFor(value: string) {
+  const hours = Math.max(0, (Date.now() - new Date(value).getTime()) / 36e5);
+  if (hours < 1) return "Just now";
+  if (hours < 24) return `${Math.floor(hours)}h`;
+  const days = Math.floor(hours / 24);
+  return days < 30 ? `${days}d` : `${Math.floor(days / 30)}mo`;
+}
+
+function ViewAllLink({ href }: { href: string }) {
+  return (
+    <ButtonLink
+      href={href}
+      variant="ghost"
+      size="sm"
+      className="text-muted-foreground hover:text-foreground"
+    >
+      View all
+      <AltArrowRightIcon data-icon="inline-end" aria-hidden="true" />
+    </ButtonLink>
+  );
+}
+
 export function OverviewWork({
   overview,
   work,
@@ -88,74 +111,112 @@ export function OverviewWork({
         <div className="flex min-w-0 flex-col gap-4">
           {showInbox && (
             <section aria-label="Application inbox">
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-[13px] font-semibold tracking-[-0.01em]">
-                    Application inbox
-                  </h2>
-                  {overview.counts.applicationsToReview > 0 && (
-                    <Badge
-                      variant="secondary"
-                      aria-label={`${overview.counts.applicationsToReview} applications in the inbox`}
-                    >
-                      {overview.counts.applicationsToReview}
-                    </Badge>
-                  )}
-                </div>
-                <ButtonLink href="/app/applications" variant="ghost" size="sm">
-                  Open inbox
-                  <AltArrowRightIcon
-                    data-icon="inline-end"
-                    aria-hidden="true"
-                  />
-                </ButtonLink>
-              </div>
+              <SectionHeader
+                title="Application inbox"
+                count={
+                  overview.counts.applicationsToReview > 0
+                    ? overview.counts.applicationsToReview
+                    : undefined
+                }
+                countLabel={`${overview.counts.applicationsToReview} applications in the inbox`}
+                actions={<ViewAllLink href="/app/applications" />}
+                className="mb-2"
+              />
               <Card className="gap-0 py-0">
                 <CardContent className="px-0">
                   {overview.applications.length > 0 ? (
-                    <div className="divide-y divide-border">
-                      {overview.applications.map((application) => (
-                        <Link
-                          key={application.id}
-                          href={`/app/applications/${application.id}`}
-                          className="flex flex-wrap items-center gap-3 px-4 py-3 hover:bg-muted/60"
-                        >
-                          <Avatar>
-                            <AvatarFallback>
-                              {initials(
-                                application.candidates?.full_name ??
-                                  "Candidate",
-                              )}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium">
-                              {application.candidates?.full_name ?? "Candidate"}
-                            </p>
-                            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                              {application.jobs?.title} ·{" "}
-                              {application.jobs?.clients?.name}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <StatusBadge status={application.status} />
-                            <time
-                              dateTime={application.submitted_at}
-                              className="hidden text-xs text-muted-foreground sm:block"
+                    <div>
+                      <div
+                        aria-hidden="true"
+                        className="hidden grid-cols-[minmax(0,1.4fr)_minmax(0,1.3fr)_120px_72px_20px] gap-4 border-b border-border bg-[#FBFBFB] px-4 py-2 text-[11px] font-medium text-muted-foreground md:grid"
+                      >
+                        <span>Candidate</span>
+                        <span>Applied for</span>
+                        <span>Stage</span>
+                        <span>Waiting</span>
+                        <span />
+                      </div>
+                      <ul>
+                        {overview.applications.map((application) => {
+                          const name =
+                            application.candidates?.full_name ?? "Candidate";
+                          return (
+                            <li
+                              key={application.id}
+                              className="border-b border-border last:border-b-0"
                             >
-                              {new Intl.DateTimeFormat("en", {
-                                month: "short",
-                                day: "numeric",
-                                timeZone: timezone,
-                              }).format(new Date(application.submitted_at))}
-                            </time>
-                            <AltArrowRightIcon aria-hidden="true" size={15} />
-                          </div>
-                        </Link>
-                      ))}
+                              <Link
+                                href={`/app/applications/${application.id}`}
+                                className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 px-4 py-3 outline-none hover:bg-[#F8F9FC] focus-visible:bg-[#F8F9FC] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset md:grid-cols-[minmax(0,1.4fr)_minmax(0,1.3fr)_120px_72px_20px]"
+                              >
+                                <span className="flex min-w-0 items-center gap-3">
+                                  <Avatar>
+                                    <AvatarFallback className="bg-[#EDECFD] text-xs font-semibold text-[#4846B8]">
+                                      {initials(name)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span className="min-w-0">
+                                    <span className="block truncate text-sm font-medium group-hover:text-primary">
+                                      {name}
+                                    </span>
+                                    <span className="block truncate text-xs text-muted-foreground md:hidden">
+                                      {application.jobs?.title}
+                                    </span>
+                                  </span>
+                                </span>
+                                <span className="hidden min-w-0 md:block">
+                                  <span className="block truncate text-xs font-medium">
+                                    {application.jobs?.title}
+                                  </span>
+                                  <span className="block truncate text-xs text-muted-foreground">
+                                    {application.jobs?.clients?.name}
+                                  </span>
+                                </span>
+                                <span>
+                                  <StatusBadge status={application.status} />
+                                </span>
+                                <time
+                                  dateTime={application.submitted_at}
+                                  title={new Intl.DateTimeFormat("en", {
+                                    dateStyle: "medium",
+                                    timeStyle: "short",
+                                    timeZone: timezone,
+                                  }).format(new Date(application.submitted_at))}
+                                  className="hidden text-xs tabular-nums text-muted-foreground md:block"
+                                >
+                                  {waitingFor(application.submitted_at)}
+                                </time>
+                                <AltArrowRightIcon
+                                  aria-hidden="true"
+                                  size={16}
+                                  className="hidden text-muted-foreground group-hover:text-primary md:block"
+                                />
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      {overview.counts.applicationsToReview >
+                        overview.applications.length && (
+                        <div className="flex items-center justify-between gap-3 bg-[#FBFBFB] px-4 py-2.5 text-xs text-muted-foreground">
+                          <span>
+                            Oldest {overview.applications.length} of{" "}
+                            <span className="font-medium tabular-nums text-foreground">
+                              {overview.counts.applicationsToReview}
+                            </span>{" "}
+                            waiting
+                          </span>
+                          <Link
+                            href="/app/applications"
+                            className="rounded-sm font-medium text-foreground outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            Open inbox
+                          </Link>
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    <div className="flex flex-col items-start gap-3 px-5 pb-5">
+                    <div className="flex flex-col items-start gap-3 p-5">
                       <div>
                         <p className="text-sm font-medium">
                           {overview.counts.applicationsReceived === 0 &&
@@ -183,26 +244,21 @@ export function OverviewWork({
             </section>
           )}
           <section aria-label={firstJob ? "Start hiring" : "Active jobs"}>
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <h2 className="text-[13px] font-semibold tracking-[-0.01em]">
-                  {firstJob ? "Start hiring" : "Active jobs"}
-                </h2>
-                {overview.counts.openJobs > 0 && (
-                  <Badge
-                    variant="secondary"
-                    aria-label={`${overview.counts.openJobs} active jobs`}
-                  >
-                    {overview.counts.openJobs}
-                  </Badge>
-                )}
-              </div>
-              {work.totalJobs > 0 && (
-                <ButtonLink href="/app/jobs" variant="outline" size="sm">
-                  View all
-                </ButtonLink>
-              )}
-            </div>
+            <SectionHeader
+              title={firstJob ? "Start hiring" : "Active jobs"}
+              count={
+                overview.counts.openJobs > 0
+                  ? overview.counts.openJobs
+                  : undefined
+              }
+              countLabel={`${overview.counts.openJobs} active jobs`}
+              actions={
+                work.totalJobs > 0 ? (
+                  <ViewAllLink href="/app/jobs?status=open" />
+                ) : undefined
+              }
+              className="mb-2"
+            />
             <Card className="gap-0 py-0">
               <CardContent className="px-0">
                 {work.activeJobs.length > 0 ? (
@@ -342,7 +398,7 @@ export function OverviewWork({
                     </ButtonLink>
                   </Empty>
                 ) : (
-                  <div className="px-5 pb-5">
+                  <div className="p-5">
                     <p className="text-sm font-medium">
                       {work.draft
                         ? "Your draft is ready to continue"
@@ -360,7 +416,7 @@ export function OverviewWork({
                   </div>
                 )}
                 {work.draft && (
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3 bg-[#FBFBFB] px-5 py-3">
                     <div className="min-w-0">
                       <p className="text-xs text-muted-foreground">Draft</p>
                       <p className="mt-1 text-sm font-medium">
@@ -396,7 +452,7 @@ export function OverviewWork({
                 </div>
               </CardHeader>
               <CardContent className="px-0">
-                <div className="divide-y divide-border">
+                <div className="py-1">
                   {requests.slice(0, 3).map((request) => (
                     <Link
                       key={request.id}

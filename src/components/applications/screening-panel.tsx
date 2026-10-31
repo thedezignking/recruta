@@ -141,17 +141,17 @@ export function ScreeningPanel({
     }
   }
   return (
-    <Card id="screening">
-      <CardHeader>
+    <Card id="screening" size="sm" className="gap-0 py-0">
+      <CardHeader className="px-4 pt-4">
         <CardTitle className="flex items-center gap-2">
-          <DocumentTextIcon size={18} aria-hidden="true" />
+          <DocumentTextIcon size={16} aria-hidden="true" />
           AI screening
         </CardTitle>
         <CardDescription>
           Evidence for your review. Hiring decisions stay with you.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-5">
+      <CardContent className="flex flex-col gap-5 p-4">
         {intakeFailed && (
           <Alert>
             <AlertDescription>

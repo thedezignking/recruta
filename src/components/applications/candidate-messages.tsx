@@ -174,17 +174,17 @@ export function CandidateMessages({
     }
   }
   return (
-    <Card id="messages">
-      <CardHeader>
+    <Card id="messages" size="sm" className="gap-0 py-0">
+      <CardHeader className="px-4 pt-4">
         <CardTitle className="flex items-center gap-2">
-          <LetterIcon size={18} aria-hidden="true" />
+          <LetterIcon size={16} aria-hidden="true" />
           Candidate email
         </CardTitle>
         <CardDescription>
           To {email} · Replies go to {replyTo}
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-5">
+      <CardContent className="flex flex-col gap-5 p-4">
         {!available && (
           <p className="text-sm text-muted-foreground">
             Email delivery is not enabled. Your operator must configure a

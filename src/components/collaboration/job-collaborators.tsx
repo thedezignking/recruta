@@ -78,10 +78,13 @@ export function JobCollaborators({
     }
   }
   return (
-    <section className="mt-7" aria-labelledby="hiring-managers-heading">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+    <section aria-labelledby="hiring-managers-heading">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 id="hiring-managers-heading" className="text-sm font-semibold">
+          <h2
+            id="hiring-managers-heading"
+            className="text-[13px] font-semibold tracking-[-0.01em]"
+          >
             Hiring managers
           </h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
@@ -95,7 +98,7 @@ export function JobCollaborators({
       </div>
       <div className="overflow-hidden rounded-[10px] border border-border bg-white">
         {activeMembers.length ? (
-          <div className="divide-y divide-border">
+          <div className="py-1">
             {activeMembers.map((member) => (
               <div
                 key={member.user_id}
@@ -148,9 +151,9 @@ export function JobCollaborators({
           </div>
         )}
         {data.invitations.length > 0 && (
-          <div className="border-t border-border bg-[#FCFCFC] px-4 py-3">
+          <div className="bg-[#FCFCFC] px-4 py-3">
             <p className="mb-2 text-xs font-semibold">Pending invitations</p>
-            <div className="divide-y divide-border">
+            <div>
               {data.invitations.map((invitation) => (
                 <div
                   key={invitation.id}

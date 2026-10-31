@@ -228,18 +228,25 @@ describe("workspace navigation", () => {
     ).toBeTruthy();
   });
 
-  it("puts the New job action in the Jobs toolbar after notifications", () => {
+  it("keeps New job out of the toolbar and titles the Jobs page", () => {
     navigationState.pathname = "/app/jobs";
     renderShell();
     const header = screen.getByRole("banner");
-    expect(within(header).getByRole("link", { name: "New job" })).toBeTruthy();
+    expect(within(header).queryByRole("link", { name: "New job" })).toBeNull();
+    expect(within(header).getByRole("heading", { name: "Jobs" })).toBeTruthy();
+  });
+
+  it("shows a breadcrumb on detail pages", () => {
+    navigationState.pathname = "/app/clients/client-1";
+    renderShell();
+    const crumb = within(screen.getByRole("banner")).getByRole("navigation", {
+      name: "Breadcrumb",
+    });
     expect(
-      within(header)
-        .getByRole("button", { name: "Notifications" })
-        .compareDocumentPosition(
-          within(header).getByRole("link", { name: "New job" }),
-        ) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+      within(crumb)
+        .getByRole("link", { name: "Organizations" })
+        .getAttribute("href"),
+    ).toBe("/app/clients");
   });
 
   it("keeps hiring requests in the mobile navigation", async () => {
