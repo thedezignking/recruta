@@ -71,7 +71,7 @@ test("uses the abstract fit mark and matching favicon", async ({
   await expect(brand).toHaveText("Recruta");
   const logo = await request.get("/brand/recruta-symbol.svg");
   expect(logo.ok()).toBe(true);
-  expect(await logo.text()).toContain('fill="#111111"');
+  expect(await logo.text()).toContain('fill="#272A32"');
   await expect(
     page.getByRole("button", { name: "Sign in", exact: true }),
   ).toHaveCSS("border-radius", "6px");

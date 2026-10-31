@@ -63,8 +63,8 @@ Read the relevant sections before changing product behavior, architecture, data,
 
 ### UI and content standards
 
-- Branding uses a near-black (#111111) rounded square with a white abstract fit symbol formed by two complementary corners, defined in `public/brand/recruta-symbol.svg` and mirrored in `src/app/icon.svg`. Previous starburst and gradient ribbon artwork is legacy only. Do not add gradients, 3D effects, or generic product icons.
-- The default lockup uses a 28 px square mark (8/40 proportional corner radius), a 22 px semibold Geist wordmark, and a 10 px gap. The sidebar's agency switcher uses a 24 px agency logo or purple initial placeholder beside the agency name; the Evenkore logo is a local asset assigned only to that workspace. Use 6 px control/navigation corners and 10 px card/overlay corners through the shared radius scale; compact sidebar icons are 18 px and compact action icons 16 px.
+- Branding uses a charcoal (#272A32) rounded square with an off-white (#F4F7F2) abstract fit symbol formed by two complementary corners, defined in `public/brand/recruta-symbol.svg` and mirrored in `src/app/icon.svg`. Previous starburst and gradient ribbon artwork is legacy only. Do not add gradients, 3D effects, or generic product icons.
+- The default lockup uses a 28 px square mark (10/40 proportional corner radius, 25%), a 22 px semibold Geist wordmark, and a 10 px gap. The sidebar's agency switcher uses a 24 px agency logo or purple initial placeholder beside the agency name; the Evenkore logo is a local asset assigned only to that workspace. Use 6 px control/navigation corners and 10 px card/overlay corners through the shared radius scale; compact sidebar icons are 18 px and compact action icons 16 px.
 
 - Brand accent is `#5C5AED`; do not use it as a semantic success or error color.
 - Use Geist Sans for product UI and Geist Mono for identifiers or operational metadata where useful.

@@ -55,24 +55,25 @@ export function ActivityChart({
 
   return (
     <div className="relative" onPointerLeave={() => setHovered(null)}>
-      <div aria-hidden="true" className="flex h-10 items-end gap-1">
+      <div aria-hidden="true" className="flex h-10 items-end">
         {values.map((value, index) => {
           const ratio = peak > 0 ? value / peak : 0;
           const ramp = 0.35 + (index / Math.max(values.length - 1, 1)) * 0.65;
           return (
-            <span
-              key={index}
-              className="flex-1 rounded-[2px] bg-current transition-opacity duration-150"
-              style={{
-                height: value > 0 ? `${Math.max(14, ratio * 100)}%` : "8%",
-                opacity:
-                  value > 0
-                    ? active === null || active === index
-                      ? ramp
-                      : ramp * 0.45
-                    : 0.14,
-              }}
-            />
+            <span key={index} className="flex h-full flex-1 items-end">
+              <span
+                className="mx-auto w-[42%] max-w-3 min-w-1.5 rounded-[2px] bg-current transition-opacity duration-150"
+                style={{
+                  height: value > 0 ? `${Math.max(14, ratio * 100)}%` : "8%",
+                  opacity:
+                    value > 0
+                      ? active === null || active === index
+                        ? ramp
+                        : ramp * 0.45
+                      : 0.14,
+                }}
+              />
+            </span>
           );
         })}
       </div>

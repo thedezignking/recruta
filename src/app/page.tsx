@@ -28,7 +28,7 @@ import { RecrutaLogo } from "@/components/shared/recruta-mark";
 import { cn } from "cn";
 
 export const metadata: Metadata = {
-  title: { absolute: "Recruta · Recruitment software for agencies" },
+  title: { absolute: "Recruta — Recruitment software for agencies" },
   description:
     "Recruta handles the admin around every job and applicant, so your recruiters spend their time placing people.",
 };

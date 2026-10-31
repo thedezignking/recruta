@@ -17,7 +17,7 @@ Give recruiters a calm, useful workspace for opening jobs and reviewing applican
 - Brand accent: `#5C5AED`.
 - Geist Sans for the interface; Geist Mono for operational metadata when useful.
 - Content surfaces use a 10 px radius; controls and navigation use 6 px, and compact nested elements use 4 px. The shared radius base is 6 px. Circular avatars and status dots remain circular. The application shell has no outer rounded frame, padding, or border.
-- Brand signature: a flat near-black (#111111) rounded square with a white abstract fit symbol formed by two complementary corners. The 40-unit SVG has an 8-unit corner radius and renders at 28 px beside a 22 px semibold Geist wordmark with a 10 px gap. The same vector supplies the favicon. No gradients, 3D effects, or bitmap-dependent wordmarks; previous supplied artwork remains legacy only. Never stretch the square mark.
+- Brand signature: a flat charcoal (#272A32) rounded square with an off-white (#F4F7F2) abstract fit symbol formed by two complementary corners. The 40-unit SVG has a 10-unit corner radius and renders at 28 px beside a 22 px semibold Geist wordmark with a 10 px gap. The same vector supplies the favicon. No gradients, 3D effects, or bitmap-dependent wordmarks; previous supplied artwork remains legacy only. Never stretch the square mark.
 
 ## Workspace shell
 
