@@ -25,6 +25,7 @@ import { MatchBadge } from "@/components/applications/match-badge";
 import { gapVerdictLabels, matchReason } from "@/lib/match-grade";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ApiError } from "@/lib/api";
+import { applicationReference } from "@/lib/applicant-operations";
 import { requireAgencyPageContext } from "@/server/auth/context";
 import {
   getApplication,
@@ -52,7 +53,11 @@ export default async function ApplicationPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ notesBefore?: string; eventsBefore?: string }>;
+  searchParams: Promise<{
+    notesBefore?: string;
+    eventsBefore?: string;
+    tab?: string;
+  }>;
 }) {
   const { id } = await params;
   const before = await searchParams;
@@ -139,6 +144,19 @@ export default async function ApplicationPage({
       b.job_application_questions.sort_order,
   );
   const candidateName = application.candidates.full_name;
+  const tabs = [
+    { key: "overview", label: "Overview", count: 0 },
+    { key: "screening", label: "Screening", count: 0 },
+    { key: "messages", label: "Messages", count: messages.length },
+    {
+      key: "activity",
+      label: "Notes & activity",
+      count: history.notes.length,
+    },
+  ] as const;
+  const tab =
+    tabs.find((item) => item.key === before.tab)?.key ??
+    (before.notesBefore || before.eventsBefore ? "activity" : "overview");
   const progressIndex = progressStages.findIndex(
     (stage) => stage.status === application.status,
   );
@@ -211,6 +229,9 @@ export default async function ApplicationPage({
           <span key="source" className="capitalize">
             via {application.source.replaceAll("_", " ")}
           </span>,
+          <span key="reference" className="font-mono text-[11px]">
+            {applicationReference(id)}
+          </span>,
         ]}
         actions={
           <>
@@ -277,59 +298,349 @@ export default async function ApplicationPage({
           </Alert>
         )}
 
-      <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="flex min-w-0 flex-col gap-5">
-          {match && (
-            <Panel
-              title="Requirement match"
-              actions={
-                <span className="text-xs text-muted-foreground">
-                  Advisory · you decide
-                </span>
-              }
-            >
-              <div className="flex flex-wrap items-center gap-3">
-                <MatchBadge match={match} />
-                <span className="text-sm text-muted-foreground">
-                  {matchReason(match)}
-                </span>
-              </div>
-              {match.gaps.length > 0 ? (
-                <ul className="mt-4 flex flex-col gap-2.5">
-                  {match.gaps.map((gap) => (
-                    <li
-                      key={gap.requirementId}
-                      className="rounded-md bg-[#F8F8F8] px-3 py-2.5"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-sm font-medium">
-                          {gap.label}
-                          <span className="ml-2 text-xs font-normal text-muted-foreground">
-                            {gap.type === "required" ? "Required" : "Preferred"}
-                          </span>
-                        </span>
-                        <span className="text-xs font-medium text-[#8C5109]">
-                          {gapVerdictLabels[gap.verdict]}
-                        </span>
-                      </div>
-                      {gap.followUp && (
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Ask: {gap.followUp}
-                        </p>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Every requirement is supported by the CV or answers.
-                </p>
-              )}
-            </Panel>
-          )}
+      <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0">
+          <nav
+            aria-label="Application sections"
+            className="flex gap-1 overflow-x-auto border-b border-border"
+          >
+            {tabs.map((item) => (
+              <Link
+                key={item.key}
+                href={
+                  item.key === "overview"
+                    ? `/app/applications/${id}`
+                    : `/app/applications/${id}?tab=${item.key}`
+                }
+                scroll={false}
+                aria-current={tab === item.key ? "page" : undefined}
+                className={`-mb-px inline-flex h-10 shrink-0 items-center gap-1.5 border-b-2 px-3 text-[13px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${tab === item.key ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+              >
+                {item.label}
+                {item.count ? (
+                  <span className="rounded-full bg-muted px-1.5 text-[11px] tabular-nums text-muted-foreground">
+                    {item.count}
+                  </span>
+                ) : null}
+              </Link>
+            ))}
+          </nav>
 
-          <Panel title="Candidate">
-            <dl className="grid gap-4 text-sm sm:grid-cols-2">
+          <div className="mt-5 flex flex-col gap-5">
+            {tab === "overview" && (
+              <>
+                {match && (
+                  <Panel
+                    title="Requirement match"
+                    actions={
+                      <span className="text-xs text-muted-foreground">
+                        Advisory · you decide
+                      </span>
+                    }
+                  >
+                    <div className="flex flex-wrap items-center gap-3">
+                      <MatchBadge match={match} />
+                      <span className="text-sm text-muted-foreground">
+                        {matchReason(match)}
+                      </span>
+                    </div>
+                    {match.gaps.length > 0 ? (
+                      <ul className="mt-4 flex flex-col gap-2.5">
+                        {match.gaps.map((gap) => (
+                          <li
+                            key={gap.requirementId}
+                            className="rounded-md bg-[#F8F8F8] px-3 py-2.5"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="text-sm font-medium">
+                                {gap.label}
+                                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                                  {gap.type === "required"
+                                    ? "Required"
+                                    : "Preferred"}
+                                </span>
+                              </span>
+                              <span className="text-xs font-medium text-[#8C5109]">
+                                {gapVerdictLabels[gap.verdict]}
+                              </span>
+                            </div>
+                            {gap.followUp && (
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                Ask: {gap.followUp}
+                              </p>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-3 text-sm text-muted-foreground">
+                        Every requirement is supported by the CV or answers.
+                      </p>
+                    )}
+                  </Panel>
+                )}
+                {application.cover_note && (
+                  <Panel title="Message from the candidate">
+                    <p className="whitespace-pre-wrap break-words text-sm leading-6">
+                      {application.cover_note}
+                    </p>
+                  </Panel>
+                )}
+                <Panel
+                  title="Screening answers"
+                  count={answers.length || undefined}
+                >
+                  {answers.length ? (
+                    <dl className="flex flex-col gap-5">
+                      {answers.map((answer, index) => (
+                        <div
+                          key={answer.id}
+                          className="grid gap-1.5 sm:grid-cols-[24px_minmax(0,1fr)]"
+                        >
+                          <span
+                            aria-hidden="true"
+                            className="hidden text-xs tabular-nums text-muted-foreground sm:block"
+                          >
+                            {index + 1}.
+                          </span>
+                          <div className="min-w-0">
+                            <dt className="text-xs font-medium text-muted-foreground">
+                              {answer.job_application_questions.label}
+                            </dt>
+                            <dd className="mt-1 whitespace-pre-wrap break-words text-sm leading-6">
+                              {typeof answer.answer === "boolean"
+                                ? answer.answer
+                                  ? "Yes"
+                                  : "No"
+                                : typeof answer.answer === "string" ||
+                                    typeof answer.answer === "number"
+                                  ? String(answer.answer) || "—"
+                                  : JSON.stringify(answer.answer)}
+                            </dd>
+                          </div>
+                        </div>
+                      ))}
+                    </dl>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      This application has no screening answers.
+                    </p>
+                  )}
+                </Panel>
+                <Panel
+                  title="Documents"
+                  count={application.candidate_documents.length || undefined}
+                  bodyClassName="p-0"
+                >
+                  {application.candidate_documents.length ? (
+                    <ul className="py-1">
+                      {application.candidate_documents.map((document) => (
+                        <li
+                          key={document.id}
+                          className="flex items-center justify-between gap-4 px-4 py-3"
+                        >
+                          <div className="flex min-w-0 items-center gap-3">
+                            <span className="grid size-9 shrink-0 place-items-center rounded-md border border-border bg-[#F8F8F8] text-muted-foreground">
+                              <DocumentTextIcon aria-hidden="true" size={18} />
+                            </span>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium">
+                                {document.file_name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {(document.size_bytes / 1024).toFixed(0)} KB ·
+                                Private
+                              </p>
+                            </div>
+                          </div>
+                          <OpenResumeButton
+                            applicationId={id}
+                            documentId={document.id}
+                            agencyId={context.agencyId}
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="p-4 text-sm text-muted-foreground">
+                      No documents attached.
+                    </p>
+                  )}
+                </Panel>
+              </>
+            )}
+            {tab === "screening" && (
+              <ScreeningPanel
+                agencyId={context.agencyId}
+                applicationId={id}
+                data={screening}
+                documents={application.candidate_documents}
+                enabled={
+                  processing.screeningEnabled &&
+                  processingAvailability().screening
+                }
+                timezone={agency.data.timezone}
+                intakeFailed={intake.data?.status === "failed"}
+              />
+            )}
+            {tab === "messages" && (
+              <CandidateMessages
+                agencyId={context.agencyId}
+                applicationId={id}
+                email={application.candidates.email}
+                replyTo={agency.data.contact_email}
+                messages={messages}
+                available={processingAvailability().email}
+                suppressed={application.candidates.email_suppressed}
+                status={application.status}
+                timezone={agency.data.timezone}
+              />
+            )}
+            {tab === "activity" && (
+              <>
+                <Panel
+                  title="Internal notes"
+                  count={history.notes.length || undefined}
+                >
+                  {history.notes.length ? (
+                    <ol className="flex flex-col gap-4">
+                      {history.notes.map((note) => {
+                        const author =
+                          names.get(note.author_user_id) ?? "Former teammate";
+                        return (
+                          <li key={note.id} className="flex gap-3">
+                            <span
+                              aria-hidden="true"
+                              className="grid size-7 shrink-0 place-items-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground"
+                            >
+                              {author.slice(0, 1).toUpperCase()}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
+                                <span className="font-medium">{author}</span>
+                                <time
+                                  dateTime={note.created_at}
+                                  className="text-muted-foreground"
+                                >
+                                  {date(note.created_at)}
+                                </time>
+                              </div>
+                              <p className="mt-1 whitespace-pre-wrap break-words rounded-md bg-[#F8F8F8] px-3 py-2 text-sm leading-6">
+                                {note.body}
+                              </p>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No internal notes yet.
+                    </p>
+                  )}
+                  {(history.notesNext || before.notesBefore) && (
+                    <div className="mt-4 flex gap-2">
+                      {history.notesNext && (
+                        <ButtonLink
+                          variant="outline"
+                          size="sm"
+                          href={`/app/applications/${id}?tab=activity&notesBefore=${history.notesNext}${before.eventsBefore ? `&eventsBefore=${encodeURIComponent(before.eventsBefore)}` : ""}`}
+                        >
+                          Older notes
+                        </ButtonLink>
+                      )}
+                      {before.notesBefore && (
+                        <ButtonLink
+                          variant="ghost"
+                          size="sm"
+                          href={`/app/applications/${id}?tab=activity`}
+                        >
+                          Latest history
+                        </ButtonLink>
+                      )}
+                    </div>
+                  )}
+                </Panel>
+                <Panel title="Activity">
+                  <ol className="relative flex flex-col gap-4">
+                    <span
+                      aria-hidden="true"
+                      className="absolute top-1.5 bottom-1.5 left-[3px] w-px bg-border"
+                    />
+                    {history.events.map((event) => {
+                      const metadata = event.metadata as Record<
+                        string,
+                        unknown
+                      >;
+                      return (
+                        <li key={event.id} className="relative pl-5 text-sm">
+                          <span
+                            aria-hidden="true"
+                            className="absolute top-1.5 left-0 size-[7px] rounded-full bg-[#C9C9D3] ring-2 ring-white"
+                          />
+                          <p className="first-letter:uppercase">
+                            {eventLabel(event)}
+                          </p>
+                          {typeof metadata.reason === "string" && (
+                            <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">
+                              “{metadata.reason}”
+                            </p>
+                          )}
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {names.get(event.actor_user_id) ?? "System"} ·{" "}
+                            <time dateTime={event.created_at}>
+                              {date(event.created_at)}
+                            </time>
+                          </p>
+                        </li>
+                      );
+                    })}
+                    <li className="relative pl-5 text-sm">
+                      <span
+                        aria-hidden="true"
+                        className="absolute top-1.5 left-0 size-[7px] rounded-full bg-primary ring-2 ring-white"
+                      />
+                      <p>Application received</p>
+                      <time
+                        className="mt-0.5 block text-xs text-muted-foreground"
+                        dateTime={application.submitted_at}
+                      >
+                        {date(application.submitted_at)}
+                      </time>
+                    </li>
+                  </ol>
+                  {history.eventsNext && (
+                    <ButtonLink
+                      variant="outline"
+                      size="sm"
+                      className="mt-4"
+                      href={`/app/applications/${id}?tab=activity&eventsBefore=${history.eventsNext}${before.notesBefore ? `&notesBefore=${encodeURIComponent(before.notesBefore)}` : ""}`}
+                    >
+                      Older activity
+                    </ButtonLink>
+                  )}
+                </Panel>
+              </>
+            )}
+          </div>
+        </div>
+
+        <aside
+          aria-label="Review actions"
+          className="flex flex-col gap-5 xl:sticky xl:top-20"
+        >
+          <ApplicationReview
+            applicationId={id}
+            agencyId={context.agencyId}
+            status={application.status}
+            updatedAt={application.updated_at}
+            ownerId={application.owner_user_id}
+            userId={context.user.id}
+            role={context.role}
+            members={members}
+          />
+          <Panel title="Contact">
+            <dl className="flex flex-col gap-4 text-sm">
               <div className="min-w-0">
                 <dt className="text-xs text-muted-foreground">Email</dt>
                 <dd className="mt-1">
@@ -367,256 +678,7 @@ export default async function ApplicationPage({
                 </dd>
               </div>
             </dl>
-            {application.cover_note && (
-              <div className="mt-5">
-                <h3 className="text-xs text-muted-foreground">
-                  Candidate message
-                </h3>
-                <p className="mt-1.5 whitespace-pre-wrap break-words text-sm leading-6">
-                  {application.cover_note}
-                </p>
-              </div>
-            )}
           </Panel>
-
-          <Panel title="Screening answers" count={answers.length || undefined}>
-            {answers.length ? (
-              <dl className="flex flex-col gap-5">
-                {answers.map((answer, index) => (
-                  <div
-                    key={answer.id}
-                    className="grid gap-1.5 sm:grid-cols-[24px_minmax(0,1fr)]"
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="hidden text-xs tabular-nums text-muted-foreground sm:block"
-                    >
-                      {index + 1}.
-                    </span>
-                    <div className="min-w-0">
-                      <dt className="text-xs font-medium text-muted-foreground">
-                        {answer.job_application_questions.label}
-                      </dt>
-                      <dd className="mt-1 whitespace-pre-wrap break-words text-sm leading-6">
-                        {typeof answer.answer === "boolean"
-                          ? answer.answer
-                            ? "Yes"
-                            : "No"
-                          : typeof answer.answer === "string" ||
-                              typeof answer.answer === "number"
-                            ? String(answer.answer) || "—"
-                            : JSON.stringify(answer.answer)}
-                      </dd>
-                    </div>
-                  </div>
-                ))}
-              </dl>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                This application has no screening answers.
-              </p>
-            )}
-          </Panel>
-
-          <Panel
-            title="Documents"
-            count={application.candidate_documents.length || undefined}
-            bodyClassName="p-0"
-          >
-            {application.candidate_documents.length ? (
-              <ul className="py-1">
-                {application.candidate_documents.map((document) => (
-                  <li
-                    key={document.id}
-                    className="flex items-center justify-between gap-4 px-4 py-3"
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span className="grid size-9 shrink-0 place-items-center rounded-md border border-border bg-[#F8F8F8] text-muted-foreground">
-                        <DocumentTextIcon aria-hidden="true" size={18} />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">
-                          {document.file_name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {(document.size_bytes / 1024).toFixed(0)} KB · Private
-                        </p>
-                      </div>
-                    </div>
-                    <OpenResumeButton
-                      applicationId={id}
-                      documentId={document.id}
-                      agencyId={context.agencyId}
-                    />
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="p-4 text-sm text-muted-foreground">
-                No documents attached.
-              </p>
-            )}
-          </Panel>
-
-          <ScreeningPanel
-            agencyId={context.agencyId}
-            applicationId={id}
-            data={screening}
-            documents={application.candidate_documents}
-            enabled={
-              processing.screeningEnabled && processingAvailability().screening
-            }
-            timezone={agency.data.timezone}
-            intakeFailed={intake.data?.status === "failed"}
-          />
-          <CandidateMessages
-            agencyId={context.agencyId}
-            applicationId={id}
-            email={application.candidates.email}
-            replyTo={agency.data.contact_email}
-            messages={messages}
-            available={processingAvailability().email}
-            suppressed={application.candidates.email_suppressed}
-            status={application.status}
-            timezone={agency.data.timezone}
-          />
-
-          <Panel
-            title="Internal notes"
-            count={history.notes.length || undefined}
-          >
-            {history.notes.length ? (
-              <ol className="flex flex-col gap-4">
-                {history.notes.map((note) => {
-                  const author =
-                    names.get(note.author_user_id) ?? "Former teammate";
-                  return (
-                    <li key={note.id} className="flex gap-3">
-                      <span
-                        aria-hidden="true"
-                        className="grid size-7 shrink-0 place-items-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground"
-                      >
-                        {author.slice(0, 1).toUpperCase()}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
-                          <span className="font-medium">{author}</span>
-                          <time
-                            dateTime={note.created_at}
-                            className="text-muted-foreground"
-                          >
-                            {date(note.created_at)}
-                          </time>
-                        </div>
-                        <p className="mt-1 whitespace-pre-wrap break-words rounded-md bg-[#F8F8F8] px-3 py-2 text-sm leading-6">
-                          {note.body}
-                        </p>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ol>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                No internal notes yet.
-              </p>
-            )}
-            {(history.notesNext || before.notesBefore) && (
-              <div className="mt-4 flex gap-2">
-                {history.notesNext && (
-                  <ButtonLink
-                    variant="outline"
-                    size="sm"
-                    href={`/app/applications/${id}?notesBefore=${history.notesNext}${before.eventsBefore ? `&eventsBefore=${encodeURIComponent(before.eventsBefore)}` : ""}`}
-                  >
-                    Older notes
-                  </ButtonLink>
-                )}
-                {before.notesBefore && (
-                  <ButtonLink
-                    variant="ghost"
-                    size="sm"
-                    href={`/app/applications/${id}`}
-                  >
-                    Latest history
-                  </ButtonLink>
-                )}
-              </div>
-            )}
-          </Panel>
-
-          <Panel title="Activity">
-            <ol className="relative flex flex-col gap-4">
-              <span
-                aria-hidden="true"
-                className="absolute top-1.5 bottom-1.5 left-[3px] w-px bg-border"
-              />
-              {history.events.map((event) => {
-                const metadata = event.metadata as Record<string, unknown>;
-                return (
-                  <li key={event.id} className="relative pl-5 text-sm">
-                    <span
-                      aria-hidden="true"
-                      className="absolute top-1.5 left-0 size-[7px] rounded-full bg-[#C9C9D3] ring-2 ring-white"
-                    />
-                    <p className="first-letter:uppercase">
-                      {eventLabel(event)}
-                    </p>
-                    {typeof metadata.reason === "string" && (
-                      <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">
-                        “{metadata.reason}”
-                      </p>
-                    )}
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {names.get(event.actor_user_id) ?? "System"} ·{" "}
-                      <time dateTime={event.created_at}>
-                        {date(event.created_at)}
-                      </time>
-                    </p>
-                  </li>
-                );
-              })}
-              <li className="relative pl-5 text-sm">
-                <span
-                  aria-hidden="true"
-                  className="absolute top-1.5 left-0 size-[7px] rounded-full bg-primary ring-2 ring-white"
-                />
-                <p>Application received</p>
-                <time
-                  className="mt-0.5 block text-xs text-muted-foreground"
-                  dateTime={application.submitted_at}
-                >
-                  {date(application.submitted_at)}
-                </time>
-              </li>
-            </ol>
-            {history.eventsNext && (
-              <ButtonLink
-                variant="outline"
-                size="sm"
-                className="mt-4"
-                href={`/app/applications/${id}?eventsBefore=${history.eventsNext}${before.notesBefore ? `&notesBefore=${encodeURIComponent(before.notesBefore)}` : ""}`}
-              >
-                Older activity
-              </ButtonLink>
-            )}
-          </Panel>
-        </div>
-
-        <aside
-          aria-label="Review actions"
-          className="flex flex-col gap-5 xl:sticky xl:top-20"
-        >
-          <ApplicationReview
-            applicationId={id}
-            agencyId={context.agencyId}
-            status={application.status}
-            updatedAt={application.updated_at}
-            ownerId={application.owner_user_id}
-            userId={context.user.id}
-            role={context.role}
-            members={members}
-          />
           <SubmissionPanel
             agencyId={context.agencyId}
             applicationId={id}

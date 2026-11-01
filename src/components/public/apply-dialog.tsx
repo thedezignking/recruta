@@ -14,7 +14,7 @@ export function ApplyDialog({
   agencySlug,
   jobSlug,
   jobTitle,
-  agencyName,
+  agency,
   organization,
   questions,
   defaultOpen = false,
@@ -23,7 +23,7 @@ export function ApplyDialog({
   agencySlug: string;
   jobSlug: string;
   jobTitle: string;
-  agencyName: string;
+  agency: { name: string };
   organization?: string | null;
   questions: Question[];
   defaultOpen?: boolean;
@@ -44,43 +44,51 @@ export function ApplyDialog({
       }}
     >
       <Dialog.Trigger
-        render={<Button size="lg" className={cn("h-11 px-5", className)} />}
+        className={cn(
+          "mk-press inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-white shadow-[inset_0_1px_0_rgb(255_255_255_/_0.15),0_1px_2px_rgb(23_24_43_/_0.15)] outline-none hover:bg-[#4E4CE0] focus-visible:ring-3 focus-visible:ring-[#5C5AED]/40",
+          className,
+        )}
       >
-        Apply now
-        <ArrowRightIcon data-icon="inline-end" aria-hidden="true" />
+        Apply for this role
+        <ArrowRightIcon aria-hidden="true" size={16} />
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-[#111111]/25 backdrop-blur-[3px] transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
         <Dialog.Popup className="fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col overflow-hidden rounded-t-[14px] bg-white shadow-2xl outline-none transition-[transform,opacity] duration-200 data-[ending-style]:translate-y-4 data-[ending-style]:opacity-0 data-[starting-style]:translate-y-4 data-[starting-style]:opacity-0 sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:w-[calc(100%-2rem)] sm:max-w-xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[14px] sm:data-[ending-style]:-translate-y-[48%] sm:data-[starting-style]:-translate-y-[48%] motion-reduce:transition-none">
-          <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-4">
-            <div className="min-w-0">
-              <Dialog.Title className="text-xl font-semibold tracking-[-0.03em]">
-                Apply for {jobTitle}
-              </Dialog.Title>
-              {organization && (
-                <Dialog.Description className="mt-1 text-sm text-muted-foreground">
-                  {organization}
+          <div className="relative overflow-hidden border-b border-[#EBEBEB]">
+            <div
+              aria-hidden="true"
+              className="mk-halftone pointer-events-none absolute inset-0 opacity-70"
+            />
+            <div className="relative flex items-start justify-between gap-4 px-6 pt-6 pb-5">
+              <div className="min-w-0">
+                <Dialog.Description className="text-xs font-medium text-[#5C5AED]">
+                  {organization ?? agency.name}
                 </Dialog.Description>
-              )}
+                <Dialog.Title className="mt-1 text-xl font-semibold tracking-[-0.03em] text-balance">
+                  Apply for {jobTitle}
+                </Dialog.Title>
+              </div>
+              <Dialog.Close
+                render={
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    aria-label="Close application"
+                    className="shrink-0 rounded-full bg-white"
+                  />
+                }
+              >
+                <CloseIcon aria-hidden="true" />
+              </Dialog.Close>
             </div>
-            <Dialog.Close
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="Close application"
-                />
-              }
-            >
-              <CloseIcon aria-hidden="true" />
-            </Dialog.Close>
           </div>
-          <div className="overflow-y-auto px-6 pb-6">
+          <div className="overflow-y-auto px-6 pt-6 pb-6">
             <ApplicationForm
               agencySlug={agencySlug}
               jobSlug={jobSlug}
               jobTitle={jobTitle}
-              agencyName={agencyName}
+              agencyName={agency.name}
               questions={questions}
             />
           </div>

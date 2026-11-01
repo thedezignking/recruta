@@ -179,3 +179,8 @@ export type ApplicationDetail = {
     job_application_questions: { label: string; sort_order: number };
   }[];
 };
+
+/** Short reference shown to candidates; mirrors public.application_reference. */
+export function applicationReference(id: string) {
+  return `APP-${id.replaceAll("-", "").slice(0, 8).toUpperCase()}`;
+}

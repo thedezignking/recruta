@@ -1,29 +1,23 @@
+import { notFound } from "next/navigation";
 import {
   JobRoleDetails,
   jobRoleFacts,
 } from "@/components/jobs/job-role-details";
-import { notFound } from "next/navigation";
-import {
-  CalendarIcon,
-  CaseRoundIcon,
-  ClockCircleIcon,
-  GlobalIcon,
-  Home2Icon,
-  MapPointIcon,
-  WalletMoneyIcon,
-} from "@solar-icons/react/linear";
+import { Reveal } from "@/components/marketing/motion";
 import { ApplyDialog } from "@/components/public/apply-dialog";
+import {
+  CareerFill,
+  CareerFooter,
+  CareerFrame,
+  CareerHatch,
+  RoleTags,
+  careerRails,
+  careerRule,
+} from "@/components/public/careers-layout";
 import { PublicSiteHeader } from "@/components/public/public-site-header";
 import { ApiError } from "@/lib/api";
 import { getPublicJob } from "@/server/services/public-jobs";
-
-const tagIcons: Record<string, typeof MapPointIcon> = {
-  "Employment arrangement": CaseRoundIcon,
-  "Working hours": ClockCircleIcon,
-  "Remote eligibility": GlobalIcon,
-  "Workplace type": Home2Icon,
-  Salary: WalletMoneyIcon,
-};
+import { cn } from "cn";
 
 export default async function PublicJobPage({
   params,
@@ -68,93 +62,75 @@ export default async function PublicJobPage({
       type: r.requirement_type,
     })),
   };
-  const facts = jobRoleFacts(role);
-  const hasArrangement = facts.some(
-    ([label]) => label === "Employment arrangement",
-  );
-  const tags = facts.filter(([label]) =>
-    [
-      "Workplace type",
-      "Remote eligibility",
-      "Employment arrangement",
-      hasArrangement ? null : "Working hours",
-      "Salary",
-    ].includes(label),
-  );
-  const location =
-    job.work_arrangement === "remote" ? null : (job.location ?? null);
-  const deadline = job.deadline_at
-    ? new Intl.DateTimeFormat("en", {
-        dateStyle: "medium",
-        timeZone: "UTC",
-      }).format(new Date(job.deadline_at))
-    : null;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="mk flex min-h-dvh flex-col bg-white">
       <PublicSiteHeader
         agency={job.agencies}
         back={{ href: `/careers/${agencySlug}`, label: "All roles" }}
       />
-      <main
-        id="main-content"
-        className="mx-auto max-w-3xl px-4 pt-12 pb-20 sm:px-6 sm:pt-16"
-      >
-        <header className="mb-12 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            {job.clients?.name && (
-              <p className="text-sm font-medium text-primary">
-                {job.clients.name}
-              </p>
-            )}
-            <h1 className="mt-2 text-balance text-[32px] leading-[1.1] font-semibold tracking-[-0.045em] sm:text-[44px]">
-              {job.title}
-            </h1>
-            <ul aria-label="Role details" className="mt-5 flex flex-wrap gap-2">
-              {location && (
-                <li className="inline-flex items-center gap-1.5 rounded-full bg-[#F3F3F5] px-3 py-1 text-xs font-medium">
-                  <MapPointIcon aria-hidden="true" size={13} />
-                  {location}
-                </li>
-              )}
-              {tags.map(([label, value]) => {
-                const Icon = tagIcons[label];
-                return (
-                  <li
-                    key={label}
-                    title={label}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-[#F3F3F5] px-3 py-1 text-xs font-medium"
-                  >
-                    {Icon && <Icon aria-hidden="true" size={13} />}
-                    <span className="sr-only">{label}: </span>
-                    <span className="first-letter:uppercase">{value}</span>
-                  </li>
-                );
-              })}
-              {deadline && (
-                <li className="inline-flex items-center gap-1.5 rounded-full bg-[#F3F3F5] px-3 py-1 text-xs font-medium">
-                  <CalendarIcon aria-hidden="true" size={13} />
-                  Apply by {deadline}
-                </li>
-              )}
-            </ul>
+      <main id="main-content" className="flex flex-1 flex-col">
+        <section aria-labelledby="role-heading">
+          <div
+            className={cn("relative overflow-hidden", careerRails, careerRule)}
+          >
+            <div
+              aria-hidden="true"
+              className="mk-halftone pointer-events-none absolute inset-0"
+            />
+            <Reveal className="relative mx-auto flex max-w-[880px] flex-col gap-6 px-5 pt-12 pb-12 sm:flex-row sm:items-center sm:justify-between sm:pt-20 sm:pb-16">
+              <div className="min-w-0">
+                {job.clients?.name && (
+                  <p className="text-sm font-medium text-[#5C5AED]">
+                    {job.clients.name}
+                  </p>
+                )}
+                <h1
+                  id="role-heading"
+                  className="mt-2 text-[32px] leading-[1.1] font-semibold tracking-[-0.02em] text-balance sm:text-[44px] sm:tracking-[-0.04em]"
+                >
+                  {job.title}
+                </h1>
+                <RoleTags
+                  facts={jobRoleFacts(role)}
+                  include={[
+                    "Location",
+                    "Workplace type",
+                    "Remote eligibility",
+                    "Employment arrangement",
+                    "Working hours",
+                    "Salary",
+                    "Apply by",
+                  ]}
+                  className="mt-5"
+                />
+              </div>
+              <ApplyDialog
+                agencySlug={agencySlug}
+                jobSlug={jobSlug}
+                jobTitle={job.title}
+                agency={job.agencies}
+                organization={job.clients?.name}
+                questions={job.job_application_questions}
+                defaultOpen={applyOpen}
+                className="shrink-0 max-sm:w-full"
+              />
+            </Reveal>
           </div>
-          <ApplyDialog
-            agencySlug={agencySlug}
-            jobSlug={jobSlug}
-            jobTitle={job.title}
-            agencyName={job.agencies.name}
-            organization={job.clients?.name}
-            questions={job.job_application_questions}
-            defaultOpen={applyOpen}
-            className="shrink-0"
-          />
-        </header>
+        </section>
 
-        <article>
-          <JobRoleDetails {...role} hideFacts />
-        </article>
+        <CareerHatch />
+
+        <CareerFrame label="About the role">
+          <article className="mx-auto max-w-[720px] px-5 py-12 sm:py-16">
+            <JobRoleDetails {...role} hideFacts />
+          </article>
+        </CareerFrame>
+
+        <CareerHatch />
+        <CareerFill />
       </main>
+      <CareerFooter agencyName={job.agencies.name} />
     </div>
   );
 }

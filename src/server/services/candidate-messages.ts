@@ -6,7 +6,7 @@ import { ApiError } from "@/lib/api";
 import { candidateMessageSchema } from "@/lib/applicant-processing";
 import { getDeliveryEnv } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { statusEmail } from "@/server/email/templates";
+import { candidateEmail } from "@/server/email/templates";
 import { getApplication } from "./applications";
 
 export async function listCandidateMessages(
@@ -143,8 +143,7 @@ export async function processNextCandidateMessage(
     const payload = {
       to: message.recipient_email,
       subject: message.subject,
-      html: statusEmail({
-        title: message.subject,
+      html: candidateEmail({
         preview: message.subject,
         body: message.body,
       }),

@@ -7,8 +7,10 @@ import {
   DocumentTextIcon,
   LetterIcon,
 } from "@solar-icons/react/linear";
+import { SettingsIcon } from "@solar-icons/react/linear";
 import { RecrutaBot } from "@/components/bot/recruta-bot";
-import { PageHeader } from "@/components/shared/page-header";
+import { ButtonLink } from "@/components/shared/button-link";
+import { PageHeader, SectionHeader } from "@/components/shared/page-header";
 import { getAssistantEnv } from "@/lib/env";
 import { requireAgencyPageContext } from "@/server/auth/context";
 import { getAttentionQueue } from "@/server/services/application-automations";
@@ -25,6 +27,39 @@ async function countRows(
 ) {
   const { count, error } = await query;
   return error ? null : (count ?? 0);
+}
+
+type StepState = "on" | "off" | "manual" | "waiting" | "unavailable";
+
+const stepBadges: Record<StepState, { label: string; on: boolean }> = {
+  on: { label: "On", on: true },
+  off: { label: "Off", on: false },
+  manual: { label: "Manual", on: false },
+  waiting: { label: "Needs screening", on: false },
+  unavailable: { label: "Not set up", on: false },
+};
+
+function StepBadge({ state }: { state: StepState }) {
+  const badge = stepBadges[state];
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold",
+        badge.on
+          ? "bg-success/10 text-success"
+          : "bg-muted text-muted-foreground",
+      )}
+    >
+      <span
+        aria-hidden="true"
+        className={cn(
+          "size-1.5 rounded-full",
+          badge.on ? "bg-success" : "bg-muted-foreground/50",
+        )}
+      />
+      {badge.label}
+    </span>
+  );
 }
 
 function daysAgo(days: number) {
@@ -44,27 +79,43 @@ export default async function RecrutaBotPage() {
         .eq("agency_id", agencyId)
         .eq("band", band),
     );
-  const [profile, settings, attention, screened, strong, partial, weak] =
-    await Promise.all([
+  const [
+    profile,
+    settings,
+    attention,
+    screened,
+    strong,
+    partial,
+    weak,
+    acknowledged,
+  ] = await Promise.all([
+    supabase
+      .from("user_profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .maybeSingle(),
+    getProcessingSettings(supabase, agencyId),
+    getAttentionQueue(supabase, agencyId).catch(() => []),
+    countRows(
       supabase
-        .from("user_profiles")
-        .select("full_name")
-        .eq("id", user.id)
-        .maybeSingle(),
-      getProcessingSettings(supabase, agencyId),
-      getAttentionQueue(supabase, agencyId).catch(() => []),
-      countRows(
-        supabase
-          .from("screening_runs")
-          .select("id", { count: "exact", head: true })
-          .eq("agency_id", agencyId)
-          .eq("status", "succeeded")
-          .gte("finished_at", since),
-      ),
-      matches("strong"),
-      matches("partial"),
-      matches("weak"),
-    ]);
+        .from("screening_runs")
+        .select("id", { count: "exact", head: true })
+        .eq("agency_id", agencyId)
+        .eq("status", "succeeded")
+        .gte("finished_at", since),
+    ),
+    matches("strong"),
+    matches("partial"),
+    matches("weak"),
+    countRows(
+      supabase
+        .from("communications")
+        .select("id", { count: "exact", head: true })
+        .eq("agency_id", agencyId)
+        .eq("message_type", "application_received")
+        .gte("created_at", since),
+    ),
+  ]);
   const availability = processingAvailability();
   const assistant = getAssistantEnv();
   const firstName =
@@ -78,138 +129,170 @@ export default async function RecrutaBotPage() {
       : null;
   const canManage = context.role !== "recruiter";
 
-  const workflows = [
+  const screeningState: StepState = !availability.screening
+    ? "unavailable"
+    : !settings.screeningEnabled
+      ? "off"
+      : settings.automaticScreening
+        ? "on"
+        : "manual";
+  const steps: {
+    icon: typeof LetterIcon;
+    title: string;
+    does: string;
+    state: StepState;
+    stat?: string | null;
+    href?: string;
+    hrefLabel?: string;
+  }[] = [
+    {
+      icon: LetterIcon,
+      title: "Confirm the application",
+      does: "Emails the candidate that their application arrived, with the role and a reference.",
+      state: !availability.email
+        ? "unavailable"
+        : settings.acknowledgeApplications
+          ? "on"
+          : "off",
+      stat: acknowledged === null ? null : `${acknowledged} sent`,
+    },
     {
       icon: DocumentTextIcon,
-      title: "Screen new applications",
-      when: "An application arrives",
-      then: "Read the CV against the job's requirements",
-      on:
-        settings.screeningEnabled &&
-        settings.automaticScreening &&
-        availability.screening,
-      metric:
-        screened === null ? null : `${screened} screened in the last 30 days`,
+      title: "Screen the CV",
+      does: "Reads the CV against the job's requirements and quotes the evidence.",
+      state: screeningState,
+      stat: screened === null ? null : `${screened} screened`,
     },
     {
       icon: ChartSquareIcon,
-      title: "Grade by requirement match",
-      when: "Screening finishes",
-      then: "Grade Strong, Partial or Weak with reasons",
-      on: settings.screeningEnabled && availability.screening,
-      metric:
+      title: "Grade the match",
+      does: "Marks each screened application Strong, Partial or Weak, with the gaps to ask about.",
+      state:
+        screeningState === "on" || screeningState === "manual"
+          ? "on"
+          : "waiting",
+      stat:
         strong === null
           ? null
           : `${strong} strong · ${partial ?? 0} partial · ${weak ?? 0} weak`,
       href: strong ? "/app/applications?match=strong" : undefined,
-      hrefLabel: "View strong matches",
-    },
-    {
-      icon: LetterIcon,
-      title: "Acknowledge applicants",
-      when: "An application arrives",
-      then: "Email the candidate a confirmation",
-      on: settings.acknowledgeApplications && availability.email,
-      metric: null,
+      hrefLabel: "Strong matches",
     },
     {
       icon: BellIcon,
-      title: "Review reminders",
-      when: `An application waits ${settings.reviewReminderHours} hours`,
-      then: "Add it to Needs attention",
-      on: true,
-      metric: `${attention.length} ${attention.length === 1 ? "item needs" : "items need"} attention`,
+      title: "Flag waiting applications",
+      does: `Adds an application to Needs attention when nobody has reviewed it after ${settings.reviewReminderHours} hours.`,
+      state: "on",
+      stat: `${attention.length} waiting now`,
       href: attention.length ? "/app/attention" : undefined,
-      hrefLabel: "Open Needs attention",
+      hrefLabel: "Needs attention",
     },
+  ];
+  const summary = [
+    { label: "Confirmations sent", value: acknowledged },
+    { label: "CVs screened", value: screened },
+    { label: "Strong matches", value: strong },
+    { label: "Need attention now", value: attention.length },
   ];
 
   const work = (
-    <div className="mx-auto w-full max-w-4xl">
-      <div className="mb-5">
-        <h2 className="text-[13px] font-semibold tracking-[-0.01em]">
-          Workflows
-        </h2>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          What Recruta does on its own. Nothing here moves a candidate or makes
-          a hiring decision.
-        </p>
-      </div>
-      <ul className="grid gap-4 md:grid-cols-2">
-        {workflows.map((workflow) => {
-          const Icon = workflow.icon;
+    <div className="mx-auto w-full max-w-3xl">
+      <SectionHeader
+        title="Automations"
+        actions={
+          canManage ? (
+            <ButtonLink href="/app/settings#processing" variant="outline">
+              <SettingsIcon data-icon="inline-start" aria-hidden="true" />
+              Edit in Settings
+            </ButtonLink>
+          ) : null
+        }
+      />
+      <p className="mt-1 text-sm text-muted-foreground">
+        What Recruta does when someone applies. It never moves a candidate or
+        makes a hiring decision.
+      </p>
+
+      <dl className="mt-5 grid grid-cols-2 overflow-hidden rounded-[10px] border border-border sm:grid-cols-4">
+        {summary.map((item, index) => (
+          <div
+            key={item.label}
+            className={cn(
+              "border-border px-4 py-3.5",
+              index % 2 === 1 && "border-l",
+              index > 1 && "border-t sm:border-t-0",
+              index > 0 && "sm:border-l",
+            )}
+          >
+            <dt className="text-xs text-muted-foreground">{item.label}</dt>
+            <dd className="mt-1 text-xl font-semibold tracking-[-0.02em] tabular-nums">
+              {item.value ?? "—"}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-2 text-xs text-muted-foreground">Last 30 days.</p>
+
+      <h3 className="mt-8 text-[13px] font-semibold tracking-[-0.01em]">
+        When someone applies
+      </h3>
+      <ol className="mt-3">
+        {steps.map((step, index) => {
+          const Icon = step.icon;
+          const last = index === steps.length - 1;
           return (
-            <li
-              key={workflow.title}
-              className="flex flex-col rounded-[10px] border border-border bg-card p-4"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <span className="flex items-center gap-2.5">
-                  <span className="grid size-8 place-items-center rounded-lg bg-[#F4F4FE] text-[#5C5AED]">
-                    <Icon aria-hidden="true" size={17} />
-                  </span>
-                  <span className="text-sm font-semibold">
-                    {workflow.title}
-                  </span>
-                </span>
+            <li key={step.title} className="relative flex gap-4 pb-6 last:pb-0">
+              {!last && (
                 <span
-                  className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                    workflow.on
-                      ? "bg-success/10 text-success"
-                      : "bg-muted text-muted-foreground",
-                  )}
-                >
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      "size-1.5 rounded-full",
-                      workflow.on ? "bg-success" : "bg-muted-foreground/50",
+                  aria-hidden="true"
+                  className="absolute top-10 bottom-1 left-[17px] w-px bg-border"
+                />
+              )}
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "relative grid size-9 shrink-0 place-items-center rounded-full border",
+                  step.state === "on"
+                    ? "border-[#5C5AED]/25 bg-[#F4F4FE] text-[#5C5AED]"
+                    : "border-border bg-white text-muted-foreground",
+                )}
+              >
+                <Icon size={17} />
+              </span>
+              <div className="min-w-0 flex-1 pt-1">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                  <p className="text-sm font-semibold">
+                    <span className="sr-only">Step {index + 1}: </span>
+                    {step.title}
+                  </p>
+                  <StepBadge state={step.state} />
+                </div>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  {step.does}
+                </p>
+                {(step.stat || step.href) && (
+                  <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                    {step.stat && (
+                      <span className="text-muted-foreground tabular-nums">
+                        {step.stat}
+                      </span>
                     )}
-                  />
-                  {workflow.on ? "On" : "Off"}
-                </span>
-              </div>
-              <ol className="mt-4 flex flex-col gap-1.5 text-xs">
-                <li className="flex items-start gap-2 rounded-md bg-[#F8F8F8] px-3 py-2">
-                  <span className="w-9 shrink-0 font-mono text-[10px] text-muted-foreground uppercase">
-                    When
-                  </span>
-                  {workflow.when}
-                </li>
-                <li className="flex items-start gap-2 rounded-md bg-[#F8F8F8] px-3 py-2">
-                  <span className="w-9 shrink-0 font-mono text-[10px] text-[#5C5AED] uppercase">
-                    Then
-                  </span>
-                  {workflow.then}
-                </li>
-              </ol>
-              <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-4 text-xs">
-                <span className="text-muted-foreground tabular-nums">
-                  {workflow.metric ?? ""}
-                </span>
-                {workflow.href ? (
-                  <Link
-                    href={workflow.href}
-                    className="inline-flex items-center gap-1 font-medium hover:text-primary"
-                  >
-                    {workflow.hrefLabel}
-                    <AltArrowRightIcon aria-hidden="true" size={13} />
-                  </Link>
-                ) : canManage ? (
-                  <Link
-                    href="/app/settings#processing"
-                    className="inline-flex items-center gap-1 font-medium hover:text-primary"
-                  >
-                    Manage
-                    <AltArrowRightIcon aria-hidden="true" size={13} />
-                  </Link>
-                ) : null}
+                    {step.href && (
+                      <Link
+                        href={step.href}
+                        className="inline-flex items-center gap-0.5 font-medium text-foreground hover:text-[#5C5AED]"
+                      >
+                        {step.hrefLabel}
+                        <AltArrowRightIcon aria-hidden="true" size={13} />
+                      </Link>
+                    )}
+                  </p>
+                )}
               </div>
             </li>
           );
         })}
-      </ul>
+      </ol>
     </div>
   );
 

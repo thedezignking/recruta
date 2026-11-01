@@ -2047,6 +2047,7 @@ export type Database = {
         Args: { p_agency_id: string; p_filters?: Json };
         Returns: Json;
       };
+      application_reference: { Args: { p_id: string }; Returns: string };
       approve_hiring_request: {
         Args: { p_request_id: string; p_request_id_header?: string };
         Returns: {

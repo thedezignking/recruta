@@ -15,6 +15,11 @@ function useInView<T extends Element>(margin = "-80px") {
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
+    // Without IntersectionObserver (old browsers, test DOMs) just show it.
+    if (typeof IntersectionObserver === "undefined") {
+      queueMicrotask(() => setVisible(true));
+      return;
+    }
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {

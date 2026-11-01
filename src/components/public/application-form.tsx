@@ -2,7 +2,10 @@
 
 import { useMemo, useRef, useState } from "react";
 import { CheckCircleIcon } from "@solar-icons/react/bold";
-import { UploadIcon } from "@solar-icons/react/linear";
+import {
+  DocumentTextIcon,
+  UploadMinimalisticIcon,
+} from "@solar-icons/react/linear";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -15,6 +18,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "cn";
 
 type PublicQuestion = {
   id: string;
@@ -51,6 +55,9 @@ export function ApplicationForm({
   preview?: boolean;
 }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [resume, setResume] = useState<{ name: string; size: number } | null>(
+    null,
+  );
   const submissionKey = useRef<string | null>(null);
   const busy = useRef(false);
   const [pending, setPending] = useState(false);
@@ -162,6 +169,7 @@ export function ApplicationForm({
           <FieldLabel htmlFor="fullName">Full name</FieldLabel>
           <Input
             id="fullName"
+            className="h-10"
             name="fullName"
             autoComplete="name"
             required
@@ -176,6 +184,7 @@ export function ApplicationForm({
             <FieldLabel htmlFor="email">Email address</FieldLabel>
             <Input
               id="email"
+              className="h-10"
               name="email"
               type="email"
               inputMode="email"
@@ -196,6 +205,7 @@ export function ApplicationForm({
             </FieldLabel>
             <Input
               id="phone"
+              className="h-10"
               name="phone"
               type="tel"
               inputMode="tel"
@@ -212,6 +222,7 @@ export function ApplicationForm({
           </FieldLabel>
           <Input
             id="linkedinUrl"
+            className="h-10"
             name="linkedinUrl"
             type="url"
             inputMode="url"
@@ -219,25 +230,53 @@ export function ApplicationForm({
           />
         </Field>
         <Field data-invalid={Boolean(fieldErrors.resume)}>
-          <FieldLabel htmlFor="resume">Resume</FieldLabel>
-          <div className="rounded-xl border border-dashed border-input bg-muted/35 p-4 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/20">
-            <div className="flex items-center gap-3">
-              <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-card text-primary shadow-sm ring-1 ring-border">
-                <UploadIcon aria-hidden="true" size={18} />
+          <FieldLabel htmlFor="resume">CV or resume</FieldLabel>
+          <div
+            className={cn(
+              "relative flex items-center gap-3 rounded-xl border border-dashed p-4 transition-colors duration-150 focus-within:border-[#5C5AED] focus-within:ring-3 focus-within:ring-[#5C5AED]/20 hover:border-[#5C5AED]/50",
+              resume
+                ? "border-[#5C5AED]/40 bg-[#F6F6FE]"
+                : "border-[#D9D9DE] bg-[#FAFAFB]",
+              fieldErrors.resume && "border-destructive",
+            )}
+          >
+            <span
+              aria-hidden="true"
+              className="grid size-10 shrink-0 place-items-center rounded-lg bg-white text-[#5C5AED] shadow-[0_1px_2px_rgb(17_17_17_/_0.06)] ring-1 ring-[#EBEBEB]"
+            >
+              {resume ? (
+                <DocumentTextIcon size={19} />
+              ) : (
+                <UploadMinimalisticIcon size={19} />
+              )}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-medium">
+                {resume ? resume.name : "Upload your CV"}
               </span>
-              <Input
-                id="resume"
-                name="resume"
-                type="file"
-                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                required
-                aria-invalid={Boolean(fieldErrors.resume)}
-                className="border-0 bg-transparent px-0 shadow-none file:mr-3"
-              />
-            </div>
+              <span className="block text-xs text-muted-foreground">
+                {resume
+                  ? `${Math.max(1, Math.round(resume.size / 1024))} KB · Choose another file to replace it`
+                  : "Drop a file here or browse. PDF or DOCX, up to 10 MB."}
+              </span>
+            </span>
+            <input
+              id="resume"
+              name="resume"
+              type="file"
+              accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              required
+              aria-invalid={Boolean(fieldErrors.resume)}
+              aria-describedby="resume-help"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                setResume(file ? { name: file.name, size: file.size } : null);
+              }}
+              className="absolute inset-0 cursor-pointer opacity-0"
+            />
           </div>
-          <FieldDescription>
-            PDF or DOCX, up to 10 MB. Leave out ID or financial documents.
+          <FieldDescription id="resume-help">
+            Leave out ID or financial documents.
           </FieldDescription>
           <FieldError
             errors={fieldErrors.resume?.map((message) => ({ message }))}
@@ -284,7 +323,7 @@ export function ApplicationForm({
                         }))
                       }
                       required={question.is_required}
-                      className="h-9 rounded-lg border border-input bg-background px-2.5 text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/25"
+                      className="h-10 rounded-lg border border-input bg-background px-2.5 text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/25"
                     >
                       <option value="">Select an answer</option>
                       <option value="true">Yes</option>
@@ -301,7 +340,7 @@ export function ApplicationForm({
                         }))
                       }
                       required={question.is_required}
-                      className="h-9 rounded-lg border border-input bg-background px-2.5 text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/25"
+                      className="h-10 rounded-lg border border-input bg-background px-2.5 text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/25"
                     >
                       <option value="">Select an answer</option>
                       {options.map((option) => (
@@ -321,6 +360,7 @@ export function ApplicationForm({
                         }))
                       }
                       required={question.is_required}
+                      className="h-10"
                     />
                   )}
                   {question.help_text ? (
@@ -347,7 +387,7 @@ export function ApplicationForm({
             value="true"
             type="checkbox"
             required
-            className="mt-0.5 size-4 accent-primary"
+            className="mt-1 size-4 accent-[#5C5AED]"
           />
           <FieldLabel
             htmlFor="consent"
@@ -361,7 +401,7 @@ export function ApplicationForm({
           type="submit"
           size="lg"
           disabled={pending || preview}
-          className="h-11 w-full"
+          className="mk-press h-11 w-full rounded-lg bg-[#5C5AED] text-[15px] shadow-[inset_0_1px_0_rgb(255_255_255_/_0.15),0_1px_2px_rgb(23_24_43_/_0.15)] hover:bg-[#4E4CE0]"
         >
           {preview
             ? "Publish job to accept applications"
