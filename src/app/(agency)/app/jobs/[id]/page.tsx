@@ -14,6 +14,7 @@ import { CopyApplicationLink } from "@/components/jobs/copy-application-link";
 import { JobLifecycleActions } from "@/components/jobs/job-lifecycle-actions";
 import { ButtonLink } from "@/components/shared/button-link";
 import { DetailHeader, Panel } from "@/components/shared/page-header";
+import { getJobOpenings } from "@/server/services/pipeline";
 import { CompanyLogo } from "@/components/organizations/company-picker";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { MatchBadge } from "@/components/applications/match-badge";
@@ -85,15 +86,17 @@ export default async function JobPage({
         job.client_id,
       )
     : null;
-  const [applicationResult, agencyResult, pipeline] = await Promise.all([
-    listApplications(context.supabase, context.agencyId, { jobId: id }),
-    context.supabase
-      .from("agencies")
-      .select("slug")
-      .eq("id", context.agencyId)
-      .single(),
-    getJobPipeline(context.supabase, context.agencyId, id),
-  ]);
+  const [applicationResult, agencyResult, pipeline, openings] =
+    await Promise.all([
+      listApplications(context.supabase, context.agencyId, { jobId: id }),
+      context.supabase
+        .from("agencies")
+        .select("slug")
+        .eq("id", context.agencyId)
+        .single(),
+      getJobPipeline(context.supabase, context.agencyId, id),
+      getJobOpenings(context.supabase, context.agencyId, id),
+    ]);
   const [clientResult, memberResult, workflowResult] = showEdit
     ? await Promise.all([
         listClients(context.supabase, context.agencyId),
@@ -595,6 +598,67 @@ export default async function JobPage({
         </div>
 
         <aside className="flex flex-col gap-5" aria-label="Job details">
+          {openings && job.status !== "draft" && (
+            <Panel
+              title="Openings"
+              actions={
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {Math.min(openings.length, job.positions_required)} of{" "}
+                  {job.positions_required} filled
+                </span>
+              }
+            >
+              <div
+                role="img"
+                aria-label={`${openings.length} of ${job.positions_required} openings filled`}
+                className="flex h-1.5 gap-0.5 overflow-hidden rounded-full"
+              >
+                {job.positions_required <= 24 ? (
+                  Array.from({ length: job.positions_required }, (_, index) => (
+                    <span
+                      key={index}
+                      className={`flex-1 ${index < openings.length ? "bg-success" : "bg-[#EBEBEB]"}`}
+                    />
+                  ))
+                ) : (
+                  <span className="flex-1 bg-[#EBEBEB]">
+                    <span
+                      className="block h-full bg-success"
+                      style={{
+                        width: `${Math.min(100, (openings.length / job.positions_required) * 100)}%`,
+                      }}
+                    />
+                  </span>
+                )}
+              </div>
+              {openings.length > 0 ? (
+                <ul className="mt-3 flex flex-col gap-2 text-sm">
+                  {openings.map((placement) => (
+                    <li
+                      key={placement.id}
+                      className="flex items-center justify-between gap-3"
+                    >
+                      <Link
+                        href={`/app/applications/${placement.applicationId}`}
+                        className="min-w-0 truncate font-medium hover:text-primary"
+                      >
+                        {placement.candidateName}
+                      </Link>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {placement.status === "started"
+                          ? "Started"
+                          : `Starts ${new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${placement.startDate}T00:00:00Z`))}`}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Placements appear here once an offer is accepted.
+                </p>
+              )}
+            </Panel>
+          )}
           {applicationUrl && (
             <Panel title="Application link">
               <p className="truncate rounded-md border border-border bg-[#F8F8F8] px-2.5 py-2 font-mono text-[11px] text-muted-foreground">

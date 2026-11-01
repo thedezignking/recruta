@@ -34,9 +34,30 @@ import {
   listApplications,
 } from "@/server/services/applications";
 import { listAgencyMembers } from "@/server/services/workspace";
+import { getApplicationPipeline } from "@/server/services/pipeline";
+import { InterviewsPanel } from "@/components/pipeline/interviews-panel";
+import { OfferCard } from "@/components/pipeline/offer-card";
 import { getSubmissions } from "@/server/services/collaboration";
 import { SubmissionPanel } from "@/components/collaboration/submission-panel";
 import { ButtonLink } from "@/components/shared/button-link";
+
+const pipelineEventLabels: Record<string, string> = {
+  "interview.scheduled": "Interview scheduled",
+  "interview.rescheduled": "Interview rescheduled",
+  "interview.cancelled": "Interview cancelled",
+  "interview.no_show": "Candidate missed the interview",
+  "interview.completed": "Interview outcome recorded",
+  "offer.drafted": "Offer drafted",
+  "offer.updated": "Offer terms updated",
+  "offer.extended": "Offer extended",
+  "offer.accepted": "Offer accepted",
+  "offer.declined": "Offer declined",
+  "offer.withdrawn": "Offer withdrawn",
+  "offer.expired": "Offer expired",
+  "placement.recorded": "Placement recorded",
+  "placement.started": "Candidate started",
+  "placement.fell_through": "Placement fell through",
+};
 
 const progressStages = [
   { status: "received", label: "Received" },
@@ -82,6 +103,8 @@ export default async function ApplicationPage({
     processing,
     intake,
     match,
+    pipeline,
+    job,
   ] = await Promise.all([
     getApplicationHistory(context.supabase, context.agencyId, id, {
       notes: before.notesBefore,
@@ -106,6 +129,13 @@ export default async function ApplicationPage({
       .eq("application_id", id)
       .maybeSingle(),
     getApplicationMatch(context.supabase, context.agencyId, id),
+    getApplicationPipeline(context.supabase, context.agencyId, id),
+    context.supabase
+      .from("jobs")
+      .select("currency")
+      .eq("agency_id", context.agencyId)
+      .eq("id", application.job_id)
+      .maybeSingle(),
   ]);
   if (agency.error) throw new Error("Agency timezone could not be loaded.");
   const date = (value: string) =>
@@ -147,6 +177,15 @@ export default async function ApplicationPage({
   const tabs = [
     { key: "overview", label: "Overview", count: 0 },
     { key: "screening", label: "Screening", count: 0 },
+    ...(pipeline.available
+      ? [
+          {
+            key: "interviews",
+            label: "Interviews",
+            count: pipeline.interviews.length,
+          } as const,
+        ]
+      : []),
     { key: "messages", label: "Messages", count: messages.length },
     {
       key: "activity",
@@ -173,11 +212,13 @@ export default async function ApplicationPage({
             ? "Screening processing updated"
             : event.event_type === "application.screening_corrected"
               ? "Recruiter corrected screening evidence"
-              : event.event_type.startsWith("communication.")
-                ? event.event_type
-                    .replaceAll("communication.", "Email ")
-                    .replaceAll("_", " ")
-                : event.event_type.replaceAll("_", " ");
+              : pipelineEventLabels[event.event_type]
+                ? pipelineEventLabels[event.event_type]
+                : event.event_type.startsWith("communication.")
+                  ? event.event_type
+                      .replaceAll("communication.", "Email ")
+                      .replaceAll("_", " ")
+                  : event.event_type.replaceAll("_", " ");
   };
   return (
     <div className="pb-20 lg:pb-0">
@@ -469,6 +510,22 @@ export default async function ApplicationPage({
                 </Panel>
               </>
             )}
+            {tab === "interviews" && (
+              <InterviewsPanel
+                agencyId={context.agencyId}
+                applicationId={id}
+                status={application.status}
+                updatedAt={application.updated_at}
+                interviews={pipeline.interviews}
+                members={team.items
+                  .filter((member) => member.status === "active")
+                  .map((member) => ({
+                    id: member.user_id,
+                    name: member.profile?.full_name ?? "Teammate",
+                  }))}
+                timezone={agency.data.timezone}
+              />
+            )}
             {tab === "screening" && (
               <ScreeningPanel
                 agencyId={context.agencyId}
@@ -639,6 +696,18 @@ export default async function ApplicationPage({
             role={context.role}
             members={members}
           />
+          {pipeline.available && (
+            <OfferCard
+              agencyId={context.agencyId}
+              applicationId={id}
+              status={application.status}
+              updatedAt={application.updated_at}
+              offers={pipeline.offers}
+              placements={pipeline.placements}
+              canRecordFee={["owner", "administrator"].includes(context.role)}
+              defaultCurrency={job.data?.currency ?? null}
+            />
+          )}
           <Panel title="Contact">
             <dl className="flex flex-col gap-4 text-sm">
               <div className="min-w-0">

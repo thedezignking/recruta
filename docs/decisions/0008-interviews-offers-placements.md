@@ -1,6 +1,8 @@
 # ADR 0008: Interviews, offers and placements
 
-Status: Proposed (November 1, 2026)
+Status: Accepted, in progress (November 1, 2026)
+
+Built in the first slice: the `interviews`, `offers`, `placements` and `placement_fees` tables with RLS; `manage_pipeline` for every write; the Interviews tab and the Offer/Placement card on the application page; and the Openings panel on the job page. Interviewers are agency members plus free-text guests. Still to do: email templates and `.ics`, portal visibility, Needs attention items, the Overview placements metric and the Playwright journey.
 
 ## Context
 

@@ -703,6 +703,8 @@ Still separate:
 
 ## Milestone 5 — Interviews, Offers, and Placements
 
+In progress (ADR 0008): interviews, offers and opening-level placements are recorded through one audited database function. Interview outcomes are recommendations and never move the stage. Candidate emails, reminders and the placements metric follow.
+
 - Scheduling, reminders, feedback, offers, opening-level placements, and candidate communication.
 
 ## Milestone 6 — Reporting, Integrations, and Pilot Scale

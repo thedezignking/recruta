@@ -1243,6 +1243,81 @@ export type Database = {
           },
         ];
       };
+      interviews: {
+        Row: {
+          agency_id: string;
+          application_id: string;
+          cancel_reason: string | null;
+          created_at: string;
+          created_by: string | null;
+          ends_at: string;
+          format: string;
+          guests: string | null;
+          id: string;
+          interviewer_ids: string[];
+          location: string | null;
+          outcome: string | null;
+          outcome_note: string | null;
+          round: number;
+          starts_at: string;
+          status: string;
+          timezone: string;
+          title: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          agency_id: string;
+          application_id: string;
+          cancel_reason?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          ends_at: string;
+          format: string;
+          guests?: string | null;
+          id: string;
+          interviewer_ids?: string[];
+          location?: string | null;
+          outcome?: string | null;
+          outcome_note?: string | null;
+          round: number;
+          starts_at: string;
+          status?: string;
+          timezone: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          agency_id?: string;
+          application_id?: string;
+          cancel_reason?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          ends_at?: string;
+          format?: string;
+          guests?: string | null;
+          id?: string;
+          interviewer_ids?: string[];
+          location?: string | null;
+          outcome?: string | null;
+          outcome_note?: string | null;
+          round?: number;
+          starts_at?: string;
+          status?: string;
+          timezone?: string;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "interviews_agency_id_application_id_fkey";
+            columns: ["agency_id", "application_id"];
+            isOneToOne: false;
+            referencedRelation: "applications";
+            referencedColumns: ["agency_id", "id"];
+          },
+        ];
+      };
       job_application_questions: {
         Row: {
           agency_id: string;
@@ -1648,6 +1723,173 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "hiring_request_revisions";
             referencedColumns: ["hiring_request_id", "id"];
+          },
+        ];
+      };
+      offers: {
+        Row: {
+          agency_id: string;
+          application_id: string;
+          created_at: string;
+          created_by: string | null;
+          currency: string | null;
+          decided_at: string | null;
+          decision_reason: string | null;
+          expires_at: string | null;
+          extended_at: string | null;
+          id: string;
+          notes: string | null;
+          salary_amount: number | null;
+          salary_period: string | null;
+          start_date: string | null;
+          status: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          agency_id: string;
+          application_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string | null;
+          decided_at?: string | null;
+          decision_reason?: string | null;
+          expires_at?: string | null;
+          extended_at?: string | null;
+          id: string;
+          notes?: string | null;
+          salary_amount?: number | null;
+          salary_period?: string | null;
+          start_date?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          agency_id?: string;
+          application_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string | null;
+          decided_at?: string | null;
+          decision_reason?: string | null;
+          expires_at?: string | null;
+          extended_at?: string | null;
+          id?: string;
+          notes?: string | null;
+          salary_amount?: number | null;
+          salary_period?: string | null;
+          start_date?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "offers_agency_id_application_id_fkey";
+            columns: ["agency_id", "application_id"];
+            isOneToOne: false;
+            referencedRelation: "applications";
+            referencedColumns: ["agency_id", "id"];
+          },
+        ];
+      };
+      placement_fees: {
+        Row: {
+          agency_id: string;
+          amount: number;
+          currency: string;
+          placement_id: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          agency_id: string;
+          amount: number;
+          currency: string;
+          placement_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          agency_id?: string;
+          amount?: number;
+          currency?: string;
+          placement_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "placement_fees_agency_id_placement_id_fkey";
+            columns: ["agency_id", "placement_id"];
+            isOneToOne: false;
+            referencedRelation: "placements";
+            referencedColumns: ["agency_id", "id"];
+          },
+        ];
+      };
+      placements: {
+        Row: {
+          agency_id: string;
+          application_id: string;
+          created_at: string;
+          created_by: string | null;
+          fell_through_reason: string | null;
+          id: string;
+          job_id: string;
+          offer_id: string;
+          opening_number: number;
+          start_date: string;
+          status: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          agency_id: string;
+          application_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          fell_through_reason?: string | null;
+          id: string;
+          job_id: string;
+          offer_id: string;
+          opening_number: number;
+          start_date: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          agency_id?: string;
+          application_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          fell_through_reason?: string | null;
+          id?: string;
+          job_id?: string;
+          offer_id?: string;
+          opening_number?: number;
+          start_date?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "placements_agency_id_application_id_fkey";
+            columns: ["agency_id", "application_id"];
+            isOneToOne: false;
+            referencedRelation: "applications";
+            referencedColumns: ["agency_id", "id"];
+          },
+          {
+            foreignKeyName: "placements_agency_id_job_id_fkey";
+            columns: ["agency_id", "job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["agency_id", "id"];
+          },
+          {
+            foreignKeyName: "placements_agency_id_offer_id_fkey";
+            columns: ["agency_id", "offer_id"];
+            isOneToOne: false;
+            referencedRelation: "offers";
+            referencedColumns: ["agency_id", "id"];
           },
         ];
       };
@@ -2301,6 +2543,17 @@ export type Database = {
           p_user_id: string;
         };
         Returns: undefined;
+      };
+      manage_pipeline: {
+        Args: {
+          p_action: string;
+          p_agency_id: string;
+          p_application_id: string;
+          p_expected_updated_at?: string;
+          p_payload: Json;
+          p_request_id?: string;
+        };
+        Returns: Json;
       };
       onboard_agency: {
         Args: {
