@@ -3,9 +3,10 @@
 import { useId, useState } from "react";
 import Link from "next/link";
 import {
-  AltArrowDownIcon,
   AltArrowRightIcon,
   BellIcon,
+  CheckCircleIcon,
+  DangerTriangleIcon,
   CaseMinimalisticIcon,
   DocumentTextIcon,
   InboxIcon,
@@ -49,25 +50,31 @@ export function Trace({ steps, ms }: { steps: TraceStep[]; ms: number }) {
         disabled={!steps.length}
         className="group inline-flex items-center gap-1.5 rounded-full py-0.5 pr-2 text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-[#5C5AED] disabled:pointer-events-none"
       >
-        <span
-          aria-hidden="true"
-          className={cn(
-            "size-1.5 rounded-full",
-            failed ? "bg-[#D9822B]" : "bg-[#5C5AED]",
-          )}
-        />
+        {failed ? (
+          <DangerTriangleIcon
+            aria-hidden="true"
+            size={14}
+            className="shrink-0 text-[#C2620A]"
+          />
+        ) : (
+          <CheckCircleIcon
+            aria-hidden="true"
+            size={14}
+            className="shrink-0 text-success"
+          />
+        )}
         {summary}
         {ms ? <span className="tabular-nums">· {seconds(ms)}</span> : null}
         {failed ? (
           <span className="text-[#B2650F]">· {failed} failed</span>
         ) : null}
         {steps.length > 0 && (
-          <AltArrowDownIcon
+          <AltArrowRightIcon
             aria-hidden="true"
             size={13}
             className={cn(
               "transition-transform duration-200 motion-reduce:transition-none",
-              open && "rotate-180",
+              open && "rotate-90",
             )}
           />
         )}
@@ -81,7 +88,7 @@ export function Trace({ steps, ms }: { steps: TraceStep[]; ms: number }) {
         )}
         inert={!open}
       >
-        <div className="overflow-hidden">
+        <div className="-mb-1 overflow-hidden pr-1 pb-1 pl-2.5">
           <ol className="relative mt-2 ml-[3px] flex flex-col gap-2.5 border-l border-border pb-1 pl-4">
             {steps.map((step, index) => {
               const Icon = toolIcons[step.tool] ?? RoutingIcon;
@@ -92,7 +99,7 @@ export function Trace({ steps, ms }: { steps: TraceStep[]; ms: number }) {
                     className={cn(
                       "absolute top-[3px] -left-[25px] grid size-[17px] place-items-center rounded-full border bg-white",
                       step.ok
-                        ? "border-[#5C5AED]/30 text-[#5C5AED]"
+                        ? "border-border text-muted-foreground"
                         : "border-[#D9822B]/40 text-[#B2650F]",
                     )}
                   >
