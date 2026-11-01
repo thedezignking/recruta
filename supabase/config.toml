@@ -25,6 +25,37 @@ enable_signup = true
 enable_signup = true
 double_confirm_changes = true
 enable_confirmations = true
+# Sign-up is confirmed with a 6-digit code typed into Recruta, not a link.
+otp_length = 6
+otp_expiry = 900
+max_frequency = "1m"
+
+[auth.email.template.confirmation]
+subject = "{{ .Token }} is your Recruta code"
+content_path = "./supabase/templates/confirmation.html"
+
+# Hosted project: production URLs and Recruta as the sender (Resend SMTP).
+# `supabase config push` reads RESEND_API_KEY from the environment.
+[remotes.production]
+project_id = "caadsqvkmvfocfatduaq"
+
+[remotes.production.auth]
+site_url = "https://userecruta.vercel.app"
+additional_redirect_urls = [
+  "https://userecruta.vercel.app/auth/callback",
+  "https://userecruta.vercel.app/invitations/**",
+  "http://localhost:3000/auth/callback",
+  "http://localhost:3000/invitations/**",
+]
+
+[remotes.production.auth.email.smtp]
+enabled = true
+host = "smtp.resend.com"
+port = 465
+user = "resend"
+pass = "env(RESEND_API_KEY)"
+admin_email = "learn@thedezignking.com"
+sender_name = "Recruta"
 
 [storage]
 enabled = true

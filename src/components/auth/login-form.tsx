@@ -13,29 +13,35 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/auth/password-input";
+import { EmailCodeStep } from "@/components/auth/email-code-step";
 
 export function LoginForm({ next = "/auth/continue" }: { next?: string }) {
   const router = useRouter();
   const [error, setError] = useState<string>();
   const [pending, setPending] = useState(false);
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const destination =
+    next.startsWith("/") && !next.startsWith("//") ? next : "/auth/continue";
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPending(true);
     setError(undefined);
     const form = new FormData(event.currentTarget);
+    const email = String(form.get("email")).trim();
     try {
-      const { error: authError } = await createClient().auth.signInWithPassword(
-        {
-          email: String(form.get("email")),
-          password: String(form.get("password")),
-        },
-      );
+      const supabase = createClient();
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password: String(form.get("password")),
+      });
+      // Not confirmed yet: send a fresh code and confirm here instead.
+      if (authError?.code === "email_not_confirmed") {
+        await supabase.auth.resend({ type: "signup", email });
+        setConfirming(email);
+        return;
+      }
       if (authError) throw authError;
-      router.push(
-        next.startsWith("/") && !next.startsWith("//")
-          ? next
-          : "/auth/continue",
-      );
+      router.push(destination);
       router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Sign in failed.");
@@ -43,6 +49,17 @@ export function LoginForm({ next = "/auth/continue" }: { next?: string }) {
       setPending(false);
     }
   }
+  if (confirming)
+    return (
+      <EmailCodeStep
+        email={confirming}
+        onVerified={() => {
+          router.push(destination);
+          router.refresh();
+        }}
+        onBack={() => setConfirming(null)}
+      />
+    );
   return (
     <form onSubmit={submit}>
       <FieldGroup>

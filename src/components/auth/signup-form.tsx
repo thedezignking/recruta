@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,9 +12,11 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/auth/password-input";
+import { EmailCodeStep } from "@/components/auth/email-code-step";
 
 export function SignupForm() {
-  const [state, setState] = useState<{ error?: string; sent?: boolean }>({});
+  const router = useRouter();
+  const [state, setState] = useState<{ error?: string; sentTo?: string }>({});
   const [pending, setPending] = useState(false);
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -23,16 +26,15 @@ export function SignupForm() {
     try {
       const password = String(form.get("password"));
       if (password.length < 10) throw new Error("Use at least 10 characters.");
+      const email = String(form.get("email")).trim();
+      // Recruta emails a 6-digit code (see supabase/templates/confirmation.html).
       const { error } = await createClient().auth.signUp({
-        email: String(form.get("email")),
+        email,
         password,
-        options: {
-          data: { full_name: String(form.get("name")) },
-          emailRedirectTo: `${location.origin}/auth/callback?next=/onboarding`,
-        },
+        options: { data: { full_name: String(form.get("name")) } },
       });
       if (error) throw error;
-      setState({ sent: true });
+      setState({ sentTo: email });
     } catch (caught) {
       setState({
         error:
@@ -42,17 +44,16 @@ export function SignupForm() {
       setPending(false);
     }
   }
-  if (state.sent)
+  if (state.sentTo)
     return (
-      <div
-        role="status"
-        className="rounded-lg border border-success/20 bg-success/5 p-4 text-sm leading-6"
-      >
-        <p className="font-medium text-success">Check your inbox</p>
-        <p className="mt-1 text-muted-foreground">
-          Use the verification link we sent, then finish setting up your agency.
-        </p>
-      </div>
+      <EmailCodeStep
+        email={state.sentTo}
+        onVerified={() => {
+          router.replace("/onboarding");
+          router.refresh();
+        }}
+        onBack={() => setState({})}
+      />
     );
   return (
     <form onSubmit={submit}>
