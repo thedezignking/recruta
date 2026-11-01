@@ -7,6 +7,7 @@ import { candidateMessageSchema } from "@/lib/applicant-processing";
 import { getDeliveryEnv } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { candidateEmail } from "@/server/email/templates";
+import { interviewInvite } from "@/server/email/calendar";
 import { getApplication } from "./applications";
 
 export async function listCandidateMessages(
@@ -124,6 +125,7 @@ export async function processNextCandidateMessage(
     html: string;
     replyTo: string;
     key: string;
+    attachments?: { filename: string; content: string; contentType: string }[];
   }) => Promise<string>,
 ) {
   const config = requireCandidateEmailConfiguration();
@@ -149,6 +151,7 @@ export async function processNextCandidateMessage(
       }),
       replyTo: message.reply_to,
       key: `recruta-message:${message.id}`,
+      attachments: await interviewAttachments(admin, message),
     };
     if (send) providerId = await send(payload);
     else {
@@ -159,6 +162,7 @@ export async function processNextCandidateMessage(
           subject: payload.subject,
           html: payload.html,
           replyTo: payload.replyTo,
+          attachments: payload.attachments,
         },
         { idempotencyKey: payload.key },
       );
@@ -200,4 +204,58 @@ export async function processNextCandidateMessage(
     committed: !!finish.data,
     failed: !!failure,
   };
+}
+
+/** Calendar invite for interview emails; none for anything else. */
+async function interviewAttachments(
+  admin: SupabaseClient,
+  message: {
+    message_type: string;
+    interview_id?: string | null;
+    agency_id: string;
+    recipient_email: string;
+    reply_to: string | null;
+  },
+) {
+  if (
+    !message.interview_id ||
+    !["interview_invitation", "interview_update"].includes(message.message_type)
+  )
+    return undefined;
+  const { data } = await admin
+    .from("interviews")
+    .select(
+      "id,title,starts_at,ends_at,location,format,status,updated_at,agencies(name),applications(jobs(title))",
+    )
+    .eq("agency_id", message.agency_id)
+    .eq("id", message.interview_id)
+    .single();
+  if (!data) throw new Error("interview_missing");
+  const one = <T>(value: T | T[] | null | undefined) =>
+    Array.isArray(value) ? value[0] : value;
+  const agency = one(data.agencies) as { name?: string } | undefined;
+  const job = one(
+    (one(data.applications) as { jobs?: unknown } | undefined)?.jobs,
+  ) as { title?: string } | undefined;
+  const organizer = agency?.name ?? "Recruiter";
+  const invite = interviewInvite({
+    interviewId: data.id,
+    updatedAt: data.updated_at,
+    startsAt: data.starts_at,
+    endsAt: data.ends_at,
+    title: `${data.title}${job?.title ? `: ${job.title}` : ""} with ${organizer}`,
+    description: `${data.title} for ${job?.title ?? "your application"} with ${organizer}.`,
+    location: data.location,
+    organizerName: organizer,
+    organizerEmail: message.reply_to ?? "no-reply@example.invalid",
+    attendeeEmail: message.recipient_email,
+    cancelled: data.status === "cancelled",
+  });
+  return [
+    {
+      filename: "interview.ics",
+      content: invite.content,
+      contentType: `text/calendar; charset=utf-8; method=${invite.method}`,
+    },
+  ];
 }

@@ -31,6 +31,50 @@ function fixture() {
   return { rpc, db: { rpc } as unknown as SupabaseClient };
 }
 describe("durable candidate messages", () => {
+  it("attaches a calendar invite to interview emails", async () => {
+    const message = {
+      id: "message",
+      lease_token: "lease",
+      agency_id: "agency",
+      message_type: "interview_invitation",
+      interview_id: "11111111-1111-4111-8111-111111111111",
+      recipient_email: "candidate@example.invalid",
+      subject: "Interview invitation",
+      body: "Hi Ada,",
+      reply_to: "agency@example.invalid",
+    };
+    const single = vi.fn().mockResolvedValue({
+      data: {
+        id: message.interview_id,
+        title: "First interview",
+        starts_at: "2026-11-10T09:00:00Z",
+        ends_at: "2026-11-10T09:45:00Z",
+        location: null,
+        format: "video",
+        status: "scheduled",
+        updated_at: "2026-11-02T08:00:00Z",
+        agencies: { name: "Evenkore" },
+        applications: { jobs: { title: "Analyst" } },
+      },
+    });
+    const query = { select: vi.fn(), eq: vi.fn(), single };
+    query.select.mockReturnValue(query);
+    query.eq.mockReturnValue(query);
+    const rpc = vi
+      .fn()
+      .mockResolvedValueOnce({ data: [message], error: null })
+      .mockResolvedValue({ data: true, error: null });
+    const db = { rpc, from: vi.fn(() => query) } as unknown as SupabaseClient;
+    const send = vi.fn().mockResolvedValue("provider-id");
+    await processNextCandidateMessage(db, send);
+    const attachment = send.mock.calls[0][0].attachments[0];
+    expect(attachment.filename).toBe("interview.ics");
+    expect(attachment.contentType).toContain("method=REQUEST");
+    expect(attachment.content).toContain(
+      "SUMMARY:First interview: Analyst with Evenkore",
+    );
+  });
+
   it("uses stable provider keys and safely renders user content", async () => {
     const f = fixture();
     const send = vi.fn().mockResolvedValue("provider-id");

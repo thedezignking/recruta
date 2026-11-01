@@ -2,7 +2,7 @@
 
 Status: Accepted, in progress (November 1, 2026)
 
-Built in the first slice: the `interviews`, `offers`, `placements` and `placement_fees` tables with RLS; `manage_pipeline` for every write; the Interviews tab and the Offer/Placement card on the application page; and the Openings panel on the job page. Interviewers are agency members plus free-text guests. Still to do: email templates and `.ics`, portal visibility, Needs attention items, the Overview placements metric and the Playwright journey.
+Built in the first slice: the `interviews`, `offers`, `placements` and `placement_fees` tables with RLS; `manage_pipeline` for every write; the Interviews tab and the Offer/Placement card on the application page; and the Openings panel on the job page. Interviewers are agency members plus free-text guests. The second slice adds candidate emails: an interview invitation or cancellation, and an offer email, each prefilled from the record and queued only when the recruiter confirms. Interview emails attach an `.ics` with a stable UID, so a cancellation or new invite updates the same calendar event, and the sender drops an invitation whose interview is no longer scheduled, or an offer that is no longer extended. Still to do: portal visibility, Needs attention items, the Overview placements metric and the Playwright journey.
 
 ## Context
 

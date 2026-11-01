@@ -116,7 +116,7 @@ export default async function ApplicationPage({
     }),
     context.supabase
       .from("agencies")
-      .select("timezone,contact_email")
+      .select("name,timezone,contact_email")
       .eq("id", context.agencyId)
       .single(),
     getScreeningRuns(context.supabase, context.agencyId, id),
@@ -174,6 +174,17 @@ export default async function ApplicationPage({
       b.job_application_questions.sort_order,
   );
   const candidateName = application.candidates.full_name;
+  const pipelineEmail = {
+    available:
+      processingAvailability().email &&
+      !application.candidates.email_suppressed,
+    candidateName,
+    candidateEmail: application.candidates.email,
+    jobTitle: application.jobs.title,
+    companyName: application.jobs.clients.name,
+    agencyName: agency.data.name,
+    timezone: agency.data.timezone,
+  };
   const tabs = [
     { key: "overview", label: "Overview", count: 0 },
     { key: "screening", label: "Screening", count: 0 },
@@ -524,6 +535,7 @@ export default async function ApplicationPage({
                     name: member.profile?.full_name ?? "Teammate",
                   }))}
                 timezone={agency.data.timezone}
+                email={pipelineEmail}
               />
             )}
             {tab === "screening" && (
@@ -706,6 +718,7 @@ export default async function ApplicationPage({
               placements={pipeline.placements}
               canRecordFee={["owner", "administrator"].includes(context.role)}
               defaultCurrency={job.data?.currency ?? null}
+              email={pipelineEmail}
             />
           )}
           <Panel title="Contact">

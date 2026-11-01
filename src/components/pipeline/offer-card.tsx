@@ -14,6 +14,11 @@ import {
 import type { ApplicationPipeline } from "@/server/services/pipeline";
 import { cn } from "cn";
 import { usePipelineAction } from "./use-pipeline-action";
+import {
+  EmailCandidate,
+  firstName,
+  type PipelineEmailContext,
+} from "./email-candidate";
 
 type Offer = ApplicationPipeline["offers"][number];
 type Placement = ApplicationPipeline["placements"][number];
@@ -58,7 +63,9 @@ export function OfferCard({
   placements,
   canRecordFee,
   defaultCurrency,
+  email,
 }: {
+  email: PipelineEmailContext;
   agencyId: string;
   applicationId: string;
   status: string;
@@ -84,6 +91,7 @@ export function OfferCard({
   const [date, setDate] = useState(live?.start_date ?? "");
   const [fee, setFee] = useState("");
   const [returnTo, setReturnTo] = useState<"offer" | "withdrawn">("withdrawn");
+  const [emailing, setEmailing] = useState(false);
 
   if (!["interview", "offer", "placed"].includes(status) && !offers.length)
     return null;
@@ -177,13 +185,17 @@ export function OfferCard({
                     type="button"
                     size="sm"
                     disabled={busy}
-                    onClick={() =>
-                      run({
-                        action: "extend_offer",
-                        id: live.id,
-                        expectedUpdatedAt: updatedAt,
-                      })
-                    }
+                    onClick={async () => {
+                      if (
+                        (await run({
+                          action: "extend_offer",
+                          id: live.id,
+                          expectedUpdatedAt: updatedAt,
+                        })) &&
+                        email.available
+                      )
+                        setEmailing(true);
+                    }}
                   >
                     {pending === "extend_offer"
                       ? "Saving…"
@@ -213,6 +225,27 @@ export function OfferCard({
               )}
               {live.status === "extended" && (
                 <>
+                  {email.available && !emailing && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEmailing(true)}
+                    >
+                      Email offer to candidate
+                    </Button>
+                  )}
+                  {emailing && (
+                    <EmailCandidate
+                      agencyId={agencyId}
+                      applicationId={applicationId}
+                      kind="offer"
+                      to={email.candidateEmail}
+                      defaultSubject={`Your offer: ${email.jobTitle} at ${email.companyName}`}
+                      defaultBody={offerEmail(live, email)}
+                      onClose={() => setEmailing(false)}
+                    />
+                  )}
                   <Button
                     type="button"
                     size="sm"
@@ -670,4 +703,19 @@ function OfferForm({
       </div>
     </form>
   );
+}
+
+function offerEmail(offer: Offer, email: PipelineEmailContext) {
+  const details = [
+    formatPay(offer) && `* Pay: ${formatPay(offer)}`,
+    offer.start_date && `* Start date: ${formatDate(offer.start_date)}`,
+    offer.expires_at && `* Please respond by: ${formatDate(offer.expires_at)}`,
+  ].filter(Boolean);
+  return [
+    `Hi ${firstName(email.candidateName)},`,
+    `We're pleased to offer you the ${email.jobTitle} position at ${email.companyName}.`,
+    ...(details.length ? ["Offer details", details.join("\n")] : []),
+    "Reply to this email to accept or to ask any questions.",
+    `Best regards,\n${email.agencyName} Recruitment Team`,
+  ].join("\n\n");
 }

@@ -29,6 +29,11 @@ import {
   localToIso,
   usePipelineAction,
 } from "./use-pipeline-action";
+import {
+  EmailCandidate,
+  firstName,
+  type PipelineEmailContext,
+} from "./email-candidate";
 
 type Interview = ApplicationPipeline["interviews"][number];
 type Member = { id: string; name: string };
@@ -49,7 +54,9 @@ export function InterviewsPanel({
   interviews,
   members,
   timezone,
+  email,
 }: {
+  email: PipelineEmailContext;
   agencyId: string;
   applicationId: string;
   status: string;
@@ -63,6 +70,7 @@ export function InterviewsPanel({
     applicationId,
   );
   const [scheduling, setScheduling] = useState(false);
+  const [emailFor, setEmailFor] = useState<string | null>(null);
   const canSchedule = (interviewStages as readonly string[]).includes(status);
   const names = new Map(members.map((m) => [m.id, m.name]));
   const when = (start: string, end: string) => {
@@ -112,8 +120,10 @@ export function InterviewsPanel({
           pending={pending === "schedule_interview"}
           onCancel={() => setScheduling(false)}
           onSubmit={async (values) => {
-            if (await run({ action: "schedule_interview", ...values }))
+            if (await run({ action: "schedule_interview", ...values })) {
               setScheduling(false);
+              if (email.available) setEmailFor(values.id);
+            }
           }}
         />
       )}
@@ -130,6 +140,11 @@ export function InterviewsPanel({
               busy={busy}
               pending={pending}
               run={run}
+              emailOpen={emailFor === interview.id}
+              onEmail={(open) => setEmailFor(open ? interview.id : null)}
+              email={email}
+              agencyId={agencyId}
+              applicationId={applicationId}
             />
           ))}
         </ol>
@@ -356,7 +371,17 @@ function InterviewItem({
   busy,
   pending,
   run,
+  emailOpen,
+  onEmail,
+  email,
+  agencyId,
+  applicationId,
 }: {
+  emailOpen: boolean;
+  onEmail: (open: boolean) => void;
+  email: PipelineEmailContext;
+  agencyId: string;
+  applicationId: string;
   interview: Interview;
   when: string;
   interviewers: string;
@@ -445,6 +470,33 @@ function InterviewItem({
           Cancelled: “{interview.cancel_reason}”
         </p>
       )}
+      {interview.status === "cancelled" && email.available && !emailOpen && (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="mt-3"
+          onClick={() => onEmail(true)}
+        >
+          Email cancellation
+        </Button>
+      )}
+      {emailOpen && !mode && (
+        <EmailCandidate
+          agencyId={agencyId}
+          applicationId={applicationId}
+          kind={scheduled ? "interview_invitation" : "interview_update"}
+          interviewId={interview.id}
+          to={email.candidateEmail}
+          note={
+            scheduled
+              ? "A calendar invite is attached"
+              : "The calendar event is cancelled"
+          }
+          {...interviewEmail(interview, when, email)}
+          onClose={() => onEmail(false)}
+        />
+      )}
 
       {scheduled && !mode && (
         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -456,6 +508,16 @@ function InterviewItem({
           >
             Record outcome
           </Button>
+          {email.available && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => onEmail(!emailOpen)}
+            >
+              Email invite
+            </Button>
+          )}
           <Button
             type="button"
             size="sm"
@@ -699,4 +761,45 @@ function MoveToInterview({
       </Button>
     </div>
   );
+}
+
+function interviewEmail(
+  interview: Interview,
+  when: string,
+  email: PipelineEmailContext,
+) {
+  const sign = `Best regards,\n${email.agencyName} Recruitment Team`;
+  const hi = `Hi ${firstName(email.candidateName)},`;
+  if (interview.status === "cancelled")
+    return {
+      defaultSubject: `Interview cancelled: ${email.jobTitle}`,
+      defaultBody: [
+        hi,
+        `We need to cancel your ${interview.title.toLowerCase()} for the ${email.jobTitle} role, planned for ${when}. We're sorry for the change and will be in touch about next steps.`,
+        sign,
+      ].join("\n\n"),
+    };
+  const whereLabel =
+    interview.format === "video"
+      ? "Link"
+      : interview.format === "phone"
+        ? "Phone"
+        : "Address";
+  const details = [
+    `* What: ${interview.title}`,
+    `* When: ${when} (${email.timezone})`,
+    `* Format: ${interviewFormatLabels[interview.format]}`,
+    ...(interview.location ? [`* ${whereLabel}: ${interview.location}`] : []),
+  ];
+  return {
+    defaultSubject: `Interview invitation: ${email.jobTitle} at ${email.companyName}`,
+    defaultBody: [
+      hi,
+      `Thanks for your interest in the ${email.jobTitle} role at ${email.companyName}. We'd like to invite you to an interview.`,
+      "Interview details",
+      details.join("\n"),
+      "A calendar invite is attached. If the time doesn't work, reply to this email and we'll find another.",
+      sign,
+    ].join("\n\n"),
+  };
 }

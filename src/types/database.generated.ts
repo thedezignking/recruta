@@ -889,6 +889,7 @@ export type Database = {
       };
       communications: {
         Row: {
+          interview_id: string | null;
           agency_id: string;
           application_id: string | null;
           attempt_count: number;
@@ -924,6 +925,7 @@ export type Database = {
           created_at?: string;
           delivered_at?: string | null;
           failure_code?: string | null;
+          interview_id?: string | null;
           id?: string;
           idempotency_key: string;
           last_error?: string | null;
@@ -942,6 +944,7 @@ export type Database = {
           subject?: string | null;
         };
         Update: {
+          interview_id?: string | null;
           agency_id?: string;
           application_id?: string | null;
           attempt_count?: number;

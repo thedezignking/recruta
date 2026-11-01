@@ -30,7 +30,11 @@ export const candidateMessageSchema = z
       "missing_information",
       "status_update",
       "rejection",
+      "interview_invitation",
+      "interview_update",
+      "offer",
     ]),
+    interviewId: z.uuid().optional(),
     subject: z
       .string()
       .trim()
@@ -45,7 +49,13 @@ export const candidateMessageSchema = z
   })
   .refine((value) => value.kind !== "rejection" || value.confirmed, {
     message: "Review and confirm the rejection message before queuing it.",
-  });
+  })
+  .refine(
+    (value) =>
+      !["interview_invitation", "interview_update"].includes(value.kind) ||
+      value.interviewId,
+    { message: "Choose the interview this email is about." },
+  );
 export const screeningVerdicts = {
   supported: "Supported",
   not_found: "Not found in the material",
