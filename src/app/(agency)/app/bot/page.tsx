@@ -8,7 +8,12 @@ import {
   LetterIcon,
 } from "@solar-icons/react/linear";
 import { SettingsIcon } from "@solar-icons/react/linear";
+import { z } from "zod";
 import { RecrutaBot } from "@/components/bot/recruta-bot";
+import {
+  getConversation,
+  listConversations,
+} from "@/server/assistant/conversations";
 import { ButtonLink } from "@/components/shared/button-link";
 import { PageHeader, SectionHeader } from "@/components/shared/page-header";
 import { getAssistantEnv } from "@/lib/env";
@@ -62,14 +67,29 @@ function StepBadge({ state }: { state: StepState }) {
   );
 }
 
+function serverNow() {
+  return Date.now();
+}
+
 function daysAgo(days: number) {
   return new Date(Date.now() - days * 86400000).toISOString();
 }
 
-export default async function RecrutaBotPage() {
+export default async function RecrutaBotPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ c?: string }>;
+}) {
   const context = await requireAgencyPageContext().catch(() => null);
   if (!context) redirect("/login");
   const { supabase, agencyId, user } = context;
+  const requested = (await searchParams).c;
+  const [conversations, initialConversation] = await Promise.all([
+    listConversations(supabase, agencyId, user.id),
+    requested && z.uuid().safeParse(requested).success
+      ? getConversation(supabase, agencyId, requested).catch(() => null)
+      : null,
+  ]);
   const since = daysAgo(30);
   const matches = (band: string) =>
     countRows(
@@ -304,6 +324,9 @@ export default async function RecrutaBotPage() {
         firstName={firstName}
         chatStatus={chatStatus}
         work={work}
+        conversations={conversations}
+        initialConversation={initialConversation}
+        now={serverNow()}
       />
     </div>
   );

@@ -471,6 +471,83 @@ export type Database = {
           },
         ];
       };
+      assistant_conversations: {
+        Row: {
+          agency_id: string;
+          created_at: string;
+          id: string;
+          title: string;
+          updated_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          agency_id: string;
+          created_at?: string;
+          id: string;
+          title: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          agency_id?: string;
+          created_at?: string;
+          id?: string;
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+        ];
+      };
+      assistant_messages: {
+        Row: {
+          actions: Json;
+          agency_id: string;
+          content: string;
+          conversation_id: string;
+          created_at: string;
+          duration_ms: number | null;
+          id: string;
+          links: Json;
+          trace: Json;
+          role: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          actions?: Json;
+          agency_id: string;
+          content: string;
+          conversation_id: string;
+          created_at?: string;
+          duration_ms?: number | null;
+          id: string;
+          links?: Json;
+          trace?: Json;
+          role: string;
+        };
+        Update: {
+          actions?: Json;
+          agency_id?: string;
+          content?: string;
+          conversation_id?: string;
+          created_at?: string;
+          duration_ms?: number | null;
+          id?: string;
+          links?: Json;
+          trace?: Json;
+          role?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "assistant_messages_agency_id_conversation_id_fkey";
+            columns: ["agency_id", "conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "assistant_conversations";
+            referencedColumns: ["agency_id", "id"];
+          },
+        ];
+      };
       candidate_documents: {
         Row: {
           agency_id: string;

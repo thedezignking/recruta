@@ -12,6 +12,7 @@ import type {
   AssistantMessage,
   AssistantReply,
   StageChangeProposal,
+  TraceStep,
 } from "@/lib/assistant";
 import { matchReason } from "@/lib/match-grade";
 import { getAttentionQueue } from "@/server/services/application-automations";
@@ -137,7 +138,85 @@ const tools: OpenAI.Responses.Tool[] = [
 ];
 
 type Context = { supabase: SupabaseClient; agencyId: string };
-type ToolState = { actions: StageChangeProposal[]; links: Map<string, string> };
+type ToolState = {
+  actions: StageChangeProposal[];
+  links: Map<string, string>;
+  trace: TraceStep[];
+};
+
+const stageText = (value: unknown) =>
+  typeof value === "string" ? value.replaceAll("_", " ") : "";
+
+/** A readable summary of one lookup and its result, for the trace. */
+function describe(
+  name: string,
+  args: Record<string, unknown>,
+  output: unknown,
+): Pick<TraceStep, "label" | "detail" | "result" | "href"> {
+  const error =
+    output && typeof output === "object" && "error" in output
+      ? String((output as { error: unknown }).error)
+      : null;
+  const count = (value: unknown) =>
+    Array.isArray(value)
+      ? value.length
+      : value && typeof value === "object" && "total" in value
+        ? Number((value as { total: unknown }).total)
+        : null;
+  const plural = (n: number | null, one: string, many: string) =>
+    n === null ? undefined : `${n} ${n === 1 ? one : many}`;
+  const filters = (pairs: [string, unknown][]) =>
+    pairs
+      .filter(([, value]) => typeof value === "string" && value)
+      .map(([key, value]) => `${key}: ${stageText(value)}`)
+      .join(" · ") || undefined;
+  if (name === "search_jobs")
+    return {
+      label: "Searched jobs",
+      detail: filters([
+        ["title", args.query],
+        ["status", args.status],
+      ]),
+      result: error ?? plural(count(output), "job", "jobs"),
+    };
+  if (name === "list_applications")
+    return {
+      label: "Listed applications",
+      detail: filters([
+        ["stage", args.stage],
+        ["match", args.match],
+        ["search", args.query],
+        ["job", args.jobId ? "selected job" : null],
+      ]),
+      result: error ?? plural(count(output), "application", "applications"),
+    };
+  if (name === "get_application") {
+    const record = (output ?? {}) as { candidate?: string; job?: string };
+    return {
+      label: record.candidate
+        ? `Opened ${record.candidate}'s application`
+        : "Opened an application",
+      detail: record.job,
+      result: error ?? undefined,
+      href:
+        typeof args.applicationId === "string" && !error
+          ? `/app/applications/${args.applicationId}`
+          : undefined,
+    };
+  }
+  if (name === "list_needs_attention")
+    return {
+      label: "Checked Needs attention",
+      result: error ?? plural(count(output), "item", "items"),
+      href: "/app/attention",
+    };
+  if (name === "propose_stage_change")
+    return {
+      label: `Prepared a move to ${stageText(args.toStage)}`,
+      result: error ?? "Waiting for your confirmation",
+    };
+  return { label: name, result: error ?? undefined };
+}
 
 async function runTool(
   name: string,
@@ -301,7 +380,8 @@ export async function runAssistant(
     timeout: 60000,
     maxRetries: 1,
   });
-  const state: ToolState = { actions: [], links: new Map() };
+  const state: ToolState = { actions: [], links: new Map(), trace: [] };
+  const startedAll = performance.now();
   const input: OpenAI.Responses.ResponseInput = messages.map((message) => ({
     role: message.role,
     content: message.content,
@@ -341,11 +421,14 @@ export async function runAssistant(
         links: [...state.links]
           .slice(0, 8)
           .map(([href, label]) => ({ href, label })),
+        trace: state.trace,
+        ms: Math.round(performance.now() - startedAll),
       };
     }
     input.push(...(response.output as OpenAI.Responses.ResponseInputItem[]));
     for (const call of calls) {
       let output: unknown;
+      const started = performance.now();
       try {
         output = await runTool(call.name, call.arguments, context, state);
       } catch (error) {
@@ -356,6 +439,16 @@ export async function runAssistant(
               : "That lookup failed. Check the id and try again.",
         };
       }
+      let args: Record<string, unknown> = {};
+      try {
+        args = JSON.parse(call.arguments || "{}");
+      } catch {}
+      state.trace.push({
+        tool: call.name,
+        ...describe(call.name, args, output),
+        ok: !(output && typeof output === "object" && "error" in output),
+        ms: Math.round(performance.now() - started),
+      });
       input.push({
         type: "function_call_output",
         call_id: call.call_id,

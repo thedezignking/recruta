@@ -63,7 +63,10 @@ Follow-up B2: a private, expiring link where the candidate adds the missing answ
 - The assistant cannot change anything. A stage change comes back as an action card; confirming it calls the existing application review API with the proposal's `expectedUpdatedAt`, so transitions, reasons, stale-write protection and audit history apply unchanged. No email is sent.
 - Drafted emails are text for the recruiter to use. The bot does not send email from chat.
 - Tool results (CV text, answers, notes) are untrusted data; the instructions forbid following them and forbid reasoning about protected characteristics. Tool rounds are capped at six.
-- Version 1 does not store conversations: the browser keeps the transcript for the session and sends at most 20 messages per request. Stored history, streaming and per-user daily limits are later work.
+- Chats are saved per person and workspace (`assistant_conversations`, `assistant_messages`). RLS lets only the owner read, rename or delete them; managers cannot read other people's chats. Messages are append-only, and deleting a chat deletes its messages. The server keeps the history: the browser sends one new message, and the last 20 turns are loaded from the database for the model. A message is saved before the AI call, so it survives a provider failure.
+- The Chat tab has a history panel grouped by recency, with New chat, Rename and Delete. On desktop it is collapsed to a slim rail by default and remembers its state per device; on phones it opens as a slide-in panel.
+- Each reply stores a trace: one summarised step per lookup (label, filters, result count, timing, success, and a link where useful) plus the total answer time. It never stores raw tool output. The trace shows as a collapsible "Worked through N steps" line above the answer.
+- Streaming and per-user daily limits are later work.
 - Gated by `RECRUTA_AI_ENABLED`, `RECRUTA_AI_DATA_USE_APPROVED`, `RECRUTA_ASSISTANT_ENABLED=true`, an explicit `OPENAI_ASSISTANT_MODEL` (no default) and the workspace AI opt-in. When any gate is off the Chat tab says why and the Work tab still works.
 
 ### D. Bot activity

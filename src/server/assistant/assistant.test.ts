@@ -81,6 +81,15 @@ describe("runAssistant", () => {
         expectedUpdatedAt: "2026-10-31T10:00:00Z",
       }),
     ]);
+    expect(reply.trace).toEqual([
+      expect.objectContaining({
+        tool: "propose_stage_change",
+        label: "Prepared a move to shortlisted",
+        result: "Waiting for your confirmation",
+        ok: true,
+      }),
+    ]);
+    expect(reply.ms).toBeGreaterThanOrEqual(0);
     const request = create.mock.calls[1][0];
     expect(request.store).toBe(false);
     expect(request.input.at(-1)).toMatchObject({
@@ -103,6 +112,9 @@ describe("runAssistant", () => {
     const reply = await runAssistant(context, ask, config);
 
     expect(reply.actions).toEqual([]);
+    // A refused step shows as failed in the trace, with its reason.
+    expect(reply.trace[0]).toMatchObject({ ok: false });
+    expect(reply.trace[0].result).toContain("Cannot move");
     expect(
       JSON.parse(create.mock.calls[1][0].input.at(-1).output),
     ).toHaveProperty("error");

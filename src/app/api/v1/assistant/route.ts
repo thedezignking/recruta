@@ -3,6 +3,11 @@ import { assistantRequestSchema } from "@/lib/assistant";
 import { getAssistantEnv } from "@/lib/env";
 import { isSameOriginRequest } from "@/lib/request-origin";
 import { runAssistant } from "@/server/assistant/assistant";
+import {
+  loadHistory,
+  saveAssistantReply,
+  saveUserMessage,
+} from "@/server/assistant/conversations";
 import { requireAgencyContext } from "@/server/auth/context";
 import { getProcessingSettings } from "@/server/services/processing-settings";
 
@@ -30,15 +35,33 @@ export async function POST(request: Request) {
         "ASSISTANT_WORKSPACE_DISABLED",
         "Turn on AI for this workspace in Settings to use Recruta bot chat.",
       );
-    const { messages } = assistantRequestSchema.parse(await readJson(request));
+    const input = assistantRequestSchema.parse(await readJson(request));
+    // The message is saved first, so it survives an AI failure.
+    const { conversationId, title } = await saveUserMessage(
+      context.supabase,
+      { agencyId: context.agencyId, userId: context.user.id },
+      input,
+    );
+    const history = await loadHistory(
+      context.supabase,
+      context.agencyId,
+      conversationId,
+    );
     const reply = await runAssistant(
       { supabase: context.supabase, agencyId: context.agencyId },
-      messages,
+      history,
       { apiKey: env.apiKey, model: env.model, requestId: id },
     );
-    return ok(reply, {
-      headers: { "x-request-id": id, "cache-control": "private, no-store" },
-    });
+    await saveAssistantReply(
+      context.supabase,
+      context.agencyId,
+      conversationId,
+      reply,
+    );
+    return ok(
+      { ...reply, conversationId, title },
+      { headers: { "x-request-id": id, "cache-control": "private, no-store" } },
+    );
   } catch (error) {
     return apiError(error, id);
   }
