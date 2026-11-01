@@ -2,7 +2,7 @@ import { AddIcon } from "@solar-icons/react/linear/add";
 import { CaseMinimalisticIcon as CaseRoundIcon } from "@solar-icons/react/linear/case-minimalistic";
 import { ClipboardCheckIcon } from "@solar-icons/react/linear/clipboard-check";
 import { InboxIcon } from "@solar-icons/react/linear/inbox";
-import { DocumentTextIcon } from "@solar-icons/react/linear/document-text";
+import { UserCheckRoundedIcon } from "@solar-icons/react/linear/user-check-rounded";
 import { ButtonLink } from "@/components/shared/button-link";
 import { PageHeader, SectionHeader } from "@/components/shared/page-header";
 import type {
@@ -69,17 +69,6 @@ export function WorkspaceOverview({
       iconSurface: "bg-[#4177d1]",
     },
     {
-      label: "In review",
-      value: overview.summaryCounts.inReview,
-      icon: DocumentTextIcon,
-      href: "/app/applications?status=in_review",
-      trend: trends?.inReview,
-      activityLabel: "Now in review",
-      previous: trends?.previous.inReview,
-      color: "text-[#18886d]",
-      iconSurface: "bg-[#26947b]",
-    },
-    {
       label: "Shortlisted",
       value: overview.summaryCounts.shortlisted,
       icon: ClipboardCheckIcon,
@@ -89,6 +78,17 @@ export function WorkspaceOverview({
       previous: trends?.previous.shortlisted,
       color: "text-[#8060bb]",
       iconSurface: "bg-[#8766c5]",
+    },
+    {
+      label: "Placements",
+      value: overview.summaryCounts.placements,
+      icon: UserCheckRoundedIcon,
+      href: "/app/applications?status=placed",
+      trend: trends?.placements,
+      activityLabel: "Placements recorded",
+      previous: trends?.previous.placements,
+      color: "text-[#18886d]",
+      iconSurface: "bg-[#26947b]",
     },
   ];
 

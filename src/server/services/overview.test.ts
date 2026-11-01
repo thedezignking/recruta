@@ -65,6 +65,11 @@ function database(error = false) {
     ],
     clients: [],
     application_matches: [],
+    placements: [
+      row("placed", "pending_start"),
+      row("fell", "fell_through"),
+      row("old-placed", "started", old),
+    ],
   };
   return {
     from: vi.fn((table: string) => {
@@ -77,6 +82,10 @@ function database(error = false) {
         },
         eq: (key: keyof Row, value: string) => {
           rows = rows.filter((item) => item[key] === value);
+          return query;
+        },
+        neq: (key: keyof Row, value: string) => {
+          rows = rows.filter((item) => item[key] !== value);
           return query;
         },
         in: (key: "status", values: string[]) => {
@@ -148,6 +157,7 @@ describe("overview summary", () => {
       inReview: 1,
       shortlisted: 1,
       applicationsReceived: 3,
+      placements: 1,
     });
   });
   it("supports unbounded all-time counts", async () => {
@@ -156,6 +166,7 @@ describe("overview summary", () => {
       inReview: 2,
       shortlisted: 1,
       applicationsReceived: 5,
+      placements: 2,
     });
   });
   it("includes the full intake history in All-time charts", async () => {
@@ -170,11 +181,14 @@ describe("overview summary", () => {
     ).toBe(5);
     expect(trends.inReview.reduce((sum, value) => sum + value, 0)).toBe(2);
     expect(trends.shortlisted.reduce((sum, value) => sum + value, 0)).toBe(1);
+    // Fell-through placements are excluded.
+    expect(trends.placements.reduce((sum, value) => sum + value, 0)).toBe(2);
     expect(trends.previous).toEqual({
       openJobs: 1,
       applicationsReceived: 3,
       inReview: 1,
       shortlisted: 1,
+      placements: 1,
     });
     expect(trends.comparisonLabel).toBe("last 30 days");
     await expect(

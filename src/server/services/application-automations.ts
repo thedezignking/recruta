@@ -66,45 +66,75 @@ export async function getAttentionQueue(db: SupabaseClient, agencyId: string) {
   const cutoff = new Date(
     Date.now() - settings.reviewReminderHours * 3600000,
   ).toISOString();
-  const [applications, processing, messages, intake] = await Promise.all([
-    db
-      .from("applications")
-      .select("id,submitted_at,candidates(full_name),jobs(title)")
-      .eq("agency_id", agencyId)
-      .eq("status", "received")
-      .lt("submitted_at", cutoff)
-      .order("submitted_at")
-      .order("id")
-      .limit(20),
-    db
-      .from("applications")
-      .select("id,submitted_at,candidates(full_name),jobs(title)")
-      .eq("agency_id", agencyId)
-      .eq("processing_status", "failed")
-      .not("status", "in", "(placed,rejected,withdrawn)")
-      .order("submitted_at")
-      .order("id")
-      .limit(20),
-    db
-      .from("communications")
-      .select(
-        "id,application_id,related_entity_id,subject,status,created_at,failure_code",
-      )
-      .eq("agency_id", agencyId)
-      .eq("related_entity_type", "application")
-      .in("status", ["failed", "permanent_failure"])
-      .order("created_at")
-      .order("id")
-      .limit(20),
-    db
-      .from("application_intake_tasks")
-      .select("id,application_id,status,created_at")
-      .eq("agency_id", agencyId)
-      .eq("status", "failed")
-      .order("created_at")
-      .order("id")
-      .limit(20),
-  ]);
+  const outcomeCutoff = new Date(Date.now() - 24 * 3600000).toISOString();
+  const offerCutoff = new Date(Date.now() + 2 * 86400000)
+    .toISOString()
+    .slice(0, 10);
+  const [applications, processing, messages, intake, interviews, offers] =
+    await Promise.all([
+      db
+        .from("applications")
+        .select("id,submitted_at,candidates(full_name),jobs(title)")
+        .eq("agency_id", agencyId)
+        .eq("status", "received")
+        .lt("submitted_at", cutoff)
+        .order("submitted_at")
+        .order("id")
+        .limit(20),
+      db
+        .from("applications")
+        .select("id,submitted_at,candidates(full_name),jobs(title)")
+        .eq("agency_id", agencyId)
+        .eq("processing_status", "failed")
+        .not("status", "in", "(placed,rejected,withdrawn)")
+        .order("submitted_at")
+        .order("id")
+        .limit(20),
+      db
+        .from("communications")
+        .select(
+          "id,application_id,related_entity_id,subject,status,created_at,failure_code",
+        )
+        .eq("agency_id", agencyId)
+        .eq("related_entity_type", "application")
+        .in("status", ["failed", "permanent_failure"])
+        .order("created_at")
+        .order("id")
+        .limit(20),
+      db
+        .from("application_intake_tasks")
+        .select("id,application_id,status,created_at")
+        .eq("agency_id", agencyId)
+        .eq("status", "failed")
+        .order("created_at")
+        .order("id")
+        .limit(20),
+      // Interviews that ended a day ago without an outcome.
+      db
+        .from("interviews")
+        .select(
+          "id,application_id,title,ends_at,applications(candidates(full_name),jobs(title))",
+        )
+        .eq("agency_id", agencyId)
+        .eq("status", "scheduled")
+        .lt("ends_at", outcomeCutoff)
+        .order("ends_at")
+        .order("id")
+        .limit(20),
+      // Extended offers due for a response within two days, or overdue.
+      db
+        .from("offers")
+        .select(
+          "id,application_id,expires_at,applications(candidates(full_name),jobs(title))",
+        )
+        .eq("agency_id", agencyId)
+        .eq("status", "extended")
+        .not("expires_at", "is", null)
+        .lte("expires_at", offerCutoff)
+        .order("expires_at")
+        .order("id")
+        .limit(20),
+    ]);
   if (
     [applications, processing, messages, intake].some((result) => result.error)
   )
@@ -119,6 +149,17 @@ export async function getAttentionQueue(db: SupabaseClient, agencyId: string) {
       ? String((object as Record<string, unknown>)[key])
       : "";
   };
+  const person = (value: unknown) => {
+    const application = Array.isArray(value) ? value[0] : value;
+    const record = (application ?? {}) as Record<string, unknown>;
+    return [
+      relation(record.candidates, "full_name"),
+      relation(record.jobs, "title"),
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  };
+  const today = new Date().toISOString().slice(0, 10);
   const applicationItems = (rows: typeof applications.data, kind: string) =>
     (rows ?? []).map((row) => ({
       id: `${kind}:${row.id}`,
@@ -151,6 +192,24 @@ export async function getAttentionQueue(db: SupabaseClient, agencyId: string) {
       label: "Intake automation failed",
       detail: "Review the application and retry processing.",
       at: row.created_at,
+    })),
+    // These tables arrive with ADR 0008; a read failure only hides them.
+    ...(interviews.error ? [] : (interviews.data ?? [])).map((row) => ({
+      id: `interview:${row.id}`,
+      applicationId: row.application_id,
+      label: "Interview outcome missing",
+      detail: [row.title, person(row.applications)].filter(Boolean).join(" · "),
+      at: row.ends_at,
+    })),
+    ...(offers.error ? [] : (offers.data ?? [])).map((row) => ({
+      id: `offer:${row.id}`,
+      applicationId: row.application_id,
+      label:
+        row.expires_at && row.expires_at < today
+          ? "Offer past its respond-by date"
+          : "Offer response due soon",
+      detail: person(row.applications),
+      at: `${row.expires_at}T00:00:00.000Z`,
     })),
   ].sort((a, b) => a.at.localeCompare(b.at) || a.id.localeCompare(b.id));
 }

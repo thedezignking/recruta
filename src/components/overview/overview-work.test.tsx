@@ -40,6 +40,7 @@ function fixture(): OverviewWorkProps {
         applicationsReceived: 0,
         inReview: 0,
         shortlisted: 0,
+        placements: 0,
       },
       applications: [],
       requests: [],

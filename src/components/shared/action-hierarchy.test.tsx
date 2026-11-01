@@ -108,6 +108,7 @@ describe("action hierarchy", () => {
             openJobs: 0,
             inReview: 0,
             shortlisted: 0,
+            placements: 0,
             applicationsReceived: 0,
           },
           applications: [],
@@ -127,14 +128,14 @@ describe("action hierarchy", () => {
     expect(cards.map((card) => card.getAttribute("aria-label"))).toEqual([
       "View all active jobs",
       "View all applications received",
-      "View all in review",
       "View all shortlisted",
+      "View all placements",
     ]);
     expect(cards[2].getAttribute("href")).toBe(
-      "/app/applications?status=in_review",
+      "/app/applications?status=shortlisted",
     );
     expect(cards[3].getAttribute("href")).toBe(
-      "/app/applications?status=shortlisted",
+      "/app/applications?status=placed",
     );
     expect(screen.queryByText(/Current workload/)).toBeNull();
     expect(screen.queryByText(/Good (morning|afternoon|evening)/)).toBeNull();

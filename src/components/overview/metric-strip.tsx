@@ -33,7 +33,9 @@ export function MetricStrip({
   idPrefix: string;
 }) {
   return (
-    <div className="mt-4 grid grid-cols-2 rounded-lg border border-border xl:grid-cols-4">
+    <div
+      className={`mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border ${metrics.length === 5 ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}
+    >
       {metrics.map((metric, index) => {
         const difference =
           metric.previous === undefined ? 0 : metric.value - metric.previous;
@@ -47,7 +49,7 @@ export function MetricStrip({
         return (
           <div
             key={metric.label}
-            className={`min-w-0 p-4 sm:p-5 ${index === 0 ? "border-r border-b xl:border-b-0" : index === 1 ? "border-b xl:border-r xl:border-b-0" : index === 2 ? "border-r" : ""}`}
+            className={`min-w-0 bg-card p-4 sm:p-5 ${metrics.length % 2 === 1 && index === metrics.length - 1 ? "col-span-2 xl:col-span-1" : ""}`}
           >
             <Link
               href={metric.href}

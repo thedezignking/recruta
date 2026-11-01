@@ -58,7 +58,6 @@ function initials(name: string) {
     .toUpperCase();
 }
 
-
 function ViewAllLink({ href }: { href: string }) {
   return (
     <ButtonLink

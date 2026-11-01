@@ -31,7 +31,16 @@ export async function getOverviewSummary(
     .select("id", { count: "exact", head: true })
     .eq("agency_id", agencyId)
     .eq("status", "shortlisted");
+  // A placement counts from when it is recorded; one that fell through is not one.
+  let placements = supabase
+    .from("placements")
+    .select("id", { count: "exact", head: true })
+    .eq("agency_id", agencyId)
+    .neq("status", "fell_through");
   if (window) {
+    placements = placements
+      .gte("created_at", window.since)
+      .lte("created_at", window.until);
     jobs = jobs.gte("created_at", window.since).lte("created_at", window.until);
     applications = applications
       .gte("submitted_at", window.since)
@@ -43,7 +52,13 @@ export async function getOverviewSummary(
       .gte("submitted_at", window.since)
       .lte("submitted_at", window.until);
   }
-  const results = await Promise.all([jobs, applications, shortlisted, intake]);
+  const results = await Promise.all([
+    jobs,
+    applications,
+    shortlisted,
+    intake,
+    placements,
+  ]);
   if (results.some((result) => result.error))
     throw new ApiError(
       500,
@@ -55,6 +70,7 @@ export async function getOverviewSummary(
     inReview: results[1].count ?? 0,
     shortlisted: results[2].count ?? 0,
     applicationsReceived: results[3].count ?? 0,
+    placements: results[4].count ?? 0,
   };
 }
 
@@ -130,7 +146,17 @@ export async function getOverviewTrends(
       date: "submitted_at",
       status: "shortlisted",
     },
+    {
+      key: "placements",
+      table: "placements",
+      date: "created_at",
+      status: null,
+    },
   ] as const;
+  const scoped = <T extends { neq: (c: string, v: string) => T }>(
+    query: T,
+    table: string,
+  ) => (table === "placements" ? query.neq("status", "fell_through") : query);
   const resultsPromise = Promise.all(
     series.flatMap(({ table, date, status }) =>
       periods.map(({ since, until }, index) => {
@@ -147,7 +173,7 @@ export async function getOverviewTrends(
               ? query.lte(date, until)
               : query.lt(date, until);
         if (status) query = query.eq("status", status);
-        return query;
+        return scoped(query, table);
       }),
     ),
   );
@@ -166,7 +192,7 @@ export async function getOverviewTrends(
         ? query.lt(date, previousEnd)
         : query.lte(date, previousEnd);
       if (status) query = query.eq("status", status);
-      return query;
+      return scoped(query, table);
     }),
   );
   const [results, previous] = await Promise.all([
@@ -200,11 +226,13 @@ export async function getOverviewTrends(
       applicationsReceived: previous[1].count ?? 0,
       inReview: previous[2].count ?? 0,
       shortlisted: previous[3].count ?? 0,
+      placements: previous[4].count ?? 0,
     },
     openJobs: bucket(0),
     applicationsReceived: bucket(1),
     inReview: bucket(2),
     shortlisted: bucket(3),
+    placements: bucket(4),
   };
 }
 
@@ -361,10 +389,12 @@ export async function getWorkspaceOverview(
   };
   return {
     counts,
-    summaryCounts:
-      selectedRange === "all"
-        ? counts
-        : await getOverviewSummary(supabase, agencyId, selectedRange, now),
+    summaryCounts: await getOverviewSummary(
+      supabase,
+      agencyId,
+      selectedRange,
+      now,
+    ),
     applications: applicationItems,
     requests: requestItems,
   };
